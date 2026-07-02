@@ -1,0 +1,177 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": true,
+  "showAttachments": true,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": true,
+  "colorGroups": [
+    {
+      "query": "[\"subtype\":\"moc\"]",
+      "color": {
+        "a": 1,
+        "rgb": 16761095
+      }
+    },
+    {
+      "query": "[\"subtype\":\"index\"]",
+      "color": {
+        "a": 1,
+        "rgb": 16769154
+      }
+    },
+    {
+      "query": "[\"subtype\":\"pattern\"]",
+      "color": {
+        "a": 1,
+        "rgb": 15022389
+      }
+    },
+    {
+      "query": "[\"subtype\":\"playbook\"]",
+      "color": {
+        "a": 1,
+        "rgb": 16734242
+      }
+    },
+    {
+      "query": "[\"subtype\":\"guide\"]",
+      "color": {
+        "a": 1,
+        "rgb": 16750848
+      }
+    },
+    {
+      "query": "[\"subtype\":\"runbook\"]",
+      "color": {
+        "a": 1,
+        "rgb": 12000284
+      }
+    },
+    {
+      "query": "[\"subtype\":\"decision\"]",
+      "color": {
+        "a": 1,
+        "rgb": 10233776
+      }
+    },
+    {
+      "query": "[\"type\":\"client-context\"]",
+      "color": {
+        "a": 1,
+        "rgb": 5025616
+      }
+    },
+    {
+      "query": "[\"type\":\"partner-context\"]",
+      "color": {
+        "a": 1,
+        "rgb": 3046194
+      }
+    },
+    {
+      "query": "[\"type\":\"project-brief\"]",
+      "color": {
+        "a": 1,
+        "rgb": 8279490
+      }
+    },
+    {
+      "query": "[\"type\":\"person\"]",
+      "color": {
+        "a": 1,
+        "rgb": 240628
+      }
+    },
+    {
+      "query": "[\"type\":\"service\"]",
+      "color": {
+        "a": 1,
+        "rgb": 48340
+      }
+    },
+    {
+      "query": "[\"type\":\"topic\"]",
+      "color": {
+        "a": 1,
+        "rgb": 2533530
+      }
+    },
+    {
+      "query": "[\"type\":\"meeting\"]",
+      "color": {
+        "a": 1,
+        "rgb": 1668818
+      }
+    },
+    {
+      "query": "[\"type\":\"transcript\"]",
+      "color": {
+        "a": 1,
+        "rgb": 9489657
+      }
+    },
+    {
+      "query": "[\"type\":\"email\"]",
+      "color": {
+        "a": 1,
+        "rgb": 8947423
+      }
+    },
+    {
+      "query": "[\"type\":\"research\"]",
+      "color": {
+        "a": 1,
+        "rgb": 4149173
+      }
+    },
+    {
+      "query": "[\"type\":\"brainstorm\"]",
+      "color": {
+        "a": 1,
+        "rgb": 15277667
+      }
+    },
+    {
+      "query": "[\"type\":\"strategy\"]",
+      "color": {
+        "a": 1,
+        "rgb": 8919631
+      }
+    },
+    {
+      "query": "[\"type\":\"writing\"]",
+      "color": {
+        "a": 1,
+        "rgb": 7951176
+      }
+    },
+    {
+      "query": "[\"type\":\"deliverable\"]",
+      "color": {
+        "a": 1,
+        "rgb": 16758528
+      }
+    },
+    {
+      "query": "[\"type\":\"note\"]",
+      "color": {
+        "a": 1,
+        "rgb": 12434877
+      }
+    }
+  ],
+  "collapse-display": true,
+  "showArrow": false,
+  "textFadeMultiplier": 1.5,
+  "nodeSizeMultiplier": 1.2,
+  "lineSizeMultiplier": 1.2,
+  "collapse-forces": false,
+  "centerStrength": 0.466579861111111,
+  "repelStrength": 12.3472222222222,
+  "linkStrength": 0.944270833333333,
+  "linkDistance": 267,
+  "scale": 0.26200858549847644,
+  "close": true
+}

@@ -1,0 +1,42 @@
+# Claude Code
+/.claude/output/
+/.claude/settings.local.json
+/.claude/worktrees/
+.mcp.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Temp files
+*.tmp
+*.bak
+tmp/
+
+# Office lockfiles (Word, Excel, PowerPoint)
+~$*
+
+# Obsidian volatile state (personal view state, not portable)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
