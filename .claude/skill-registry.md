@@ -19,8 +19,6 @@ Central router for the workspace skills. Consult this table before invoking any 
 | Draft a commercial proposal | `/ops-proposal` |
 | Start a new project or work session with proper structure | `/ops-init-project` |
 | Get a dashboard of the week's activity | `/ops-weekly-pulse` |
-| Analyze reference or competitor websites | `/ops-benchmark-web` |
-| Create or analyze spreadsheets (Excel, CSV) | `/ops-xlsx` |
 
 ## Maintenance cycle
 
@@ -43,8 +41,6 @@ Central router for the workspace skills. Consult this table before invoking any 
 | `ops-proposal` | "proposal for X", `{entity} - {need}` | entity + scope interview | structured proposal (understanding, approach, deliverables, timeline, investment) with writing frontmatter; never invents pricing | none |
 | `ops-init-project` | "new project for X", session bootstrap | intent description | project folder + README/context files from schemas | none |
 | `ops-weekly-pulse` | "what happened this week" | scan of the 4 zones | weekly dashboard in `sources/internal/weekly-pulse/` | none |
-| `ops-benchmark-web` | "analyze these sites", `-p {entity}` | URLs, optional entity context | benchmark report (design/UX/stack patterns) | web access |
-| `ops-xlsx` | any spreadsheet creation/analysis | file or data | .xlsx/.csv deliverable | Python 3 |
 
 ## Conventions every skill follows
 
