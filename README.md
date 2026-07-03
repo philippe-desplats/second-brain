@@ -2,12 +2,12 @@
 
 # Second Brain Structure
 
-**A ready-to-use second brain for entrepreneurs, operated from your terminal.**
+**A ready-to-use second brain for entrepreneurs, operated by Claude.**
 
-Clone it, answer a fifteen-minute interview, and get a personalized knowledge workspace: plain markdown under git, typed frontmatter, and an assistant that files, distills, and retrieves everything about your work.
+Clone it, answer a fifteen-minute interview, and get a personalized knowledge workspace: plain markdown under git, typed frontmatter, and an assistant that files, distills, and retrieves everything about your work. Runs in Claude Code (terminal, desktop app, IDE, web) and in Claude Cowork if you never want to touch a terminal.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Built for Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-D97757)](https://claude.com/claude-code)
+[![Runs in Claude Code and Cowork](https://img.shields.io/badge/runs%20in-Claude%20Code%20%C2%B7%20Cowork-D97757)](https://claude.com/claude-code)
 [![Semantic search: Basic Memory](https://img.shields.io/badge/semantic%20search-Basic%20Memory-4A90D9)](https://docs.basicmemory.com)
 [![Readable in Obsidian](https://img.shields.io/badge/readable%20in-Obsidian-7C3AED)](https://obsidian.md)
 
@@ -21,7 +21,7 @@ Where a note-taking app stops at storage, this workspace keeps going: every arti
 
 The trigger is always the same story: a commitment made in a meeting that nobody wrote down, a brief buried three email threads deep, a client call that starts with five minutes of "where did we leave off". The notes exist, but they live in a doc here and an inbox there, and nothing connects them.
 
-A second brain only works if filing is effortless and retrieval is instant. This one is built agent-first: strict path conventions, typed YAML frontmatter, and generated indexes make the whole workspace navigable by [Claude Code](https://claude.com/claude-code). You paste an email or dump your meeting notes; the agent identifies what it is, files it at the right path with the right name and the right schema, and pulls the full context back before your next call.
+A second brain only works if filing is effortless and retrieval is instant. This one is built agent-first: strict path conventions, typed YAML frontmatter, and generated indexes make the whole workspace navigable by Claude, whether you run [Claude Code](https://claude.com/claude-code) or [Claude Cowork](https://support.claude.com/en/articles/13345190-get-started-with-claude-cowork). You paste an email or dump your meeting notes; the agent identifies what it is, files it at the right path with the right name and the right schema, and pulls the full context back before your next call.
 
 Methodologies like PARA or Zettelkasten rely on your discipline to keep the system coherent. Here the discipline is encoded in the structure and enforced by the tooling, and your only ritual is a weekly fifteen-minute review.
 
@@ -62,9 +62,23 @@ Inside Claude Code:
 
 The init assistant interviews you about why you want a second brain, what your work looks like, and how you communicate. It then writes your charter and context files, configures the workspace for your profile, and optionally wires up Basic Memory for semantic search. Nothing is written before you approve a recap, and `/sb-init -r` reconfigures an initialized workspace later. Fifteen minutes in, you have a working system, not an empty folder.
 
+No terminal? In Claude Cowork, connect the cloned folder via "Work in a Folder" and ask: "read `.claude/skills/sb-init/SKILL.md` and run the setup interview". See [Run it your way](#run-it-your-way).
+
 ### 3. Start filing
 
 Read [GETTING-STARTED.md](GETTING-STARTED.md) for your first week with the system. The short version: feed the one flow that matters most to you first (the interview identifies it), drop anything unclear into `inbox/`, and run `/curate -w 7` once a week.
+
+## Run it your way
+
+The workspace is plain files plus markdown instructions, so any Claude surface that can read a folder can operate it:
+
+| Surface | Experience |
+|---|---|
+| **Claude Code, terminal** | The full experience: skills as slash commands (`/sb-init`, `/capture`, `/curate`), maintenance scripts, git integration |
+| **Claude Code, desktop app / IDE / web** | The same skills and slash commands wrapped in a UI; open the cloned folder and work from there |
+| **Claude Cowork** | No terminal at all: connect the folder via "Work in a Folder", the workspace instructions are picked up as folder context, and you drive everything conversationally |
+
+Skills are plain markdown instructions in `.claude/skills/`, not binaries. On a surface without slash commands, invoke them by asking: "read `.claude/skills/capture/SKILL.md` and file this email". The conventions (paths, naming, frontmatter) live in `CLAUDE.md` and `.claude/rules/`, which every surface reads the same way.
 
 ## See it working before filing anything real
 
@@ -156,7 +170,7 @@ Thirteen skills ship with the workspace, routed through `.claude/skill-registry.
 
 ## Requirements
 
-- **Claude Code** (required): the assistant that operates the workspace.
+- **Claude** (required): [Claude Code](https://claude.com/claude-code) in the terminal, desktop app, IDE extension, or web for the full skill experience; or [Claude Cowork](https://support.claude.com/en/articles/13345190-get-started-with-claude-cowork) for a terminal-free workspace.
 - **Basic Memory** (recommended): local semantic search and knowledge graph over your notes. `/sb-init` guides the installation (`uv tool install basic-memory`).
 - **Obsidian** (optional): a pleasant reading and graph view. Install the community plugin **Dataview** to render the live indexes in `atlas/maps/`; agent-readable static versions are generated alongside them either way.
 
@@ -188,7 +202,7 @@ Markdown because it survives every tool change. Git because history matters. Typ
 
 ## Acknowledgements
 
-The term "second brain" was popularized by Tiago Forte's [Building a Second Brain](https://www.buildingasecondbrain.com/), and the zone design owes ideas to PARA and the Zettelkasten tradition. The agent-first layer is made possible by [Claude Code](https://claude.com/claude-code), [Basic Memory](https://docs.basicmemory.com), and [Obsidian](https://obsidian.md) with Dataview.
+The term "second brain" was popularized by Tiago Forte's [Building a Second Brain](https://www.buildingasecondbrain.com/), and the zone design owes ideas to PARA and the Zettelkasten tradition. The agent-first layer is made possible by [Claude Code](https://claude.com/claude-code) and [Claude Cowork](https://support.claude.com/en/articles/13345190-get-started-with-claude-cowork), [Basic Memory](https://docs.basicmemory.com), and [Obsidian](https://obsidian.md) with Dataview.
 
 ## License
 

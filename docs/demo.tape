@@ -14,4 +14,4 @@ Type "python3 docs/demo_replay.py"
 Enter
 Show
 
-Sleep 31s
+Sleep 33s

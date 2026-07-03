@@ -92,10 +92,42 @@ def tool(call: str, result: str) -> None:
 
 
 def answered(question: str, answer: str) -> None:
-    time.sleep(0.6)
     out(f"⏺ {BOLD}User answered Claude's questions:{RESET}", delay=0.004)
     out(f"  {DIM}· {question} → {GREEN}{answer}{RESET}", delay=0.004)
     print()
+
+
+def ask_select(header: str, question: str, options: list, pick_index: int) -> None:
+    time.sleep(0.6)
+
+    def draw(pointer: int) -> list:
+        title = f"─ {header} "
+        lines = ["╭" + title + "─" * (BOX_W - len(title)) + "╮"]
+        lines.append("│ " + question + " " * (BOX_W - 1 - len(question)) + "│")
+        lines.append("│" + " " * BOX_W + "│")
+        for i, (name, desc) in enumerate(options):
+            if i == pointer:
+                text = f" ❯ {name:<13}{desc}"
+                lines.append("│" + f"{GREEN}{BOLD}{text}{RESET}" + " " * (BOX_W - len(text)) + "│")
+            else:
+                text = f"   {name:<13}{desc}"
+                lines.append("│" + DIM + text + RESET + " " * (BOX_W - len(text)) + "│")
+        lines.append("╰" + "─" * BOX_W + "╯")
+        return lines
+
+    block = draw(0)
+    for line in block:
+        print(line)
+    height = len(block)
+    for pointer in range(1, pick_index + 1):
+        time.sleep(0.8)
+        sys.stdout.write(f"\033[{height}A")
+        for line in draw(pointer):
+            sys.stdout.write("\r\033[K" + line + "\n")
+        sys.stdout.flush()
+    time.sleep(1.0)
+    sys.stdout.write(f"\033[{height}A\r\033[0J")
+    sys.stdout.flush()
 
 
 def main() -> None:
@@ -133,6 +165,17 @@ def main() -> None:
         f"{DIM}retrieval pain){RESET}",
     )
 
+    ask_select(
+        "Profile",
+        "Which profile is closest to how you work?",
+        [
+            ("Agency", "A team serving multiple clients"),
+            ("Freelance", "You deliver work to clients on your own"),
+            ("Solopreneur", "Your own products, few client folders"),
+            ("Personal", "Knowledge and life projects"),
+        ],
+        1,
+    )
     answered("Which profile is closest to how you work?", "Freelance")
     claude(
         "Freelance keeps three zones: clients, internal, personal.",
