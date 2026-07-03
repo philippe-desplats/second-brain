@@ -46,23 +46,30 @@ Methodologies like PARA or Zettelkasten rely on your discipline to keep the syst
 
 ```bash
 git clone https://github.com/philippe-desplats/second-brain.git my-second-brain
-cd my-second-brain
-claude
 ```
 
-Or click **Use this template** on GitHub to start from your own repository. Either way, keep your copy private: it will hold your clients, your emails, your strategy.
+Or click **Use this template** on GitHub to start from your own repository (then clone it, or download it as a ZIP if you do not use git). Either way, keep your copy private: it will hold your clients, your emails, your strategy.
 
 ### 2. Run the guided setup
 
-Inside Claude Code:
+**With Claude Code** (terminal, desktop app, or IDE): open the folder, start a session, and launch the setup skill.
+
+```bash
+cd my-second-brain
+claude
+```
 
 ```
 /sb-init
 ```
 
-The init assistant interviews you about why you want a second brain, what your work looks like, and how you communicate. It then writes your charter and context files, configures the workspace for your profile, and optionally wires up Basic Memory for semantic search. Nothing is written before you approve a recap, and `/sb-init -r` reconfigures an initialized workspace later. Fifteen minutes in, you have a working system, not an empty folder.
+**With Claude Cowork** (no terminal): in the Claude desktop app, open Cowork, click **Work in a Folder**, select the `my-second-brain` folder, then ask:
 
-No terminal? In Claude Cowork, connect the cloned folder via "Work in a Folder" and ask: "read `.claude/skills/sb-init/SKILL.md` and run the setup interview". See [Run it your way](#run-it-your-way).
+```
+Read .claude/skills/sb-init/SKILL.md and run the setup interview.
+```
+
+Both paths run the same interview: why you want a second brain, what your work looks like, how you communicate. The assistant then writes your charter and context files, configures the workspace for your profile, and optionally wires up Basic Memory for semantic search. Nothing is written before you approve a recap, and `/sb-init -r` reconfigures an initialized workspace later. Fifteen minutes in, you have a working system, not an empty folder. More on the surface differences in [Run it your way](#run-it-your-way).
 
 ### 3. Start filing
 

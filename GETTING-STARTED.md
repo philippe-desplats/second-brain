@@ -1,6 +1,6 @@
 # Getting started: your first week
 
-`/sb-init` gives you a configured workspace. This guide turns it into a habit. One rule above all: feed the wedge flow you named in your charter before anything else.
+`/sb-init` gives you a configured workspace. This guide turns it into a habit. It reads the same whether you drive the workspace from Claude Code or from Claude Cowork: where you see a slash command, Cowork users ask for the same thing in plain words (the skills are markdown instructions in `.claude/skills/`, for example "read `.claude/skills/capture/SKILL.md` and file this email"). One rule above all: feed the wedge flow you named in your charter before anything else.
 
 ## Day 1: file three real things
 
@@ -37,7 +37,7 @@ Use the production skills on real work: `/ops-email` for a reply you actually ne
 
 It scans the week, and proposes what to distill, archive, or map. With one week of data it will mostly find nothing: that is fine. You are installing the ritual, not harvesting yet. Approve or reject each suggestion; nothing moves without you.
 
-If you know you will forget, automate the reminder: `/sb-init` (step 6) can schedule `basic-memory/scripts/curation_reminder.py` weekly on macOS, Linux, or Windows. It drops a note in `inbox/` and fires a system notification; you then open Claude Code and run `/curate -w 7` (or `-r` to just generate the report file into `atlas/reviews/` before deciding).
+If you know you will forget, automate the reminder: `/sb-init` (step 6) can schedule `basic-memory/scripts/curation_reminder.py` weekly on macOS, Linux, or Windows. It drops a note in `inbox/` and fires a system notification; you then open your Claude session and run `/curate -w 7` (or `-r` to just generate the report file into `atlas/reviews/` before deciding).
 
 ## Week 2 and beyond
 
