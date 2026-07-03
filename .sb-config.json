@@ -1,11 +1,16 @@
 {
   "schema": "sb-config/v1",
-  "boilerplate_version": "0.1.0",
+  "boilerplate_version": "0.2.0",
   "initialized": false,
   "owner": null,
   "organization": null,
   "profile": null,
-  "zones": ["clients", "partners", "internal", "personal"],
+  "zones": [
+    "clients",
+    "partners",
+    "internal",
+    "personal"
+  ],
   "working_language": null,
   "working_language_secondary": null,
   "basic_memory_project": null,

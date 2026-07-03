@@ -280,17 +280,19 @@ def main(argv: list[str]) -> int:
         )
     )
 
-    rows = build_partners_active(notes)
-    generated.append(
-        write_index(
+    # Skip the partners index when the zone was pruned by /sb-init
+    if (WORKSPACE / "sources" / "partners").is_dir():
+        rows = build_partners_active(notes)
+        generated.append(
+            write_index(
             args.output_dir,
-            "partners-active",
-            "Active partners",
-            "All partners with status: active in their CLAUDE.md.",
-            rows,
-            [("name", "Partner"), ("path", "Path"), ("last_updated", "Last update")],
+                "partners-active",
+                "Active partners",
+                "All partners with status: active in their CLAUDE.md.",
+                rows,
+                [("name", "Partner"), ("path", "Path"), ("last_updated", "Last update")],
+            )
         )
-    )
 
     rows = build_projects_active(notes)
     generated.append(

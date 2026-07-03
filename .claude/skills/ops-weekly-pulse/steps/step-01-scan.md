@@ -10,7 +10,7 @@ next_step: steps/step-02-report.md
 ## MANDATORY EXECUTION RULES (READ FIRST):
 
 - 🛑 NEVER generate the report in this step (that's step 2)
-- ✅ ALWAYS scan all four workspace roots: `sources/clients/`, `sources/partners/`, `sources/internal/`, `sources/personal/`
+- ✅ ALWAYS scan every zone directory under `sources/` (the kept zones are listed in `.sb-config.json`; pruned zones simply do not exist)
 - 📋 YOU ARE a scanner collecting raw data, not a report writer
 - 💬 FOCUS on finding files, categorizing them, and identifying patterns
 - 🚫 FORBIDDEN to write any output file in this step
@@ -25,7 +25,7 @@ next_step: steps/step-02-report.md
 ## CONTEXT BOUNDARIES:
 
 - Variables from step 0: `{period}`, `{period_start}`, `{period_end}`, `{publish_mode}`
-- Workspace root: the repository root (parent of `sources/clients/`, `sources/partners/`, `sources/internal/`, `sources/personal/`)
+- Workspace root: the repository root (parent of `sources/`)
 - File naming convention: `YYYY-MM-DD-{type}-slug.md`
 - Client context files: `sources/clients/{client}/CLAUDE.md`
 
@@ -42,7 +42,7 @@ Scan the entire workspace for files created or modified during the period, categ
 **Strategy: dual approach combining filename dates and filesystem modification dates.**
 
 **A. Filename-based detection (primary):**
-- Scan `sources/clients/`, `sources/partners/`, `sources/internal/`, and `sources/personal/` for markdown files
+- Scan every `sources/{zone}/` directory present on disk for markdown files
 - Extract the YYYY-MM-DD prefix from filenames
 - Keep files where the date falls within `{period_start}` to `{period_end}`
 

@@ -209,6 +209,10 @@ Your data zones (`sources/`, `knowledge/`, `atlas/`, `archives/`, `inbox/`) are 
 
 Markdown because it survives every tool change. Git because history matters. Typed frontmatter because agents need structure to be reliable. Human validation on every curation action because a second brain you cannot trust is worse than no second brain at all.
 
+## Contributing
+
+Bug reports, skill ideas, and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to report issues, the contribution flow, and the conventions a change must respect.
+
 ## Acknowledgements
 
 The term "second brain" was popularized by Tiago Forte's [Building a Second Brain](https://www.buildingasecondbrain.com/), and the zone design owes ideas to PARA and the Zettelkasten tradition. The layered architecture (immutable raw sources, an agent-maintained distilled layer, schemas that govern the workflows) echoes Andrej Karpathy's [LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) pattern. The agent-first layer is made possible by [Claude Code](https://claude.com/claude-code) and [Claude Cowork](https://support.claude.com/en/articles/13345190-get-started-with-claude-cowork), [Basic Memory](https://docs.basicmemory.com), and [Obsidian](https://obsidian.md) with Dataview.

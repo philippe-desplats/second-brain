@@ -70,6 +70,9 @@ date: {today}
 - [trigger] {one-line trigger}
 - [wedge] {wedge flow}
 - [success-criterion] {success_90d}
+
+## Relations
+- about [[{org_name}, company context]]
 ```
 
 Write it in the working language: this file belongs to the owner, not to the structure.
@@ -101,6 +104,9 @@ last_updated: {today}
 
 ## Strategy notes
 *To be filled as strategy notes accumulate. The /distill skill will point here.*
+
+## Relations
+- see_also [[Second brain charter]]
 ```
 
 Written in the working language.
@@ -119,8 +125,16 @@ If the manifest is missing or all paths are already gone, skip silently. If the 
 For each zone NOT in `{zones}`:
 
 - **Safety gate first**: list the zone's contents. If it contains anything other than `.gitkeep` and the demo paths already handled in 4, DO NOT delete; show the contents and ask the owner to move or archive them first (this matters in `-r` reconfigure runs on a lived-in workspace).
-- If empty: remove `sources/{zone}/` and `archives/{zone}/`, and remove the zone's row from CLAUDE.md's path table (already done in 1).
-- If `partners` was dropped: delete `basic-memory/schemas/partner-context.md`, remove the partner-relation fields (`managed_by`, `owned_by`, `referred_by`, `co_delivered_with`) from `basic-memory/schemas/client-context.md`, and remove the partner references from `.claude/rules/entities.md` and `.claude/rules/frontmatter.md` (the symmetric-pairs section).
+- If empty: remove `sources/{zone}/` and `archives/{zone}/` with `git rm -r` (NOT plain `rm`: interactive `rm -i` shell aliases silently break the chain and leave a half-done prune), and remove the zone's row from CLAUDE.md's path table (already done in 1).
+- If `partners` was dropped, clean every functional reference:
+  - `git rm basic-memory/schemas/partner-context.md`
+  - `basic-memory/schemas/client-context.md`: remove the partner-relation fields (`managed_by`, `owned_by`, `referred_by`, `co_delivered_with`), their relations-vocabulary bullets, the symmetric-pairs section, and the "client that is a partner's product" section
+  - `basic-memory/schemas/person.md`: remove the `partner_at` field
+  - Every operational schema (`note`, `meeting`, `email`, `research`, `brainstorm`, `strategy`, `writing`, `transcript`, `deliverable`, `project-brief`): remove the `- partner` value from the `category` enum, remove `partner?: PartnerContext` fields, and fix examples using `category: partner` or a `partner:` field
+  - `basic-memory/schemas/README.md`: update the strict-schema count and list, remove the partner-context table row and any partner-context example block
+  - `.claude/rules/entities.md`: rewrite as clients-only (title, decision section, project naming, symmetric pairs, maintenance notes)
+  - `.claude/rules/frontmatter.md`: remove the partner-context rows, the `partner:` wikilink resolution line, and the symmetric-pairs section; reword partner-based examples
+- **Leave the maintenance scripts untouched** (`check_symmetric_relations.py`, `retype_files.py`, `auto_link_entities.py`, `add_observations_from_frontmatter.py`, `generate_indexes.py`): they are zone-agnostic, do nothing when no partner-context note exists, and keep working if the owner re-adds the zone later with a simple `mkdir`. The same goes for generic prose mentions of partners in `communication.md`, `knowledge.md`, `emails.md`, and the skills: leave them.
 
 ### 6. Adjust schema enums
 
@@ -132,11 +146,11 @@ For each zone NOT in `{zones}`:
 - `grep -c "NOT CONFIGURED" CLAUDE.md` must return 0.
 - `python3 -c "import json; json.load(open('.sb-config.json'))"` must succeed, and `initialized` must be `true`.
 - The pruned directories must be gone; the kept ones intact.
-- **If `partners` was dropped, verify the full cleanup** (a partial prune is worse than none):
+- **If `partners` was dropped, verify the full cleanup with global greps** (a partial prune is worse than none):
   - `test ! -f basic-memory/schemas/partner-context.md`
-  - `grep -c "PartnerContext" basic-memory/schemas/client-context.md` returns 0
-  - `grep -ci "partner" .claude/rules/entities.md .claude/rules/frontmatter.md` returns 0 (or only historical mentions you deliberately kept)
-  If any check fails, finish the cleanup NOW before moving on.
+  - `grep -rin "PartnerContext|partner-context" basic-memory/schemas/ .claude/rules/ CLAUDE.md` returns nothing
+  - `grep -rin "partner" basic-memory/schemas/ .claude/rules/entities.md .claude/rules/frontmatter.md` returns nothing (or only lines you deliberately kept and can justify)
+  Maintenance scripts are expected to still mention partner-context; that is by design. If any check fails, finish the cleanup NOW before moving on.
 - Re-read the two written files once to confirm frontmatter is valid YAML.
 
 Report what was written and removed, in two short lists.

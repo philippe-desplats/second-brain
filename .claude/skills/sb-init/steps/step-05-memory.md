@@ -86,10 +86,10 @@ Tell the owner the server becomes available at the next Claude Code session star
 
 ```bash
 bm reindex --project {bm_project}
-bm tool search-notes --query "charter"
+bm tool search-notes "charter" --project {bm_project}
 ```
 
-The charter written in step-04 should come back. If the index is empty, check `bm status --project {bm_project}`.
+(The query is a positional argument; there is no `--query` option.) The charter written in step-04 should come back. If the index is empty, check `bm status --project {bm_project}`.
 
 ### 6. Scheduled reindex (optional)
 

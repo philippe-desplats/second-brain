@@ -27,10 +27,10 @@ Confidence rule: one dominant signal set → proceed; two plausible types → as
 
 If `{entity_override}` is set, verify `sources/*/{entity_override}/` exists and use it. Otherwise:
 
-1. List candidate entities: `ls -d sources/*/*/` (zones: clients, partners; internal and personal are project-based, not entity-based).
+1. List candidate entities: `ls -d sources/*/*/` (entity zones present on disk, e.g. clients and partners when kept; internal and personal are project-based, not entity-based).
 2. Match signals from the content against each entity's `CLAUDE.md`: entity name, contact names, email domains, project vocabulary.
 3. Decide the zone:
-   - Matched entity → its zone (`clients` or `partners`)
+   - Matched entity → its zone (`clients`, or `partners` when that zone exists)
    - Owner-internal content (strategy, infra, own business) → `internal`
    - Private, non-business content → `personal`
 4. One confident match → propose it. Several or none → AskUserQuestion listing the top candidates plus "internal", "personal", and "new entity".

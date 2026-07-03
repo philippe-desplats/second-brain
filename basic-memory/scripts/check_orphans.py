@@ -56,6 +56,9 @@ def is_ignored(rel_path: Path) -> bool:
         return True
     if rel_str.endswith("-static.md"):
         return True
+    # structural files, not knowledge notes: never meaningful as "orphans"
+    if rel_path.name in {"README.md", "CHANGELOG.md", "GETTING-STARTED.md", "AGENTS.md", "CLAUDE.md"} and len(parts) <= 2:
+        return True
     return False
 
 
