@@ -209,7 +209,7 @@ Markdown because it survives every tool change. Git because history matters. Typ
 
 ## Acknowledgements
 
-The term "second brain" was popularized by Tiago Forte's [Building a Second Brain](https://www.buildingasecondbrain.com/), and the zone design owes ideas to PARA and the Zettelkasten tradition. The agent-first layer is made possible by [Claude Code](https://claude.com/claude-code) and [Claude Cowork](https://support.claude.com/en/articles/13345190-get-started-with-claude-cowork), [Basic Memory](https://docs.basicmemory.com), and [Obsidian](https://obsidian.md) with Dataview.
+The term "second brain" was popularized by Tiago Forte's [Building a Second Brain](https://www.buildingasecondbrain.com/), and the zone design owes ideas to PARA and the Zettelkasten tradition. The layered architecture (immutable raw sources, an agent-maintained distilled layer, schemas that govern the workflows) echoes Andrej Karpathy's [LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) pattern. The agent-first layer is made possible by [Claude Code](https://claude.com/claude-code) and [Claude Cowork](https://support.claude.com/en/articles/13345190-get-started-with-claude-cowork), [Basic Memory](https://docs.basicmemory.com), and [Obsidian](https://obsidian.md) with Dataview.
 
 ## License
 
