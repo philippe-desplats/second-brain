@@ -7,6 +7,8 @@ Central router for the workspace skills. Consult this table before invoking any 
 | If the owner wants to... | Skill |
 |---|---|
 | Initialize or reconfigure this workspace | `/sb-init` |
+| File inbound content (email, transcript, notes) or process the inbox | `/capture` (`-i` for inbox) |
+| Check the workspace health (orphans, conventions, frontmatter) | `/sb-doctor` |
 | Run the weekly or monthly workspace review | `/curate` |
 | Promote a recurring pattern into reusable knowledge | `/distill` |
 | Create a Map of Content for a dense topic | `/moc-new` |
@@ -29,6 +31,8 @@ Central router for the workspace skills. Consult this table before invoking any 
 | Skill | Triggers | Input | Output | Dependencies |
 |---|---|---|---|---|
 | `sb-init` | first run, "initialize", "set up my second brain", `-q` quick, `-r` reconfigure | interview answers | charter, CONTEXT.md, profile block, pruned zones, optional Basic Memory wiring | none (Basic Memory optional) |
+| `capture` | "capture this", "file this email", "process my inbox", `-i` `-e {entity}` `-t {type}` | pasted content, @file, or inbox queue | artifact filed at the conventional path, schema frontmatter, verbatim body | none |
+| `sb-doctor` | "check the workspace", "health check", monthly hygiene | none (scans the workspace) | health report: orphans, double frontmatter, broken conventions, stale indexes, aged inbox | Python 3 |
 | `curate` | weekly/monthly review, `-w {days}` | window of recent activity | report of distill/archive/moc candidates, delegation on approval | Basic Memory optional |
 | `distill` | 3rd repetition of a topic, "distill X" | topic or slug, `-t {ops\|tech\|business}` `-k {kind}` | note in `knowledge/` with provenance line and back-links | Basic Memory optional |
 | `moc-new` | dense topic (10+ notes), "create a map for X" | topic slug | MOC in `atlas/maps/` (Dataview + curated list) | Obsidian Dataview for live view |

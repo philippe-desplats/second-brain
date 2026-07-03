@@ -112,7 +112,16 @@ For each zone NOT in `{zones}`: remove `sources/{zone}/` and `archives/{zone}/` 
 - In every schema that declares `category`, keep only the values matching `{zones}` (internal maps to `internal`, personal to `personal`).
 - In `basic-memory/schemas/service.md`, replace the `service_type` enum with `{service_types}` (kebab-case). Skip for the personal profile (and delete `service.md` plus `atlas/services/` if the owner has no commercial activity).
 
-### 6. Verify
+### 6. Demo content
+
+The boilerplate ships with a fictional client (Globex) so the system can be seen working. Read `references/demo-manifest.md` (this skill's references folder); if the listed paths still exist, ask:
+
+- **Keep for now (Recommended for first-timers)**: explore it, then remove later by deleting the paths listed in the manifest.
+- **Remove now**: delete every path in the manifest (files and the `sources/clients/globex/` folder), keep the zone directories.
+
+If the manifest is missing or all paths are already gone, skip silently.
+
+### 7. Verify
 
 - `grep -c "NOT CONFIGURED" CLAUDE.md` must return 0.
 - The pruned directories must be gone; the kept ones intact.

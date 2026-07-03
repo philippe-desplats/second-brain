@@ -113,7 +113,7 @@ In `basic-memory/scripts/` (11 scripts):
 - `check_orphans.py`, flags notes with no inbound or outbound relations
 - `generate_indexes.py`, regenerates the `*-static.md` indexes in `atlas/maps/`
 
-**After every `bm reindex`**, always run `python3 basic-memory/scripts/fix_double_frontmatter.py` then `python3 basic-memory/scripts/check_double_frontmatter.py` as long as the Basic Memory bug persists.
+Double frontmatter was a legacy Basic Memory sync bug; the `disable_permalinks: true` setting applied by `/sb-init` prevents it. No routine run is needed: `/sb-doctor` includes the detection check, and `fix_double_frontmatter.py --apply` repairs the rare occurrence.
 
 ## Observations and tags, convention
 
@@ -127,8 +127,7 @@ For the most common categories, see the type table above. You can invent an ad h
 
 ## References
 
-- `basic-memory/README.md`, global manifesto (relation vocabulary, symmetric pairs, hybrid client/partner case)
-- `basic-memory/schemas/README.md`, index of the 15 schemas
+- `basic-memory/schemas/README.md`, design manifest: the 15 schemas, relation vocabulary, symmetric pairs, design decisions
 - `.claude/rules/emails.md`, `.claude/rules/entities.md`, specific process rules
 - `.claude/rules/communication.md`, tone and writing rules
 - Basic Memory documentation, https://docs.basicmemory.com

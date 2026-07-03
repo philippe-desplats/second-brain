@@ -87,8 +87,9 @@ Offer a scheduled reindex so the index never goes stale:
 
 - **macOS**: a LaunchAgent plist at `~/Library/LaunchAgents/com.{bm_project}.reindex.plist` running `bm reindex --project {bm_project}` twice a day (04:00 and 13:00), loaded with `launchctl load`.
 - **Linux**: a cron line `0 4,13 * * * {bm-path} reindex --project {bm_project}`.
+- **Windows**: two Task Scheduler entries via `schtasks /create /tn "bm-reindex-{bm_project}-am" /tr "{bm-path} reindex --project {bm_project}" /sc daily /st 04:00` (and a second task with `-pm` and `/st 13:00`). Use the full path from `where bm`.
 
-Individual confirmation before creating either.
+Individual confirmation before creating any of them.
 
 ### 7. Update the profile block
 
