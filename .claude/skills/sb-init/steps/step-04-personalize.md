@@ -9,7 +9,7 @@ next_step: steps/step-05-memory.md
 
 ## MANDATORY EXECUTION RULES (READ FIRST):
 
-- 🛑 NEVER execute before the step-03 recap was approved
+- 🛑 NEVER execute before the step-03 recap was approved. If the owner is away and the approval question times out, do NOT proceed: save the collected answers to `.sb-init-answers.json` at the workspace root, say so in one line, and end the session there. A later `/sb-init` run detects that file and resumes at the recap.
 - 🛑 NEVER touch anything under `sources/` other than `sources/internal/`
 - ✅ ALWAYS show the exact list of writes/removals before executing
 - ✅ ALWAYS keep edits surgical: replace markers and enum lines, do not rewrite whole files
@@ -21,7 +21,7 @@ Announce the action list, get one confirmation, then execute all of it.
 
 ### 1. Write the config and fill the CLAUDE.md profile block
 
-**First, `.sb-config.json`** (machine-readable source of truth): set `initialized: true`, `owner`, `organization`, `profile`, `zones` (the final list), `working_language`. Leave `basic_memory_project` and `curation_ritual` for steps 5 and 6. Keep `schema` and `boilerplate_version` untouched. Update `demo_content` to `"removed"` if the demo is deleted in section 4.
+**First, `.sb-config.json`** (machine-readable source of truth): set `initialized: true`, `owner`, `organization`, `profile`, `zones` (the final list), `working_language`, and `working_language_secondary` (null if none). Leave `basic_memory_project` and `curation_ritual` for steps 5 and 6. Delete `.sb-init-answers.json` if it exists (the run is completing). Keep `schema` and `boilerplate_version` untouched. Update `demo_content` to `"removed"` if the demo is deleted in section 4.
 
 **Then mirror it** into the root `CLAUDE.md`, replacing the content between `<!-- sb-init:profile -->` and `<!-- /sb-init:profile -->`:
 
@@ -132,6 +132,11 @@ For each zone NOT in `{zones}`:
 - `grep -c "NOT CONFIGURED" CLAUDE.md` must return 0.
 - `python3 -c "import json; json.load(open('.sb-config.json'))"` must succeed, and `initialized` must be `true`.
 - The pruned directories must be gone; the kept ones intact.
+- **If `partners` was dropped, verify the full cleanup** (a partial prune is worse than none):
+  - `test ! -f basic-memory/schemas/partner-context.md`
+  - `grep -c "PartnerContext" basic-memory/schemas/client-context.md` returns 0
+  - `grep -ci "partner" .claude/rules/entities.md .claude/rules/frontmatter.md` returns 0 (or only historical mentions you deliberately kept)
+  If any check fails, finish the cleanup NOW before moving on.
 - Re-read the two written files once to confirm frontmatter is valid YAML.
 
 Report what was written and removed, in two short lists.

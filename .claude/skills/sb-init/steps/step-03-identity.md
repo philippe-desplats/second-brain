@@ -31,7 +31,7 @@ Store `{owner_name}`, `{org_name}`, and the contact details.
 
 > "Which language do you work in? All notes, emails, and deliverables I generate will use it. The workspace structure itself stays in English."
 
-Store `{working_language}`. If the owner works in two languages (for example local clients + international), record the primary one and note the secondary in the communication defaults.
+Store `{working_language}`. If the owner works in two languages (for example local clients + international), store the primary in `{working_language}` and the secondary in `{working_language_secondary}`; both land in `.sb-config.json`.
 
 ### 3. Communication defaults
 
@@ -52,6 +52,8 @@ These become the `service_type` enum in `basic-memory/schemas/service.md` and se
 ### 5. Recap checkpoint
 
 Show everything collected so far ({charter} summary if present, {profile}, {zones}, identity, language, communication defaults, service types) in one compact table and confirm. This is the last stop before writing to disk.
+
+**If the owner does not respond** (away from keyboard, timed-out question): write all collected answers to `.sb-init-answers.json` at the workspace root, announce it in one line, and STOP. Never proceed to step-04 on an unanswered gate.
 
 ## NEXT STEP:
 

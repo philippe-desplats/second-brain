@@ -7,6 +7,7 @@
   "profile": null,
   "zones": ["clients", "partners", "internal", "personal"],
   "working_language": null,
+  "working_language_secondary": null,
   "basic_memory_project": null,
   "curation_ritual": null,
   "demo_content": "present"

@@ -26,6 +26,8 @@ Defaults: {quick_mode} = false, {reconfigure} = false
 
 ### 2. Check initialization state
 
+**Interrupted run?** If `.sb-init-answers.json` exists at the workspace root, a previous run was interrupted at the recap gate. Offer to resume: reload the saved answers, show the recap again (step-03 section 5), and continue from there on approval. If the owner prefers a fresh start, delete the file and proceed normally.
+
 Read the root `CLAUDE.md` and inspect the `<!-- sb-init:profile -->` block:
 
 - **If every field says NOT CONFIGURED** → fresh workspace, proceed normally.

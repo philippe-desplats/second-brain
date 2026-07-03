@@ -33,6 +33,7 @@ __pycache__/
 *.tmp
 *.bak
 tmp/
+.sb-init-answers.json
 
 # Office lockfiles (Word, Excel, PowerPoint)
 ~$*

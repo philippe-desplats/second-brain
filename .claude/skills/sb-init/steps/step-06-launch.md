@@ -25,7 +25,7 @@ Take the `{charter}` wedge flow and do it for real, right now:
 - **Client context**: "Name your most important client." Create `sources/clients/{client}/CLAUDE.md` from the template, interviewing for the communication preferences.
 - **Reusable knowledge**: "What is the thing you re-explain most often?" Draft it as the first `knowledge/` note, with a provenance line.
 
-In quick mode, or if the owner has nothing at hand, create one entity context file anyway: an empty second brain teaches nothing.
+In quick mode, or if the owner has nothing at hand or is away: do NOT fabricate an entity or invent preferences. Point at the demo content as the working model (if it was kept) and record "create your first real entity context" as the top next step in the final summary. A fabricated client would poison the workspace's trust from day one.
 
 ### 2. Show what just happened
 
@@ -64,7 +64,7 @@ git add -A && git commit -m "chore: initialize second brain workspace"
 ```
 ✅ Your second brain is ready.
 
-| | |
+| Setting | Value |
 |---|---|
 | Profile | {profile} ({zones}) |
 | Working language | {working_language} |

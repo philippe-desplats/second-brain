@@ -48,6 +48,7 @@ Store `{profile}`.
 
 Present the default zones for the chosen profile and ask whether to adjust. In quick mode, take the defaults without asking. Rules:
 
+- **Cross-check with the charter first**: if the wedge flow or retrieval pain from step-01 revolves around clients (client context, client briefs, retrieval by client), propose keeping `clients` even when the profile default drops it. The charter beats the profile default.
 - `internal` and `personal` cannot be removed.
 - If the owner hesitates about `partners`, drop it: it is the most specialized concept (its schema models resellers, white-label, business referral) and easy to add later.
 - Store the final list in `{zones}`.
