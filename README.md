@@ -84,8 +84,9 @@ The workspace is plain files plus markdown instructions, so any Claude surface t
 | **Claude Code, terminal** | The full experience: skills as slash commands (`/sb-init`, `/capture`, `/curate`), maintenance scripts, git integration |
 | **Claude Code, desktop app / IDE / web** | The same skills and slash commands wrapped in a UI; open the cloned folder and work from there |
 | **Claude Cowork** | No terminal at all: connect the folder via "Work in a Folder", the workspace instructions are picked up as folder context, and you drive everything conversationally |
+| **Codex CLI, OpenCode, Gemini CLI, Cursor** | A root [`AGENTS.md`](AGENTS.md) orients any agent that reads the [AGENTS.md standard](https://agents.md/); skills follow the open SKILL.md format these tools recognize, and Basic Memory is a standard MCP server (per-tool wiring snippets in `AGENTS.md`) |
 
-Skills are plain markdown instructions in `.claude/skills/`, not binaries. On a surface without slash commands, invoke them by asking: "read `.claude/skills/capture/SKILL.md` and file this email". The conventions (paths, naming, frontmatter) live in `CLAUDE.md` and `.claude/rules/`, which every surface reads the same way.
+Skills are plain markdown instructions in `.claude/skills/`, not binaries. On a surface without slash commands, invoke them by asking: "read `.claude/skills/capture/SKILL.md` and file this email". The conventions (paths, naming, frontmatter) live in `CLAUDE.md` and `.claude/rules/`, which every surface reads the same way. Claude Code remains the reference experience; other agents are supported on a best-effort basis.
 
 ## See it working before filing anything real
 
@@ -165,6 +166,7 @@ Thirteen skills ship with the workspace, routed through `.claude/skill-registry.
 
 ```
 ├── CLAUDE.md            # Instructions loaded by Claude Code in every session
+├── AGENTS.md            # Orientation for other agents (Codex, OpenCode, Gemini CLI)
 ├── sources/             # Raw artifacts: {entity}/{project}/{emails|meetings|deliverables}
 ├── knowledge/           # Distilled knowledge: ops/ tech/ business/
 ├── atlas/               # Navigation: home.md, people/, topics/, services/, maps/
