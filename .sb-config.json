@@ -1,0 +1,13 @@
+{
+  "schema": "sb-config/v1",
+  "boilerplate_version": "0.1.0",
+  "initialized": false,
+  "owner": null,
+  "organization": null,
+  "profile": null,
+  "zones": ["clients", "partners", "internal", "personal"],
+  "working_language": null,
+  "basic_memory_project": null,
+  "curation_ritual": null,
+  "demo_content": "present"
+}

@@ -77,13 +77,21 @@ Fix: `python3 basic-memory/scripts/generate_indexes.py`.
 
 Fix: `/capture -i`.
 
-### 8. Basic Memory sync (🔵, only if `bm` is installed)
+### 8. Workspace config (🟡)
+
+- `.sb-config.json` exists and parses (`python3 -c "import json; json.load(open('.sb-config.json'))"`).
+- `initialized` is `true` (if false, the workspace never ran `/sb-init`: that is the fix).
+- Its values match the CLAUDE.md profile block (owner, profile, working language, Basic Memory project); a divergence means one was edited by hand.
+
+Fix: re-run `/sb-init -r` to resync both, or align the drifted field manually.
+
+### 9. Basic Memory sync (🔵, only if `bm` is installed)
 
 ```bash
-command -v bm >/dev/null 2>&1 && bm status --project {project from CLAUDE.md profile block}
+command -v bm >/dev/null 2>&1 && bm status --project {basic_memory_project from .sb-config.json}
 ```
 
-Unindexed files mean search misses them. Fix: `bm reindex --project {project}`.
+Unindexed files mean search misses them. Fix: `bm reindex --project {basic_memory_project}`.
 
 </checks>
 

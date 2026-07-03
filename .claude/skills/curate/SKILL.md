@@ -1,7 +1,7 @@
 ---
 name: curate
 description: Weekly or monthly workspace review. Automatically detects candidates for `/distill` (recurring patterns not yet distilled), `/archive` (dormant entities), and `/moc-new` (dense topics without a MOC). Presents a report grouped by action and lets the user trigger each skill through interactive validation. Aligned with the periodic curation ritual ("what did I learn this week that deserves distillation, archiving, or mapping?"). NEVER writes files directly; it is a suggestion orchestrator, not an autonomous executor. Use for a weekly review (end of week), a monthly review (first of the month), or after an intense writing period.
-argument-hint: "[-s scope] [-w window] [-min N] [-only distill|archive|moc] [-a auto]"
+argument-hint: "[-s scope] [-w window] [-min N] [-only distill|archive|moc] [-r report-only] [-a auto]"
 model: opus
 allowed-tools:
   - Bash
@@ -35,6 +35,7 @@ Out of scope: writing or moving files directly; that is the job of the delegated
 /curate -only distill                            # only distill candidates
 /curate -only archive -min 12                    # archive candidates inactive > 12 months
 /curate -a                                       # auto mode, execute without confirmation (discouraged)
+/curate -w 7 -r                                  # report-only: write the report to atlas/reviews/, no questions
 ```
 
 </quick_start>
@@ -47,6 +48,7 @@ Out of scope: writing or moving files directly; that is the job of the delegated
 | `-w` | `--window` | Time window in days to detect "recent" (default: 30) |
 | `-min` | `--min-inactive` | Months of inactivity to qualify a dormant entity (default: 6) |
 | `-only` | `--only` | Filter suggestion type: `distill`, `archive`, `moc`, or a comma-separated combination |
+| `-r` | `--report` | Report-only: scan and write the report to `atlas/reviews/{date}-review.md`, no questions, no delegation. Safe for headless scheduled runs. Exclusive with `-a` |
 | `-a` | `--auto` | Skip confirmations, execute all suggestions (discouraged outside tests) |
 
 </flags>
@@ -78,6 +80,7 @@ Out of scope: writing or moving files directly; that is the job of the delegated
 | `{min_inactive_months}` | number | step-00 |
 | `{only_filter}` | list | step-00 |
 | `{auto_mode}` | boolean | step-00 |
+| `{report_mode}` | boolean | step-00 |
 | `{candidates_distill}` | list of dicts | step-01 |
 | `{candidates_archive}` | list of dicts | step-01 |
 | `{candidates_moc}` | list of dicts | step-01 |

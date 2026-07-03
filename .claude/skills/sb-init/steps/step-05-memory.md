@@ -55,6 +55,16 @@ Explain, then with confirmation edit `~/.basic-memory/config.json` (JSON, preser
 
 These three settings are hard-won defaults from production use; do not skip them.
 
+### 3bis. Exclude non-note folders from indexing
+
+Basic Memory reads its ignore list from `~/.basic-memory/.bmignore` (gitignore syntax, GLOBAL file, not per workspace). Dotfolders like `.claude/` and `.obsidian/` are ignored by default, but `templates/` is not and would pollute the search index with placeholder text. With confirmation, append if absent:
+
+```
+templates/
+CHANGELOG.md
+GETTING-STARTED.md
+```
+
 ### 4. Register the MCP server
 
 Copy `.mcp.json.example` to `.mcp.json` and fill in the real values:
@@ -91,9 +101,9 @@ Offer a scheduled reindex so the index never goes stale:
 
 Individual confirmation before creating any of them.
 
-### 7. Update the profile block
+### 7. Update the config and profile block
 
-Set `Basic Memory project: {bm_project}` in the CLAUDE.md profile block.
+Set `basic_memory_project` to `{bm_project}` in `.sb-config.json` (or the string `"not used"` if skipped), and mirror `Basic Memory project: {bm_project}` in the CLAUDE.md profile block.
 
 ## NEXT STEP:
 

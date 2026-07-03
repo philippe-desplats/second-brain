@@ -37,7 +37,19 @@ Explain the single ritual:
 
 > "Once a week, run `/curate -w 7`. It scans what accumulated, and proposes what to distill into knowledge, what to archive, what deserves a map. You approve or reject each suggestion. That is the whole discipline; everything else follows from it."
 
-Ask which day suits them and add a line to the CLAUDE.md profile block: `Curation ritual: {day}, /curate -w 7`.
+Ask which day suits them, set `curation_ritual` in `.sb-config.json` (e.g. `"friday, /curate -w 7"`), and mirror a line in the CLAUDE.md profile block: `Curation ritual: {day}, /curate -w 7`.
+
+Then offer to automate the REMINDER (optional, individual confirmation, same pattern as the Basic Memory reindex in step 5). The scheduled job never runs the assistant: it executes `basic-memory/scripts/curation_reminder.py`, which drops a reminder note in `inbox/` and fires an OS notification. The owner then opens Claude Code and runs `/curate -w 7` themselves (`-r` if they just want the report file first).
+
+```bash
+python3 {workspace-path}/basic-memory/scripts/curation_reminder.py
+```
+
+- **macOS**: LaunchAgent `~/Library/LaunchAgents/com.{workspace-slug}.curate-reminder.plist` running the command above weekly on {day} at 09:00.
+- **Linux**: cron line `0 9 * * {day-number} python3 {workspace-path}/basic-memory/scripts/curation_reminder.py`.
+- **Windows**: `schtasks /create /tn "curate-reminder-{workspace-slug}" /tr "python {workspace-path}\basic-memory\scripts\curation_reminder.py" /sc weekly /d {DAY} /st 09:00`.
+
+Use the full python path from `which python3` (or `where python`) so the job survives PATH differences in scheduled contexts.
 
 ### 4. Suggest the first commit
 

@@ -4,6 +4,8 @@ This file provides guidance to Claude Code when working in this workspace.
 
 ## Workspace profile
 
+The machine-readable source of truth is `.sb-config.json` (written by `/sb-init`, consumed by skills and scripts). The block below mirrors it for agent context; `/sb-init` keeps both in sync and `/sb-doctor` checks the sync.
+
 <!-- sb-init:profile : this block is filled by /sb-init. Do not edit the markers. -->
 - **Owner**: NOT CONFIGURED
 - **Organization**: NOT CONFIGURED

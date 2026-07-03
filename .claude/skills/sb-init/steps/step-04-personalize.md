@@ -19,9 +19,11 @@ next_step: steps/step-05-memory.md
 
 Announce the action list, get one confirmation, then execute all of it.
 
-### 1. Fill the CLAUDE.md profile block
+### 1. Write the config and fill the CLAUDE.md profile block
 
-Replace the content between `<!-- sb-init:profile -->` and `<!-- /sb-init:profile -->` in the root `CLAUDE.md`:
+**First, `.sb-config.json`** (machine-readable source of truth): set `initialized: true`, `owner`, `organization`, `profile`, `zones` (the final list), `working_language`. Leave `basic_memory_project` and `curation_ritual` for steps 5 and 6. Keep `schema` and `boilerplate_version` untouched. Update `demo_content` to `"removed"` if the demo is deleted in section 4.
+
+**Then mirror it** into the root `CLAUDE.md`, replacing the content between `<!-- sb-init:profile -->` and `<!-- /sb-init:profile -->`:
 
 ```markdown
 - **Owner**: {owner_name} ({email})
@@ -103,27 +105,32 @@ last_updated: {today}
 
 Written in the working language.
 
-### 4. Prune zones
-
-For each zone NOT in `{zones}`: remove `sources/{zone}/` and `archives/{zone}/` (they contain only `.gitkeep`), remove the zone's row from CLAUDE.md's path table (already done in 1), and if `partners` was dropped: delete `basic-memory/schemas/partner-context.md`, remove the partner-relation fields (`managed_by`, `owned_by`, `referred_by`, `co_delivered_with`) from `basic-memory/schemas/client-context.md`, and remove the partner references from `.claude/rules/entities.md` and `.claude/rules/frontmatter.md` (the symmetric-pairs section).
-
-### 5. Adjust schema enums
-
-- In every schema that declares `category`, keep only the values matching `{zones}` (internal maps to `internal`, personal to `personal`).
-- In `basic-memory/schemas/service.md`, replace the `service_type` enum with `{service_types}` (kebab-case). Skip for the personal profile (and delete `service.md` plus `atlas/services/` if the owner has no commercial activity).
-
-### 6. Demo content
+### 4. Demo content (before any pruning)
 
 The boilerplate ships with a fictional client (Globex) so the system can be seen working. Read `references/demo-manifest.md` (this skill's references folder); if the listed paths still exist, ask:
 
 - **Keep for now (Recommended for first-timers)**: explore it, then remove later by deleting the paths listed in the manifest.
 - **Remove now**: delete every path in the manifest (files and the `sources/clients/globex/` folder), keep the zone directories.
 
-If the manifest is missing or all paths are already gone, skip silently.
+If the manifest is missing or all paths are already gone, skip silently. If the owner drops the `clients` zone in step 5 but keeps the demo, warn that the demo lives in `sources/clients/` and must be kept or removed as a whole.
+
+### 5. Prune zones
+
+For each zone NOT in `{zones}`:
+
+- **Safety gate first**: list the zone's contents. If it contains anything other than `.gitkeep` and the demo paths already handled in 4, DO NOT delete; show the contents and ask the owner to move or archive them first (this matters in `-r` reconfigure runs on a lived-in workspace).
+- If empty: remove `sources/{zone}/` and `archives/{zone}/`, and remove the zone's row from CLAUDE.md's path table (already done in 1).
+- If `partners` was dropped: delete `basic-memory/schemas/partner-context.md`, remove the partner-relation fields (`managed_by`, `owned_by`, `referred_by`, `co_delivered_with`) from `basic-memory/schemas/client-context.md`, and remove the partner references from `.claude/rules/entities.md` and `.claude/rules/frontmatter.md` (the symmetric-pairs section).
+
+### 6. Adjust schema enums
+
+- In every schema that declares `category`, keep only the values matching `{zones}` (internal maps to `internal`, personal to `personal`).
+- In `basic-memory/schemas/service.md`, replace the `service_type` enum with `{service_types}` (kebab-case). Skip for the personal profile (and delete `service.md` plus `atlas/services/` if the owner has no commercial activity).
 
 ### 7. Verify
 
 - `grep -c "NOT CONFIGURED" CLAUDE.md` must return 0.
+- `python3 -c "import json; json.load(open('.sb-config.json'))"` must succeed, and `initialized` must be `true`.
 - The pruned directories must be gone; the kept ones intact.
 - Re-read the two written files once to confirm frontmatter is valid YAML.
 

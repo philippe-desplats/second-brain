@@ -37,6 +37,8 @@ Use the production skills on real work: `/ops-email` for a reply you actually ne
 
 It scans the week, and proposes what to distill, archive, or map. With one week of data it will mostly find nothing: that is fine. You are installing the ritual, not harvesting yet. Approve or reject each suggestion; nothing moves without you.
 
+If you know you will forget, automate the reminder: `/sb-init` (step 6) can schedule `basic-memory/scripts/curation_reminder.py` weekly on macOS, Linux, or Windows. It drops a note in `inbox/` and fires a system notification; you then open Claude Code and run `/curate -w 7` (or `-r` to just generate the report file into `atlas/reviews/` before deciding).
+
 ## Week 2 and beyond
 
 - The third time you explain or do the same thing, `/distill` it into `knowledge/`.

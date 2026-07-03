@@ -33,7 +33,7 @@ Central router for the workspace skills. Consult this table before invoking any 
 | `sb-init` | first run, "initialize", "set up my second brain", `-q` quick, `-r` reconfigure | interview answers | charter, CONTEXT.md, profile block, pruned zones, optional Basic Memory wiring | none (Basic Memory optional) |
 | `capture` | "capture this", "file this email", "process my inbox", `-i` `-e {entity}` `-t {type}` | pasted content, @file, or inbox queue | artifact filed at the conventional path, schema frontmatter, verbatim body | none |
 | `sb-doctor` | "check the workspace", "health check", monthly hygiene | none (scans the workspace) | health report: orphans, double frontmatter, broken conventions, stale indexes, aged inbox | Python 3 |
-| `curate` | weekly/monthly review, `-w {days}` | window of recent activity | report of distill/archive/moc candidates, delegation on approval | Basic Memory optional |
+| `curate` | weekly/monthly review, `-w {days}`, `-r` report-only | window of recent activity | report of distill/archive/moc candidates, delegation on approval (or report file in `atlas/reviews/` with `-r`) | Basic Memory optional |
 | `distill` | 3rd repetition of a topic, "distill X" | topic or slug, `-t {ops\|tech\|business}` `-k {kind}` | note in `knowledge/` with provenance line and back-links | Basic Memory optional |
 | `moc-new` | dense topic (10+ notes), "create a map for X" | topic slug | MOC in `atlas/maps/` (Dataview + curated list) | Obsidian Dataview for live view |
 | `archive` | project done/cancelled 6+ months, `--dry-run` | project slug | `git mv` to `archives/`, reference fixes, reindex | git; Basic Memory optional |

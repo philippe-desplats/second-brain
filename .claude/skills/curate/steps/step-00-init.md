@@ -21,6 +21,9 @@ next_step: steps/step-01-scan.md
 - **Flag `-min`**: integer -> `{min_inactive_months}` (default 6, threshold for archive)
 - **Flag `-only`**: `distill,archive,moc` (combination) -> `{only_filter}` (default all 3)
 - **Flag `-a`**: boolean -> `{auto_mode}`
+- **Flag `-r`**: boolean -> `{report_mode}` (report-only: scan and write the report to `atlas/reviews/`, no questions, no delegation; designed for scheduled headless runs)
+
+`-r` and `-a` are mutually exclusive; if both are set, abort with an explanation (`-r` never executes actions, `-a` executes them all).
 
 ### 2. Validate the delegated skills
 
@@ -51,6 +54,10 @@ questions:
 ```
 
 If "Cancel", set `{auto_mode}` = false.
+
+### 3bis. Report mode
+
+**If `{report_mode}` = true**: skip the auto-mode warning and the plan confirmation entirely (there is nothing to confirm, the run is read-only plus one report file). Proceed straight to step-01.
 
 ### 4. Present the plan
 

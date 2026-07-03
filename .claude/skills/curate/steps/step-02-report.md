@@ -48,7 +48,13 @@ next_step: steps/step-03-execute.md
 Total: {N1 + N2 + N3} suggested actions
 ```
 
-### 2. Auto mode, direct execution
+### 2. Report mode, write and stop
+
+**If `{report_mode}` = true**:
+
+Write the full report above (plain markdown, no box-drawing characters) to `atlas/reviews/{YYYY-MM-DD}-review.md` with frontmatter `type: note`, `subtype: note`, `title: Curation review {YYYY-MM-DD}`, plus a closing line: "Report generated in scheduled mode. Run /curate -w {window_days} to review and execute these suggestions." Then print the file path and STOP; steps 3 and 03 do not run. If a report already exists for today, overwrite it (same-day reruns supersede).
+
+### 2bis. Auto mode, direct execution
 
 **If `{auto_mode}` = true**:
 
