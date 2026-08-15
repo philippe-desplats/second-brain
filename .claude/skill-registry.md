@@ -40,7 +40,7 @@ Central router for the workspace skills. Consult this table before invoking any 
 | `ops-meeting-minutes` | "make minutes from this", notes or `@transcript`, `-e {entity}` `-i` internal | raw notes, transcript, or recap | client-facing or internal minutes in `meetings/` with meeting frontmatter | none |
 | `ops-proposal` | "proposal for X", `{entity} - {need}` | entity + scope interview | structured proposal (understanding, approach, deliverables, timeline, investment) with writing frontmatter; never invents pricing | none |
 | `ops-init-project` | "new project for X", session bootstrap | intent description | project folder + README/context files from schemas | none |
-| `ops-weekly-pulse` | "what happened this week" | scan of the 4 zones | weekly dashboard in `sources/internal/weekly-pulse/` | none |
+| `ops-weekly-pulse` | "what happened this week" | scan of the configured zones | weekly dashboard in `sources/internal/weekly-pulse/` | none |
 
 ## Conventions every skill follows
 

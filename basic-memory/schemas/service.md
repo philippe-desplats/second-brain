@@ -2,34 +2,43 @@
 title: Service
 type: schema
 entity: service
-schema_version: 1
+version: 1
 schema:
-  name: string, "commercial name of the offer or service"
-  service_type(enum):
-  - consulting
-  - development
-  - hosting
-  - maintenance
-  - audit
-  - training
-  - retainer
-  - other
-  status(enum):
-  - active
-  - pilot
-  - deprecated
-  - archived
-  price_model?(enum):
-  - fixed-fee
-  - recurring
-  - day-rate
-  - commission
-  - other
-  price?: number, "price excl. tax if applicable"
-  currency?: string, "currency, EUR by default"
-  launch_date?: string, "launch date in YYYY-MM-DD format"
+  feature?(array): string, "included feature or deliverable"
+  target?(array): string, "client target"
+  kpi?(array): string, "key indicator on the service, number of subscribers, revenue, margin"
+  risk?(array): string, "strategic risk on the offer"
+  sold_to?(array): ClientContext, "client who subscribed"
+  resold_by?(array): PartnerContext, "partner who resells"
+  replaces?: Service, "previous offer this service replaces"
+  bundles?(array): Service, "offer combined with others"
 settings:
   validation: strict
+  frontmatter:
+    name: string, "commercial name of the offer or service"
+    service_type(enum):
+    - consulting
+    - development
+    - hosting
+    - maintenance
+    - audit
+    - training
+    - retainer
+    - other
+    status(enum):
+    - active
+    - pilot
+    - deprecated
+    - archived
+    price_model?(enum):
+    - fixed-fee
+    - recurring
+    - day-rate
+    - commission
+    - other
+    price?: number, "price excl. tax if applicable"
+    currency?: string, "currency, EUR by default"
+    launch_date?: string, "launch date in YYYY-MM-DD format"
 ---
 
 # Schema, Service
@@ -42,6 +51,8 @@ The `service_type` enum above is a generic starting set. `/sb-init` customizes i
 
 - `atlas/services/{slug}.md` at the workspace root (create the folder if needed)
 
+Concrete example, `atlas/services/managed-hosting.md`, the offer used in the example at the bottom of this file.
+
 ## Why this schema
 
 Documenting services as entities makes it possible to link a client to a specific offer, to track the evolution of the catalog, or to model the services resold by partners (`resells [[Service]]`). Without a schema, service names only exist in prose.
@@ -53,7 +64,7 @@ Documenting services as entities makes it possible to link a client to a specifi
 - `[kpi]` key indicator on the service (number of subscribers, revenue, margin)
 - `[risk]` strategic risk on the offer
 
-## Expected relations in markdown
+## Additional relations in markdown
 
 - `sold_to [[Client]]`, client who subscribed
 - `resold_by [[Partner]]`, partner who resells
@@ -65,6 +76,8 @@ Documenting services as entities makes it possible to link a client to a specifi
 ```yaml
 ---
 name: Managed Hosting
+type: service
+schema_version: 1
 service_type: hosting
 status: active
 price_model: recurring

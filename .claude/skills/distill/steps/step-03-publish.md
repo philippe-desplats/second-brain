@@ -64,7 +64,7 @@ This lets you navigate from the source to the distilled pattern in the Obsidian 
 ## Relations
 
 - about [[Globex]]
-- managed_by [[Jane Doe]]
+- client [[Globex]]
 - used_in [[Playbook, Accessibility Audit]]   <- added by distill
 ```
 

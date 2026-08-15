@@ -1,6 +1,6 @@
 ---
 name: archive
-description: Archive an inactive project, client, partner, or internal project from sources/ into archives/. Confirms inactivity, physically moves the folder (git mv preserves history), updates the incoming references (other projects that point to the archived one), regenerates the Dataview indexes, and runs Basic Memory reindex. Policy: physical move WITHOUT a redundant status. Use when a project is marked `status: done` or `status: cancelled` for 6+ months, or on an explicit decision to archive.
+description: "Archive an inactive project, client, partner, or internal project from sources/ into archives/. Confirms inactivity, physically moves the folder (git mv preserves history), updates the incoming references (other projects that point to the archived one), regenerates the Dataview indexes, and runs Basic Memory reindex. Policy: physical move WITHOUT a redundant status. Use when a project is marked `status: done` or `status: cancelled` for 6+ months, or on an explicit decision to archive."
 argument-hint: "<slug-or-path> [-t client|partner|internal|personal] [-f force] [-a auto] [--dry-run]"
 model: opus
 allowed-tools:

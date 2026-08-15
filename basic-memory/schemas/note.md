@@ -2,50 +2,57 @@
 title: Note
 type: schema
 entity: note
-schema_version: 1
+version: 1
 schema:
-  date: string, "note date in YYYY-MM-DD format"
-  title: string, "short, descriptive title"
-  note_type?(enum):
-  - summary
-  - context
-  - cheatsheet
-  - reading
-  - history
-  - checkpoint
-  - reminder
-  - todo
-  - other
-  category?(enum):
-  - internal
-  - client
-  - partner
-  - personal
+  context?(array): string, "project context"
+  summary?(array): string, "summary of an exchange"
+  checkpoint?(array): string, "status point"
+  reminder?(array): string, "memory aid"
+  task?(array): string, "task to do"
   client?: ClientContext, "client involved if relevant"
   partner?: PartnerContext, "partner involved if relevant"
-  status?(enum):
-  - draft
-  - active
-  - archived
-  tags?(array): string, "free-form keywords"
   about?: Topic, "topic or project involved"
 settings:
   validation: warn
+  frontmatter:
+    date: string, "note date in YYYY-MM-DD format"
+    title: string, "short, descriptive title"
+    note_type?(enum):
+    - summary
+    - context
+    - cheatsheet
+    - reading
+    - history
+    - checkpoint
+    - reminder
+    - todo
+    - other
+    category?(enum):
+    - internal
+    - client
+    - partner
+    - personal
+    client?: ClientContext, "client involved if relevant"
+    partner?: PartnerContext, "partner involved if relevant"
+    status?(enum):
+    - draft
+    - active
+    - archived
+    tags?(array): string, "free-form keywords"
+    about?: Topic, "topic or project involved"
 ---
 
 # Schema, Note
 
 Catch-all for short captures, summaries, histories, reading notes, memory aids, and project context. Free structure, short format (often 10 to 40 lines).
 
-Usable for all 4 categories. The `note_type` field is optional but strongly recommended to avoid a sprawling catch-all that gets drowned at scale.
+Usable in every workspace zone. The `note_type` field is optional but strongly recommended to avoid a sprawling catch-all that gets drowned at scale.
 
 ## Typical location
 
-- `sources/clients/{client}/{project}/YYYY-MM-DD-note-slug.md`
-- `sources/partners/{partner}/{project}/YYYY-MM-DD-note-slug.md`
-- `sources/internal/{project}/YYYY-MM-DD-note-slug.md`
-- `sources/personal/{project}/YYYY-MM-DD-note-slug.md`
-- A `notes/` subfolder is possible in each case
+`sources/{zone}/{entity}/{project}/YYYY-MM-DD-note-slug.md`, with an optional `notes/` subfolder.
+
+`{zone}` is a zone under `sources/` and `{entity}` a client or partner folder; entity-less zones such as `internal` and `personal` hold their projects directly under the zone.
 
 ## Reference examples
 
@@ -90,6 +97,8 @@ Free categories depending on the context. A few useful examples:
 ---
 date: 2026-04-13
 title: Northwind v1 client feedback summary
+type: note
+schema_version: 1
 note_type: summary
 category: client
 client: Northwind
@@ -104,4 +113,8 @@ about: Northwind website
 - [summary] 3 pieces of feedback on the v1 site, all positive on the design
 - [context] Awaiting iteration on the mobile side
 - [reminder] Follow up with Casey in late April on the v2 schedule
+
+## Relations
+- client [[Northwind]]
+- about [[Northwind website]]
 ```

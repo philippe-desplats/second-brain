@@ -1,6 +1,6 @@
 ---
 name: moc-new
-description: Create a new MOC (Map of Content) in atlas/maps/ to aggregate the notes linked to a topic. Scans sources/, knowledge/, atlas/topics/ to find the relevant notes (frontmatter topics:, wiki-links, keywords), pre-fills the atlas-moc-template.md with those notes, offers a review to the user, and saves into atlas/maps/MOC-{slug}.md with subtype: moc. Aligned with LYT/MOC best practices (Nick Milo). Use when a topic has become dense enough (10+ notes) to deserve a navigation entry point.
+description: "Create a new MOC (Map of Content) in atlas/maps/ to aggregate the notes linked to a topic. Scans sources/, knowledge/, atlas/topics/ to find the relevant notes (frontmatter topics:, wiki-links, keywords), pre-fills the atlas-moc-template.md with those notes, offers a review to the user, and saves into atlas/maps/MOC-{slug}.md with subtype: moc. Aligned with LYT/MOC best practices (Nick Milo). Use when a topic has become dense enough (10+ notes) to deserve a navigation entry point."
 argument-hint: "<topic> [-t MOC|index] [-m N] [-d depth] [-a auto]"
 model: opus
 allowed-tools:

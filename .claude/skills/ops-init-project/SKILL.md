@@ -26,8 +26,8 @@ No flags: the skill infers everything from the prompt and asks when unsure.
 <state_variables>
 - `{user_prompt}` - Raw input from the user
 - `{project_name}` - Slug for the project (e.g. `hosting-pricing`, `acme-digital-strategy`)
-- `{project_category}` - `internal` | `clients` | `partners` | `personal`
-- `{entity_name}` - Client or partner name if applicable (for `clients` or `partners`)
+- `{project_category}` - one of the zones the workspace kept, read from the `zones` array in `.sb-config.json`
+- `{entity_name}` - the third-party name, for zones that hold one folder per entity (`clients`, `partners`)
 - `{activities}` - List of expected activities (research, brainstorm, writing, meetings, strategy)
 - `{context_files}` - Relevant context files to load
 - `{missing_context}` - Context that should exist but does not

@@ -1,24 +1,39 @@
 ---
 title: Basic Memory Picoschema schema index
-type: index
+type: note
+schema_version: 1
+subtype: index
+date: 2026-08-15
+status: active
 ---
 
 # Picoschema Schemas, Basic Memory
 
-This folder contains the **15 Picoschema schemas** that describe the canonical note types of the workspace. Each schema formalizes a pattern the second brain relies on, so the AI agent and the maintenance scripts share one vocabulary.
+This folder contains the **canonical Picoschema schemas** that describe the note types of the workspace. Each schema formalizes a pattern the second brain relies on, so the AI agent and the maintenance scripts share one vocabulary.
+
+**There are 15 schemas today.** This sentence is the only place that number is written down, so it is the one line to update when a schema is added or removed.
 
 This README doubles as the design manifest: the type catalog, the strict/warn philosophy, the design decisions, the relation vocabulary, and the mandatory symmetric pairs.
 
 ## Principle, mixed warn and strict
 
-- **6 schemas in `validation: strict`** (stable context and entity types), client-context, partner-context, person, service, topic, project-brief. These types have settled shapes, so records must validate.
-- **9 schemas in `validation: warn`** (operational types), meeting, transcript, email, research, brainstorm, strategy, writing, note, deliverable. Warnings are reported without blocking.
+- **`validation: strict`** (stable context and entity types), client-context, partner-context, person, service, topic, project-brief. These types have settled shapes, so records must validate.
+- **`validation: warn`** (operational types), meeting, transcript, email, research, brainstorm, strategy, writing, note, deliverable. Warnings are reported without blocking.
 
 Moving additional operational types to strict is optional and conditioned on the stabilization of your writing practices. This follows the "structure grows with you" philosophy: let patterns emerge and flag inconsistencies without blocking, then tighten to strict once a type has settled.
 
-## The 15 schemas
+## Principle, two contracts per schema
 
-### 9 operational schemas (covering the 4 categories, internal/client/partner/personal)
+Every schema declares two contracts, one per block, and each is read for a different purpose.
+
+- **`settings.frontmatter:`**, the frontmatter contract. Read it to know which YAML fields a note carries, with their required and optional markers.
+- **`schema:`**, the body contract. Read it to know which observations (`- [category] value`) and which `## Relations` entries the body should carry.
+
+Entity-typed fields such as `about` appear in both, written in the frontmatter and mirrored in the body relations. See D10 for the mechanics and for the mapping between Picoschema syntax and body syntax.
+
+## The canonical schemas
+
+### Operational schemas (usable in every workspace zone)
 
 | Schema | Role |
 |---|---|
@@ -32,20 +47,20 @@ Moving additional operational types to strict is optional and conditioned on the
 | [note.md](note.md) | Short capture, summary, memo |
 | [deliverable.md](deliverable.md) | Finalized deliverable, commercial or internal |
 
-### 2 context schemas (category-specific)
+### Context schemas (zone-specific)
 
 | Schema | Role |
 |---|---|
 | [client-context.md](client-context.md) | Client `CLAUDE.md`, communication preferences and relations |
 | [partner-context.md](partner-context.md) | Partner `CLAUDE.md`, partnership nature and relations |
 
-### 1 project schema (covering the 4 categories)
+### Project schema (usable in every workspace zone)
 
 | Schema | Role |
 |---|---|
 | [project-brief.md](project-brief.md) | Project `README.md` or `CLAUDE.md` |
 
-### 3 cross-cutting entity schemas
+### Cross-cutting entity schemas
 
 | Schema | Role |
 |---|---|
@@ -53,16 +68,11 @@ Moving additional operational types to strict is optional and conditioned on the
 | [topic.md](topic.md) | Recurring subject (technology, concept, domain) |
 | [service.md](service.md) | An offer or service from your organization |
 
-## Coverage of the 4 workspace categories
+## Coverage of the workspace zones
 
-The operational schemas and `project-brief` apply to the 4 roots:
+The operational schemas and `project-brief` apply to every zone under `sources/`, whichever set the workspace keeps after setup. Zones that hold third parties carry one folder per entity, `sources/{zone}/{entity}/{project}/`; entity-less zones such as `internal` and `personal` hold their projects directly, `sources/{zone}/{project}/`.
 
-- `sources/clients/` (commercial relationships)
-- `sources/partners/` (bilateral relationships)
-- `sources/internal/` (internal projects)
-- `sources/personal/` (personal projects)
-
-The `client-context` and `partner-context` schemas are specific to their category. The 3 cross-cutting schemas (`person`, `topic`, `service`) live at the workspace root in `atlas/people/`, `atlas/topics/`, `atlas/services/` respectively.
+The `client-context` and `partner-context` schemas are specific to their own zone. The cross-cutting schemas (`person`, `topic`, `service`) live at the workspace root in `atlas/people/`, `atlas/topics/`, `atlas/services/` respectively.
 
 ## Design decisions
 
@@ -80,12 +90,12 @@ The `basic-memory/` folder at the workspace root groups everything operational f
 
 Internal structure:
 
-- `schemas/`, the 15 canonical Picoschema schemas plus this index
+- `schemas/`, the canonical Picoschema schemas plus this index
 - `scripts/`, the Python maintenance scripts (frontmatter fixes, symmetric relation checks, index generation, retyping, etc.)
 
 ### D4, validation warn by default
 
-Philosophy "structure grows with you", let patterns emerge and flag inconsistencies without blocking. The 6 stable context and entity types (client-context, partner-context, person, service, topic, project-brief) run strict, the 9 operational types stay in warn.
+Philosophy "structure grows with you", let patterns emerge and flag inconsistencies without blocking. The stable context and entity types (client-context, partner-context, person, service, topic, project-brief) run strict, the operational types stay in warn.
 
 ### D5, numeric fields for amounts
 
@@ -97,7 +107,7 @@ Critical relations (`managed_by`, `owns`, `client`, `partner`, etc.) are declare
 
 ### D7, entity schemas that cover blind spots
 
-Four schemas exist to fill gaps that would otherwise leave the graph incomplete:
+These schemas exist to fill gaps that would otherwise leave the graph incomplete:
 
 - `person` (physical people existed only as orphan wikilinks)
 - `topic` (recurring subjects, avoids empty nodes in the graph)
@@ -108,9 +118,30 @@ Four schemas exist to fill gaps that would otherwise leave the graph incomplete:
 
 Wikilinks use the identity field value (`client`, `partner`, `name`) as is. For people with an identical name, use `[[First Last (Company)]]`.
 
-### D9, schema_version on every schema
+### D9, `version` on a schema, `schema_version` on a note
 
-Each schema includes `schema_version: 1` in its frontmatter. This enables controlled migration when schemas evolve.
+Two levels, two keys. A schema in this folder carries `version: 1`, the key Basic Memory reads for its own version tracking. A regular note carries `schema_version: 1`, declaring which version of its schema it conforms to. Bumping a schema's `version` is then the signal to migrate the notes still declaring the previous `schema_version`.
+
+### D10, how these schemas meet Basic Memory's native schema tooling
+
+Verified against Basic Memory 0.21.1 and re-checked unchanged on 0.22.1. The details below belong to the package, not to this repository, so re-read the source before relying on them, a later release can move them.
+
+- **Resolution is database driven, not path driven.** Basic Memory selects indexed notes whose type is `schema`, then matches their `entity:` value against a note's `type:` value, both normalized to permalink form. It never walks a `schema/` directory, so these files are found wherever they sit once the workspace is indexed, and the `basic-memory/schemas/` name is a free choice (see D3).
+- **The parser reads five frontmatter keys**, `entity` (required), `schema` (required, a mapping), `version` (defaults to 1), `settings.validation` (defaults to `warn`), and `settings.frontmatter` (optional). Every other key is ignored, which is what makes the D9 rename load bearing and what makes extra keys such as `title` harmless.
+- **`strict` is the only validation value with special behaviour**, it promotes findings to errors. Every other value, `warn` included, behaves as a warning. The strict and warn split described at the top of this file is therefore compatible as written.
+- **The top-level `schema:` block is validated against the note body**, meaning observations written `- [field] value` and relations written `- field [[Target]]`. Frontmatter is validated only through a separate `settings.frontmatter:` block.
+
+Decision taken, each schema carries the two blocks: `schema:` declares the observation categories and the `## Relations` entries of the body, `settings.frontmatter:` declares the frontmatter fields with their required and optional markers. Entity-typed fields such as `about` sit in both, written in the frontmatter (D6) and mirrored in the body relations. To add a field, pick the block first, then write it with the syntax it maps to:
+
+```
+field: string             -> observation `- [field] value`
+field?(array): string     -> several `[field]` observations
+field?: EntityType        -> relation `- field [[Target]]`
+field?(array): EntityType -> several `field` relations
+field?(enum): [values]    -> observation whose value is in the set
+```
+
+Every entry in a `schema:` block stays optional, hence the `?` on all of them. An observation is a judgement call about what a note happens to contain, never a hard requirement, and marking one required would turn every note already on disk into a validation failure. That matters most on the strict schemas, where a finding is an error rather than a warning. Evidence sits in `basic_memory/schema/parser.py` and `basic_memory/schema/validator.py`.
 
 ## Relation vocabulary
 

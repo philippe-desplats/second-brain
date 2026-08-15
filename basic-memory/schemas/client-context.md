@@ -2,54 +2,68 @@
 title: Client Context
 type: schema
 entity: client-context
-schema_version: 1
+version: 1
 schema:
-  client: string, "client full name or legal name, entity title for wikilinks"
-  status(enum):
-  - active
-  - inactive
-  - prospect
-  last_updated: string, "date of last update in YYYY-MM-DD format"
-  legal_form?: string, "legal form, free text, e.g. LLC, sole proprietorship, nonprofit"
-  company_id?: string, "company registration number"
-  vat_id?: string, "VAT or tax identification number"
-  industry?: string, "industry sector"
-  day_rate?: number, "daily rate applied with this client, excl. tax"
-  tone?(enum):
-  - professional
-  - friendly
-  - technical
-  - direct
-  - formal
-  - commercial
-  - educational
-  addressing?(enum):
-  - informal
-  - formal
-  - variable
-  primary_channel?(enum):
-  - email
-  - slack
-  - teams
-  - whatsapp
-  - video
-  - direct
-  email_format?(enum):
-  - plain
-  - markdown
-  - html
-  - standard-professional
-  language?(enum):
-  - fr
-  - en
-  - other
-  constraints?(array): string, "specific communication constraints"
+  preference?(array): string, "additional communication or working preference"
+  contract?(array): string, "contractual element, a daily rate, an amendment, a duration, terms"
+  milestone?(array): string, "contractual or relational milestone"
+  risk?(array): string, "identified risk, churn, late payment, dissatisfaction"
+  contact?(array): string, "key person with role"
+  stack?(array): string, "technical stack element"
+  industry_peer_of?(array): ClientContext, "sector peer, for internal benchmarking"
+  evolved_from?: Entity, "prospect entity the client evolved from"
+  competes_with?(array): Entity, "former partner turned competitor"
   managed_by?(array): PartnerContext, "partners who operationally manage the client"
   owned_by?(array): PartnerContext, "partners who are commercial owners of the client"
   referred_by?(array): PartnerContext, "referring partners"
   co_delivered_with?(array): PartnerContext, "partners with whom we co-deliver"
 settings:
   validation: strict
+  frontmatter:
+    client: string, "client full name or legal name, entity title for wikilinks"
+    status(enum):
+    - active
+    - inactive
+    - prospect
+    last_updated: string, "date of last update in YYYY-MM-DD format"
+    legal_form?: string, "legal form, free text, e.g. LLC, sole proprietorship, nonprofit"
+    company_id?: string, "company registration number"
+    vat_id?: string, "VAT or tax identification number"
+    industry?: string, "industry sector"
+    day_rate?: number, "daily rate applied with this client, excl. tax"
+    tone?(enum):
+    - professional
+    - friendly
+    - technical
+    - direct
+    - formal
+    - commercial
+    - educational
+    addressing?(enum):
+    - informal
+    - formal
+    - variable
+    primary_channel?(enum):
+    - email
+    - slack
+    - teams
+    - whatsapp
+    - video
+    - direct
+    email_format?(enum):
+    - plain
+    - markdown
+    - html
+    - standard-professional
+    language?(enum):
+    - fr
+    - en
+    - other
+    constraints?(array): string, "specific communication constraints"
+    managed_by?(array): PartnerContext, "partners who operationally manage the client"
+    owned_by?(array): PartnerContext, "partners who are commercial owners of the client"
+    referred_by?(array): PartnerContext, "referring partners"
+    co_delivered_with?(array): PartnerContext, "partners with whom we co-deliver"
 ---
 
 # Schema, Client Context
@@ -59,6 +73,8 @@ settings:
 ## Location
 
 - `sources/clients/{client}/CLAUDE.md`
+
+Live example in this repository, `sources/clients/globex/CLAUDE.md`.
 
 One and only one per client.
 
@@ -116,6 +132,8 @@ If the client is a product or an activity of a partner (e.g., a small brand owne
 ```yaml
 ---
 client: Bloom (Alex Martin)
+type: client-context
+schema_version: 1
 status: active
 last_updated: 2026-04-08
 legal_form: "sole proprietorship"
@@ -143,4 +161,8 @@ Friendly and direct tone, informal address, email as the main channel. Avoid tec
 - [contract] Showcase website, 2-day package
 - [milestone] Quote signed 2026-03-09
 - [contact] Alex Martin, owner and sole decision-maker
+
+## Relations
+- managed_by [[Alex Martin]]
+- owned_by [[Alex Martin]]
 ```

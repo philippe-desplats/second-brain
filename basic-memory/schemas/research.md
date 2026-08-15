@@ -2,39 +2,48 @@
 title: Research
 type: schema
 entity: research
-schema_version: 1
+version: 1
 schema:
-  date: string, "research date in YYYY-MM-DD format"
-  title: string, "descriptive research title"
-  category?(enum):
-  - internal
-  - client
-  - partner
-  - personal
+  finding?(array): string, "observation or research result"
+  source?(array): string, "bibliographic reference"
+  question?(array): string, "open question or one to dig deeper"
+  hypothesis?(array): string, "hypothesis to validate"
+  recommendation?(array): string, "recommendation arising from the research"
+  cited_in?(array): Deliverable, "deliverable that reuses the research"
   client?: ClientContext, "client involved if client scope"
   partner?: PartnerContext, "partner involved if partnership scope"
-  sources?(array): string, "URLs or structured references prefixed by type"
-  method?: string, "method used, e.g. WebFetch, interview, benchmark"
-  status?(enum):
-  - draft
-  - active
-  - archived
-  tags?(array): string, "free keywords"
   about?: Topic, "subject studied"
 settings:
   validation: warn
+  frontmatter:
+    date: string, "research date in YYYY-MM-DD format"
+    title: string, "descriptive research title"
+    category?(enum):
+    - internal
+    - client
+    - partner
+    - personal
+    client?: ClientContext, "client involved if client scope"
+    partner?: PartnerContext, "partner involved if partnership scope"
+    sources?(array): string, "URLs or structured references prefixed by type"
+    method?: string, "method used, e.g. WebFetch, interview, benchmark"
+    status?(enum):
+    - draft
+    - active
+    - archived
+    tags?(array): string, "free keywords"
+    about?: Topic, "subject studied"
 ---
 
 # Schema, Research
 
-Research document, audit, benchmark, monitoring, competitive analysis, technology exploration. Substantial, sourced, structured content. Usable for the 4 categories.
+Research document, audit, benchmark, monitoring, competitive analysis, technology exploration. Substantial, sourced, structured content. Usable in every workspace zone.
 
 ## Typical location
 
-- `sources/clients/{client}/{project}/YYYY-MM-DD-research-slug.md`
-- `sources/partners/{partner}/{project}/YYYY-MM-DD-research-slug.md`
-- `sources/internal/{project}/YYYY-MM-DD-research-slug.md`
-- `sources/personal/{project}/YYYY-MM-DD-research-slug.md`
+`sources/{zone}/{entity}/{project}/YYYY-MM-DD-research-slug.md`
+
+`{zone}` is a zone under `sources/` and `{entity}` a client or partner folder; entity-less zones such as `internal` and `personal` hold their projects directly under the zone.
 
 ## Reference examples
 
@@ -79,6 +88,8 @@ An audit happens in 2 steps, first a `research` that collects the standards and 
 ---
 date: 2026-04-15
 title: Basic Memory, in-depth exploration
+type: research
+schema_version: 1
 category: internal
 sources:
   - https://docs.basicmemory.com/start-here/5.why-basic-memory
@@ -96,5 +107,5 @@ about: Basic Memory
 - [recommendation] Adopt as a local POC with Obsidian for visualization
 
 ## Relations
-- cited_in [[schema-design-notes]]
+- cited_in [[Internal wiki v2 architecture spec]]
 ```

@@ -44,7 +44,7 @@ Out of scope: writing or moving files directly; that is the job of the delegated
 
 | Flag | Long | Description |
 |------|------|-------------|
-| `-s` | `--scope` | Scan scope: `full` (default), `clients`, `partners`, `internal`, `knowledge`, `topics` |
+| `-s` | `--scope` | Scan scope: `full` (default), any zone kept in the `zones` array of `.sb-config.json` (`clients`, `partners`, `internal`, `personal`), plus `knowledge` and `topics` |
 | `-w` | `--window` | Time window in days to detect "recent" (default: 30) |
 | `-min` | `--min-inactive` | Months of inactivity to qualify a dormant entity (default: 6) |
 | `-only` | `--only` | Filter suggestion type: `distill`, `archive`, `moc`, or a comma-separated combination |

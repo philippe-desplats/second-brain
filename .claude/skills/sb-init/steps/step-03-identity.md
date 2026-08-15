@@ -22,8 +22,10 @@ Ask (pre-fill suggestions from `git config user.name` / `user.email` if availabl
 
 - Full name (as it should appear in signatures and documents)
 - Organization name (for solo profiles, may be the same as the owner's name; that is fine)
-- Primary email address for outgoing correspondence
+- Primary email address for outgoing correspondence (optional)
 - Website or main public link (optional)
+
+Both contact fields are optional: if the owner has none to give, leave the field empty rather than inventing one. When email or website is absent, the profile line built in step-04 carries the name alone, with no empty parentheses.
 
 Store `{owner_name}`, `{org_name}`, and the contact details.
 

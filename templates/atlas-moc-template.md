@@ -5,7 +5,7 @@ subtype: moc
 schema_version: 1
 date: YYYY-MM-DD
 status: active
-topics: [{{topic1}}, {{topic2}}]
+topics: ["{{topic1}}", "{{topic2}}"]
 ---
 
 # MOC, {{subject title}}

@@ -216,7 +216,7 @@ Then proceed to step 2.
 
 ## SUCCESS METRICS:
 
-✅ All four workspace roots scanned (sources/clients, sources/partners, sources/internal, sources/personal)
+✅ Every zone root listed in the `zones` array of `.sb-config.json` scanned (`sources/{zone}/` for each kept zone; a pruned zone has no directory and is not expected)
 ✅ Files correctly categorized by client, project, and type
 ✅ Active clients identified with file counts
 ✅ Dormant clients identified with last activity dates

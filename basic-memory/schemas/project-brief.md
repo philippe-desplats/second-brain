@@ -2,27 +2,38 @@
 title: Project Brief
 type: schema
 entity: project-brief
-schema_version: 1
+version: 1
 schema:
-  title: string, "project title"
-  category?(enum):
-  - internal
-  - client
-  - partner
-  - personal
+  goal?(array): string, "objective to reach"
+  milestone?(array): string, "milestone reached or planned"
+  decision?(array): string, "scope or architecture decision"
+  rejection-reason?(array): string, "rejection reason if status is rejected"
+  parent?: Entity, "parent entity"
+  produces?(array): Deliverable, "deliverable produced"
   client?: ClientContext, "client involved if category=client"
   partner?: PartnerContext, "partner involved if category=partner"
-  created?: string, "creation date in YYYY-MM-DD format"
-  status?(enum):
-  - active
-  - done
-  - paused
-  - rejected
-  - archived
   owner?: Person, "main owner"
   depends_on?: ProjectBrief, "project this project depends on"
 settings:
   validation: strict
+  frontmatter:
+    title: string, "project title"
+    category?(enum):
+    - internal
+    - client
+    - partner
+    - personal
+    client?: ClientContext, "client involved if category=client"
+    partner?: PartnerContext, "partner involved if category=partner"
+    created?: string, "creation date in YYYY-MM-DD format"
+    status?(enum):
+    - active
+    - done
+    - paused
+    - rejected
+    - archived
+    owner?: Person, "main owner"
+    depends_on?: ProjectBrief, "project this project depends on"
 ---
 
 # Schema, Project Brief
@@ -36,10 +47,9 @@ When a project has both, the `CLAUDE.md` takes priority for agent instructions, 
 
 ## Location
 
-- `sources/internal/{project}/README.md` or `CLAUDE.md`
-- `sources/clients/{client}/{project}/README.md` or `CLAUDE.md`
-- `sources/partners/{partner}/{project}/README.md` or `CLAUDE.md`
-- `sources/personal/{project}/README.md` or `CLAUDE.md`
+`sources/{zone}/{entity}/{project}/README.md` or `CLAUDE.md`
+
+`{zone}` is a zone under `sources/` and `{entity}` a client or partner folder; entity-less zones such as `internal` and `personal` hold their projects directly under the zone.
 
 ## Recommended markdown sections
 
@@ -66,11 +76,12 @@ When a project has both, the `CLAUDE.md` takes priority for agent instructions, 
 ## Typed relations in the frontmatter
 
 - `client` or `partner`, parent entity
+- `owner`, person who owns the project
 - `depends_on`, other project this one depends on
 
 ## Additional relations in markdown
 
-- `parent [[Client | Partner | Internal]]`, parent entity as a text link
+- `parent [[Entity]]`, parent entity as a text link
 - `produces [[Deliverable]]`, deliverables produced
 
 ## Reference examples
@@ -86,6 +97,8 @@ When a project has both, the `CLAUDE.md` takes priority for agent instructions, 
 ```yaml
 ---
 title: Basic Memory, technology evaluation
+type: project-brief
+schema_version: 1
 category: internal
 created: 2026-04-15
 status: active

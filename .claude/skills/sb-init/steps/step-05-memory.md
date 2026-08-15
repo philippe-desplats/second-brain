@@ -28,20 +28,24 @@ Basic Memory adds semantic search and a knowledge graph over the markdown files:
 which bm || uv tool install basic-memory
 ```
 
-If `uv` is missing, offer `brew install uv` first (macOS) or point to https://docs.astral.sh/uv/. Then warm up the embedding model (downloads once):
+If `uv` is missing, offer `brew install uv` first (macOS) or point to https://docs.astral.sh/uv/. Semantic search is on by default and embeddings build automatically at first startup, no warm-up step is needed. To rebuild embeddings later, run `bm reindex --embeddings`.
+
+### 2. Create the project
+
+Derive `{bm_project}` from the workspace folder name (kebab-case). This workspace targets local routing; Basic Memory Cloud is an optional hosted product this setup does not use. Then:
+
+```bash
+bm project add {bm_project} {absolute-workspace-path} --local
+bm project list
+```
+
+Now run `bm doctor` as a smoke test, it verifies file and database consistency, not embeddings, and needs a real project to check against:
 
 ```bash
 bm doctor
 ```
 
-### 2. Create the project
-
-Derive `{bm_project}` from the workspace folder name (kebab-case). Then:
-
-```bash
-bm project add {bm_project} {absolute-workspace-path}
-bm project list
-```
+If it fails with `Cannot delete default project 'doctor-{hex}'. This is the only project in your configuration.`, doctor's own temporary project got stuck as the default; run `bm project list` then `bm project default {bm_project}` to point the default back at the real project.
 
 ### 3. Apply the critical configuration
 
@@ -61,9 +65,15 @@ Basic Memory reads its ignore list from `~/.basic-memory/.bmignore` (gitignore s
 
 ```
 templates/
+AGENTS.md
+CONTRIBUTING.md
 CHANGELOG.md
 GETTING-STARTED.md
 ```
+
+**NEVER add `README.md` or `CLAUDE.md` to this file, and never trust a leading slash to protect you.** Despite the gitignore-style syntax, the sync walker matches every pattern against the file name relative to its own parent directory, not to the project root, so a pattern is global whatever it looks like. Verified on 0.21.1 and 0.22.1: `/CLAUDE.md` silently drops every `sources/{zone}/{entity}/CLAUDE.md`, meaning every client and partner context, the highest value entities in the graph. `/README.md` drops every project brief the same way. A pattern containing a directory prefix, such as `/basic-memory/README.md`, never matches anything during a sync and only gives a false sense of exclusion. Only add a bare file name that exists nowhere else in the tree, or a directory name you are willing to exclude at every depth.
+
+The consequence, accepted deliberately: the workspace's own documentation (`README.md`, `CLAUDE.md`, the zone READMEs) stays indexed as untyped notes. It adds a little noise to semantic search and shows up as a schema warning on a validation run. That is the lesser evil, since the alternative silently deletes the entity graph.
 
 ### 4. Register the MCP server
 

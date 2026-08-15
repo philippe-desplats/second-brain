@@ -38,8 +38,6 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import yaml
-
 WORKSPACE = Path(__file__).resolve().parent.parent.parent
 IGNORED_SEGMENTS = {".git", "node_modules", ".obsidian", ".claude"}
 IGNORED_PATH_PREFIXES = (
@@ -100,6 +98,79 @@ def is_ignored(rel: Path) -> bool:
     return False
 
 
+def parse_frontmatter_yaml(fm_text: str) -> dict:
+    """Parse the frontmatter subset this workspace uses, standard library only.
+
+    Handles top-level `key: value` scalars (quoted or not, colons allowed
+    inside the value), inline sequences `key: [a, b]`, block sequences with
+    `- item` on the following lines, blank lines and full-line comments.
+
+    Deliberate limits, this is not a general YAML parser: scalars are always
+    returned as strings (callers stringify every value they read), a nested
+    mapping is consumed without being parsed and its key maps to an empty
+    string, and block scalars (`|`, `>`), trailing `# comments`, anchors and
+    multi-document streams are not interpreted. It never raises: a line it
+    cannot read is skipped, so a malformed block yields a partial dict.
+
+    Deliberately duplicated in generate_indexes.py rather than extracted:
+    every script in this folder stays runnable on its own. The two copies must
+    remain identical, change one and change the other.
+    """
+
+    def scalar(raw: str) -> str:
+        """Strip one matching pair of surrounding quotes, and empty an explicit null."""
+        raw = raw.strip()
+        if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ('"', "'"):
+            return raw[1:-1]
+        if raw in ("null", "~"):
+            return ""
+        return raw
+
+    result: dict = {}
+    lines = fm_text.split("\n")
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        i += 1
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if line.startswith((" ", "\t", "-")):
+            continue  # nested or orphan line, consumed with its parent key
+        if ":" not in line:
+            continue
+        key, _, rest = line.partition(":")
+        key = key.strip()
+        rest = rest.strip()
+        if not key:
+            continue
+        if rest.startswith("[") and rest.endswith("]"):
+            result[key] = [scalar(it) for it in rest[1:-1].split(",") if it.strip()]
+            continue
+        if rest:
+            result[key] = scalar(rest)
+            continue
+        # Bare key: either a block sequence or a nested mapping. Consume the
+        # whole indented block, only a sequence produces a value.
+        items: list = []
+        is_sequence = None
+        while i < len(lines):
+            nxt = lines[i]
+            nxt_stripped = nxt.strip()
+            if not nxt_stripped or nxt_stripped.startswith("#"):
+                i += 1
+                continue
+            if not nxt.startswith((" ", "\t", "-")):
+                break
+            if is_sequence is None:
+                is_sequence = nxt_stripped.startswith("- ")
+            if is_sequence and nxt_stripped.startswith("- "):
+                items.append(scalar(nxt_stripped[2:]))
+            i += 1
+        result[key] = items if is_sequence else ""
+    return result
+
+
 def parse_frontmatter(text: str) -> tuple[dict, int]:
     """Return (frontmatter dict, body_start_line_index)."""
     if not text.startswith("---"):
@@ -113,13 +184,7 @@ def parse_frontmatter(text: str) -> tuple[dict, int]:
     if end is None:
         return {}, 0
     fm_text = "\n".join(lines[1:end])
-    try:
-        fm = yaml.safe_load(fm_text) or {}
-        if not isinstance(fm, dict):
-            return {}, 0
-    except yaml.YAMLError:
-        return {}, 0
-    return fm, end + 1
+    return parse_frontmatter_yaml(fm_text), end + 1
 
 
 def discover_entities(root: Path) -> dict[str, list[Entity]]:

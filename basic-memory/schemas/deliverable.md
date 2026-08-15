@@ -2,82 +2,93 @@
 title: Deliverable
 type: schema
 entity: deliverable
-schema_version: 1
+version: 1
 schema:
-  date: string, "deliverable date in YYYY-MM-DD format"
-  title: string, "deliverable title"
-  deliverable_type(enum):
-  - contract
-  - quote
-  - proposal
-  - invoice
-  - credit-note
-  - newsletter
-  - post
-  - pitch-deck
-  - audit
-  - report
-  - document
-  - code
-  - slides
-  - spec
-  - mockup
-  - roadmap
-  - specification
-  - terms-of-sale
-  - legal-notice
-  - privacy-policy
-  category?(enum):
-  - client
-  - partner
-  - internal
-  - personal
+  commitment?(array): string, "commitment made in the contract, quote, or proposal"
+  clause?(array): string, "legal or conditional clause to remember"
+  item?(array): string, "billing line or item"
+  risk?(array): string, "risk identified at delivery time"
+  spec?(array): string, "technical specification, for deliverable_type document, code, spec, mockup"
+  for?: Entity, "beneficiary entity"
+  based_on?: Research, "source research"
   client?: ClientContext, "recipient client if client-scoped"
   partner?: PartnerContext, "recipient partner if partnership-scoped"
-  reference?: string, "quote number, contract, or billing reference"
-  amount_pre_tax?: number, "pre-tax amount as a number, optional"
-  amount_with_tax?: number, "with-tax (gross) amount as a number, optional"
-  currency?: string, "currency, EUR by default"
-  vat_regime?(enum):
-  - pre-tax
-  - with-tax
-  - vat-exempt
-  amount_label?: string, "free-form label for non-standard or recurring cases"
-  status?(enum):
-  - draft
-  - review
-  - sent
-  - signed
-  - invoiced
-  - paid
-  - cancelled
-  - archived
-  sent_date?: string, "sent date in YYYY-MM-DD format"
-  due_date?: string, "due date in YYYY-MM-DD format"
-  paid_date?: string, "actual payment date in YYYY-MM-DD format"
-  billing_ref?: string, "reference in an external billing tool if synced"
-  repo_url?: string, "repo URL if deliverable_type is code, spec, roadmap"
-  commit_sha?: string, "commit SHA if deliverable_type is code"
   implements?: Strategy, "strategy implemented"
   succeeds?: Deliverable, "previous deliverable in a sequence"
 settings:
   validation: warn
+  frontmatter:
+    date: string, "deliverable date in YYYY-MM-DD format"
+    title: string, "deliverable title"
+    deliverable_type(enum):
+    - contract
+    - quote
+    - proposal
+    - invoice
+    - credit-note
+    - newsletter
+    - post
+    - pitch-deck
+    - audit
+    - report
+    - document
+    - code
+    - slides
+    - spec
+    - mockup
+    - roadmap
+    - specification
+    - terms-of-sale
+    - legal-notice
+    - privacy-policy
+    category?(enum):
+    - client
+    - partner
+    - internal
+    - personal
+    client?: ClientContext, "recipient client if client-scoped"
+    partner?: PartnerContext, "recipient partner if partnership-scoped"
+    reference?: string, "quote number, contract, or billing reference"
+    amount_pre_tax?: number, "pre-tax amount as a number, optional"
+    amount_with_tax?: number, "with-tax (gross) amount as a number, optional"
+    currency?: string, "currency, EUR by default"
+    vat_regime?(enum):
+    - pre-tax
+    - with-tax
+    - vat-exempt
+    amount_label?: string, "free-form label for non-standard or recurring cases"
+    status?(enum):
+    - draft
+    - review
+    - sent
+    - signed
+    - invoiced
+    - paid
+    - cancelled
+    - archived
+    sent_date?: string, "sent date in YYYY-MM-DD format"
+    due_date?: string, "due date in YYYY-MM-DD format"
+    paid_date?: string, "actual payment date in YYYY-MM-DD format"
+    billing_ref?: string, "reference in an external billing tool if synced"
+    repo_url?: string, "repo URL if deliverable_type is code, spec, roadmap"
+    commit_sha?: string, "commit SHA if deliverable_type is code"
+    implements?: Strategy, "strategy implemented"
+    succeeds?: Deliverable, "previous deliverable in a sequence"
 ---
 
 # Schema, Deliverable
 
 Finalized document, delivered or archived as a reference. Covers 3 families:
 
-1. **Commercial deliverables** (client, partner), signed contract, sent quote, proposal, invoice, credit note, newsletter, social post, audit report, terms of sale, legal notice, privacy policy, specification
+1. **Commercial deliverables**, signed contract, sent quote, proposal, invoice, credit note, newsletter, social post, audit report, terms of sale, legal notice, privacy policy, specification
 2. **Internal deliverables**, technical spec, pitch slides, strategy document, code (index file or README pointing to repo), mockup, roadmap
 3. **Personal deliverables**, training slides, documents, etc.
 
 ## Typical location
 
-- `sources/clients/{client}/{project}/deliverables/YYYY-MM-DD-{type}-slug.md`
-- `sources/partners/{partner}/{project}/deliverables/YYYY-MM-DD-{type}-slug.md`
-- `sources/internal/{project}/deliverables/YYYY-MM-DD-{type}-slug.md`
-- `sources/personal/{project}/deliverables/YYYY-MM-DD-{type}-slug.md`
+`sources/{zone}/{entity}/{project}/deliverables/YYYY-MM-DD-{type}-slug.md`
+
+`{zone}` is a zone under `sources/` and `{entity}` a client or partner folder; entity-less zones such as `internal` and `personal` hold their projects directly under the zone.
 
 ## Reference examples
 
@@ -111,8 +122,9 @@ Amounts are typed as `number` (not string) to allow automatic summing and analyt
 
 ## Additional relations in markdown
 
-- `for [[Client | Partner | Internal]]` beneficiary
+- `for [[Entity]]` beneficiary
 - `based_on [[Research]]` source
+- `succeeds [[Previous deliverable]]` previous deliverable in the sequence, also valid as a frontmatter field
 
 ## Example 1, commercial deliverable
 
@@ -120,6 +132,8 @@ Amounts are typed as `number` (not string) to allow automatic summing and analyt
 ---
 date: 2026-03-11
 title: Initech hosting and associated services contract
+type: deliverable
+schema_version: 1
 deliverable_type: contract
 category: client
 client: Initech
@@ -153,6 +167,8 @@ implements: Initech commercial proposal 2026-02
 ---
 date: 2026-03-15
 title: Internal wiki v2 architecture spec
+type: deliverable
+schema_version: 1
 deliverable_type: spec
 category: internal
 reference: ACME-SPEC-WIKI-V2

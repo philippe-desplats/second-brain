@@ -2,27 +2,36 @@
 title: Transcript
 type: schema
 entity: transcript
-schema_version: 1
+version: 1
 schema:
-  date: string, "recording date in YYYY-MM-DD format"
-  title: string, "descriptive title"
-  source: string, "recording URL (meeting recorder, video platform)"
-  category?(enum):
-  - client
-  - partner
-  - internal
-  - personal
+  decision?(array): string, "decision made during the meeting"
+  action?(array): string, "action to take, ideally with owner and deadline"
+  risk?(array): string, "risk or point of attention identified"
+  milestone?(array): string, "milestone or key event"
+  question?(array): string, "question raised without an immediate answer"
   client?: ClientContext, "client involved if client scope"
   partner?: PartnerContext, "partner involved if partnership scope"
-  participants?(array): string, "list of participants"
-  duration?: string, "indicative duration, e.g. 1h, 45min"
-  language?(enum):
-  - fr
-  - en
-  - other
   meeting_ref?: Meeting, "associated meeting report if any"
 settings:
   validation: warn
+  frontmatter:
+    date: string, "recording date in YYYY-MM-DD format"
+    title: string, "descriptive title"
+    source: string, "recording URL (meeting recorder, video platform)"
+    category?(enum):
+    - client
+    - partner
+    - internal
+    - personal
+    client?: ClientContext, "client involved if client scope"
+    partner?: PartnerContext, "partner involved if partnership scope"
+    participants?(array): string, "list of participants"
+    duration?: string, "indicative duration, e.g. 1h, 45min"
+    language?(enum):
+    - fr
+    - en
+    - other
+    meeting_ref?: Meeting, "associated meeting report if any"
 ---
 
 # Schema, Transcript
@@ -33,10 +42,11 @@ Some partners prefer to receive the transcript rather than the report. The trans
 
 ## Typical location
 
-- `sources/clients/{client}/{project}/transcripts/YYYY-MM-DD-transcript-slug.md`
-- `sources/partners/{partner}/{project}/transcripts/YYYY-MM-DD-transcript-slug.md`
-- `sources/internal/{project}/transcripts/YYYY-MM-DD-transcript-slug.md`
-- `sources/personal/{project}/transcripts/YYYY-MM-DD-transcript-slug.md`
+`sources/{zone}/{entity}/{project}/transcripts/YYYY-MM-DD-transcript-slug.md`
+
+Concrete example, `sources/clients/globex/website-redesign/transcripts/2026-06-22-transcript-kickoff.md`.
+
+`{zone}` is a zone under `sources/` and `{entity}` a client or partner folder; entity-less zones such as `internal` and `personal` hold their projects directly under the zone.
 
 If the transcript accompanies a meeting, both can coexist side by side in `meetings/` and `transcripts/`.
 
@@ -64,6 +74,8 @@ If you annotate the transcript directly, use the meeting categories:
 ---
 date: 2026-04-15
 title: Transcript, Automation workshop
+type: transcript
+schema_version: 1
 source: https://example.com/rec/abc123
 category: partner
 partner: Morgan Reed
@@ -84,4 +96,15 @@ Hi Morgan, glad we could get this slot...
 
 Morgan (00:00:30)
 Yes, so as agreed we wanted to frame the scope...
+
+## Observations
+
+- [decision] First phase limited to the two highest volume workflows
+- [action] Morgan sends the current process documentation before Friday
+- [question] Who owns the credentials on the client side, left unanswered
+
+## Relations
+
+- partner [[Morgan Reed]]
+- meeting_ref [[2026-04-15-meeting-automation-partnership]]
 ```

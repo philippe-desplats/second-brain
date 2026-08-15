@@ -6,6 +6,8 @@ This file is the **single entry point** for everything related to the YAML front
 
 **Every new markdown file must have YAML frontmatter conforming to one of the 15 schemas in `basic-memory/schemas/`.**
 
+Inside a schema, the frontmatter contract lives in its `settings.frontmatter:` block, while the top-level `schema:` block describes the note body.
+
 ## The 15 canonical types
 
 ### Context schemas (2, strict validation)
@@ -99,7 +101,7 @@ Check via `python3 basic-memory/scripts/check_symmetric_relations.py --check`.
 
 ## Maintenance scripts
 
-In `basic-memory/scripts/` (11 scripts):
+In `basic-memory/scripts/` (12 scripts):
 
 - `check_double_frontmatter.py`, detects files with double frontmatter (Basic Memory bug to work around)
 - `fix_double_frontmatter.py`, automatically fixes doubles by merging them
@@ -112,6 +114,7 @@ In `basic-memory/scripts/` (11 scripts):
 - `check_symmetric_relations.py`, audits symmetric pairs
 - `check_orphans.py`, flags notes with no inbound or outbound relations
 - `generate_indexes.py`, regenerates the `*-static.md` indexes in `atlas/maps/`
+- `curation_reminder.py`, drops a reminder note in `inbox/` and fires a best effort OS notification; scheduled via launchd, cron, or Task Scheduler, idempotent at one reminder per day, and never runs the assistant itself
 
 Double frontmatter was a legacy Basic Memory sync bug; the `disable_permalinks: true` setting applied by `/sb-init` prevents it. No routine run is needed: `/sb-doctor` includes the detection check, and `fix_double_frontmatter.py --apply` repairs the rare occurrence.
 
@@ -123,7 +126,7 @@ Observations in the markdown body follow the syntax:
 - [category] free text #optional-tag
 ```
 
-For the most common categories, see the type table above. You can invent an ad hoc category when a case fits none of them, but keep it concise and reusable.
+For the most common categories, see the type table above. The categories expected for a given type are declared in that type's `schema:` block in `basic-memory/schemas/`, which is the block validated against the note body. You can invent an ad hoc category when a case fits none of them, but keep it concise and reusable.
 
 ## References
 

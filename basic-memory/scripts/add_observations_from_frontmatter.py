@@ -198,7 +198,7 @@ def parse_file(path: Path):
 
 
 def find_targets(filter_type: str = None):
-    """Return list of Path for files matching one of the 6 stable types."""
+    """Return list of Path for files matching one of the stable types."""
     targets = []
     for md in WORKSPACE.rglob("*.md"):
         parts = md.relative_to(WORKSPACE).parts

@@ -2,47 +2,58 @@
 title: Email
 type: schema
 entity: email
-schema_version: 1
+version: 1
 schema:
-  date: string, "email date in YYYY-MM-DD format"
-  time: string, "time of sending or receipt in HH:MM format, in quotes"
-  seq: integer, "chronological number within the day, starts at 1"
-  direction(enum):
-  - out
-  - in
-  - reply
-  status(enum):
-  - draft
-  - sent
-  - cancelled
-  from: string, "sender full name"
-  to(array): string, "list of primary recipients"
-  subject: string, "email subject"
-  category?(enum):
-  - client
-  - partner
-  - internal
-  - personal
-  cc?(array): string, "list of people in copy"
-  thread?: string, "conversation thread identifier in kebab-case"
-  about?: Project, "project involved"
+  decision?(array): string, "decision shared in the email"
+  action?(array): string, "action started or requested"
+  commitment?(array): string, "commitment made, a deadline, a deliverable, a reply"
+  question?(array): string, "question asked or received"
+  to?(array): Person, "recipient, on an outgoing email or a reply"
+  from?: Person, "sender, on an incoming email"
+  for?: Entity, "context beneficiary entity"
+  about?: ProjectBrief, "project involved"
   replies_to?: Email, "previous email in the thread"
 settings:
   validation: warn
+  frontmatter:
+    date: string, "email date in YYYY-MM-DD format"
+    time: string, "time of sending or receipt in HH:MM format, in quotes"
+    seq: integer, "chronological number within the day, starts at 1"
+    direction(enum):
+    - out
+    - in
+    - reply
+    status(enum):
+    - draft
+    - sent
+    - cancelled
+    from: string, "sender full name"
+    to(array): string, "list of primary recipients"
+    subject: string, "email subject"
+    category?(enum):
+    - client
+    - partner
+    - internal
+    - personal
+    cc?(array): string, "list of people in copy"
+    thread?: string, "conversation thread identifier in kebab-case"
+    about?: ProjectBrief, "project involved"
+    replies_to?: Email, "previous email in the thread"
 ---
 
 # Schema, Email
 
-Represents an incoming email, an outgoing email, or a reply. Canonical source, `.claude/rules/emails.md`. Two improvements over the historical convention, `to` and `cc` become YAML arrays (robust filtering), and the `category` field is added to distinguish clients, partners, internal, and personal.
+Represents an incoming email, an outgoing email, or a reply. Canonical source, `.claude/rules/emails.md`. Two improvements over the historical convention, `to` and `cc` become YAML arrays (robust filtering), and the `category` field is added to record which workspace zone the email belongs to.
 
 ## Typical location
 
-Usable for all 4 categories.
+Usable in every workspace zone.
 
-- `sources/clients/{client}/{project}/emails/YYYY-MM-DD-{seq}-{direction}-slug.md`
-- `sources/partners/{partner}/{project}/emails/YYYY-MM-DD-{seq}-{direction}-slug.md`
-- `sources/internal/{project}/emails/YYYY-MM-DD-{seq}-{direction}-slug.md`
-- `sources/personal/{project}/emails/YYYY-MM-DD-{seq}-{direction}-slug.md`
+`sources/{zone}/{entity}/{project}/emails/YYYY-MM-DD-{seq}-{direction}-slug.md`
+
+Live example in this repository, `sources/clients/globex/website-redesign/emails/2026-06-15-01-in-kickoff-questions.md`.
+
+`{zone}` is a zone under `sources/` and `{entity}` a client or partner folder; entity-less zones such as `internal` and `personal` hold their projects directly under the zone.
 
 ## Naming convention
 
@@ -73,7 +84,7 @@ Usable for all 4 categories.
 ## Additional relations in markdown
 
 - `to [[Person]]` or `from [[Person]]` depending on direction, link to the person entity
-- `for [[Client | Partner | Internal]]` context beneficiary
+- `for [[Entity]]` context beneficiary
 
 ## Important YAML notes
 
@@ -84,6 +95,8 @@ Usable for all 4 categories.
 
 ```yaml
 ---
+type: email
+schema_version: 1
 date: 2026-04-08
 time: "09:15"
 seq: 1

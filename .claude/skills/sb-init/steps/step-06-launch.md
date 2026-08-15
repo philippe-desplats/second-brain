@@ -31,6 +31,12 @@ In quick mode, or if the owner has nothing at hand or is away: do NOT fabricate 
 
 Point at the created file(s): the path (predictable), the frontmatter (typed), the wiki-links (relations). One minute, no lecture. If Basic Memory is enabled, run one search that finds the new note.
 
+```bash
+python3 basic-memory/scripts/generate_indexes.py
+```
+
+Materializes the five indexes `atlas/home.md` links to; re-run it after any writing session to keep them current.
+
 ### 3. Set the maintenance ritual
 
 Explain the single ritual:

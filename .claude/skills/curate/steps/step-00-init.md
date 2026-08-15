@@ -16,7 +16,7 @@ next_step: steps/step-01-scan.md
 
 ### 1. Parse arguments
 
-- **Flag `-s`**: `full | clients | partners | internal | knowledge | topics` -> `{scope}` (default `full`)
+- **Flag `-s`**: `full`, any zone listed in the `zones` array of `.sb-config.json`, `knowledge`, or `topics` -> `{scope}` (default `full`). A zone absent from that array was pruned at init and is not a valid scope.
 - **Flag `-w`**: integer -> `{window_days}` (default 30, used to qualify "recent")
 - **Flag `-min`**: integer -> `{min_inactive_months}` (default 6, threshold for archive)
 - **Flag `-only`**: `distill,archive,moc` (combination) -> `{only_filter}` (default all 3)

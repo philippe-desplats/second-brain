@@ -44,6 +44,9 @@ Read `sources/internal/CONTEXT.md` to understand the organization's current situ
 From `{user_prompt}`, determine:
 
 **Project category** - Who is this for?
+
+Read the `zones` array in `.sb-config.json` first: it lists the zones this workspace kept. Only the categories it contains exist, so only propose those; a zone absent from the array has no directory under `sources/` and must never be offered or created.
+
 - `internal` - Internal work (pricing, strategy, infra, processes, operations), in `sources/internal/`
 - `clients` - Work for a specific client, in `sources/clients/`
 - `partners` - Work for a partner (reseller, white-label, co-ownership), in `sources/partners/`
@@ -101,12 +104,10 @@ Present a brief summary to the user:
 
 ```
 **Project**: {project_name}
-**Category**: {internal | clients | partners | personal} {entity_name if applicable}
+**Category**: {project_category, one of the zones kept in .sb-config.json} {entity_name if applicable}
 **Destination**:
-  - If clients: sources/clients/{entity_name}/{project_name}/
-  - If partners: sources/partners/{entity_name}/{project_name}/
-  - If internal: sources/internal/{project_name}/
-  - If personal: sources/personal/{project_name}/
+  - Entity zones (clients, partners): sources/{project_category}/{entity_name}/{project_name}/
+  - Project zones (internal, personal): sources/{project_category}/{project_name}/
 **Planned activities**: {list of activities}
 **Available context**: {list of context files found}
 **Missing context**: {what's missing, if anything}
@@ -133,7 +134,7 @@ questions:
 ## SUCCESS METRICS:
 
 ✅ Business context read from `sources/internal/CONTEXT.md`
-✅ Project category correctly identified (internal, clients, partners, or personal)
+✅ Project category correctly identified, among the zones listed in `.sb-config.json`
 ✅ Activities list determined from prompt analysis
 ✅ Existing context files checked
 ✅ Missing context identified

@@ -21,7 +21,7 @@ This repository is a workspace template, not application code. The quality bar i
 
 - **Skills** follow the existing structure: a `SKILL.md` entry point, `steps/*.md` chained by `next_step`, explicit execution rules, human validation before any write. Register new skills in `.claude/skill-registry.md`.
 - **Schemas** in `basic-memory/schemas/` are the single source of truth for frontmatter. A schema change must update the decision matrix in `.claude/rules/frontmatter.md` and any template that uses it.
-- **Scripts** in `basic-memory/scripts/` are Python 3 standard library only, no dependencies, and must degrade gracefully on pruned zones (missing `sources/partners/` must never crash them).
+- **Scripts** in `basic-memory/scripts/` are Python 3 standard library only, no dependencies, and must degrade gracefully on pruned zones (missing `sources/partners/` must never crash them). Each one stays runnable on its own, so a helper two scripts need is duplicated rather than extracted: `parse_frontmatter_yaml` exists in both `generate_indexes.py` and `auto_link_entities.py` and the two copies must stay identical.
 - **Placeholders**: demo and example content uses fictional names only (Acme for the owner organization, Globex and Initech for clients, Jane Doe for people, `example.com` domains). Never use real people, companies, or paths.
 - **Language**: structural files (skills, rules, schemas, templates, docs) are written in English. No em dashes in prose.
 - **Commits** follow [Conventional Commits](https://www.conventionalcommits.org/): `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `revert`.
@@ -38,6 +38,9 @@ python3 basic-memory/scripts/check_orphans.py
 python3 basic-memory/scripts/check_symmetric_relations.py --check
 python3 basic-memory/scripts/check_double_frontmatter.py
 python3 basic-memory/scripts/generate_indexes.py --output-dir /tmp/idx-test
+# optional, requires Basic Memory and an indexed workspace. The type argument is not optional:
+# omitting it validates nothing and still exits 0.
+for t in $(ls basic-memory/schemas/*.md | xargs -n1 basename | sed 's/\.md$//' | grep -v README); do bm schema validate "$t" --strict; done
 ```
 
 For skill changes, clone the repo to a scratch folder, run `/sb-init` there with a fictional persona, and exercise the skill you touched. The demo client (Globex) gives you a filed workspace to test retrieval against.

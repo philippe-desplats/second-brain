@@ -2,25 +2,32 @@
 title: Topic
 type: schema
 entity: topic
-schema_version: 1
+version: 1
 schema:
-  name: string, "topic name, will serve as the title for wikilinks"
-  domain?(enum):
-  - tech
-  - business
-  - marketing
-  - design
-  - legal
-  - ops
-  - other
-  aliases?(array): string, "other equivalent names for this topic"
-  status?(enum):
-  - active
-  - watch
-  - archived
-  related?(array): string, "related topics"
+  definition?(array): string, "short definition of the topic"
+  example?(array): string, "usage or application example"
+  reference?(array): string, "reference resource"
+  opinion?(array): string, "the organization's stance on this topic"
+  specializes?: Topic, "sub-category of a broader topic"
+  replaces?: Topic, "old technology or practice this topic replaces"
 settings:
   validation: strict
+  frontmatter:
+    name: string, "topic name, will serve as the title for wikilinks"
+    domain?(enum):
+    - tech
+    - business
+    - marketing
+    - design
+    - legal
+    - ops
+    - other
+    aliases?(array): string, "other equivalent names for this topic"
+    status?(enum):
+    - active
+    - watch
+    - archived
+    related?(array): string, "related topics"
 ---
 
 # Schema, Topic
@@ -30,6 +37,8 @@ Represents a recurring subject (technology, concept, domain, tool) that appears 
 ## Typical location
 
 - `atlas/topics/{slug}.md` at the workspace root (create the folder if needed)
+
+Live example in this repository, `atlas/topics/client-onboarding.md`.
 
 ## Why this schema
 
@@ -42,16 +51,14 @@ Topics are the anchors of the semantic graph. A well-documented topic makes it p
 
 The `tags` (in the frontmatter) are free keywords for quick filtering. The `topics` are graph entities, with their own record, their relations, their observations.
 
+The `related` frontmatter field is an ordinary array of strings, not a typed relation. It lists neighbouring topic names for quick filtering and creates no edge in the graph. To link two topics for real, write a `specializes` or `replaces` relation in the markdown body.
+
 ## Expected observations
 
 - `[definition]` short definition of the topic
 - `[example]` usage or application example
 - `[reference]` reference resource
 - `[opinion]` the organization's stance on this topic
-
-## Typed relations in the frontmatter
-
-- `related`, related topics (free form, array of strings)
 
 ## Additional relations in markdown
 
@@ -63,6 +70,8 @@ The `tags` (in the frontmatter) are free keywords for quick filtering. The `topi
 ```yaml
 ---
 name: Basic Memory
+type: topic
+schema_version: 1
 domain: tech
 aliases: [basicmemory, BM]
 status: active

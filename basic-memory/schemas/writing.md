@@ -2,62 +2,68 @@
 title: Writing
 type: schema
 entity: writing
-schema_version: 1
+version: 1
 schema:
-  date: string, "writing date in YYYY-MM-DD format"
-  title: string, "title of the written content"
-  writing_type(enum):
-  - quote
-  - contract
-  - newsletter
-  - post
-  - outline
-  - proposal
-  - article
-  - pitch-deck
-  - email-signature
-  - bio
-  - landing-copy
-  - video-script
-  - specification
-  - terms-of-sale
-  - legal-notice
-  - privacy-policy
-  - journal
-  - letter
-  - other
-  category?(enum):
-  - internal
-  - client
-  - partner
-  - personal
+  claim?(array): string, "statement or promise made"
+  proof?(array): string, "supporting proof or argument"
+  cta?(array): string, "call to action"
+  for?: Entity, "beneficiary entity"
   client?: ClientContext, "client involved if client scope"
   partner?: PartnerContext, "partner involved if partnership scope"
-  status?(enum):
-  - draft
-  - review
-  - final
-  - sent
-  - archived
-  destination?: string, "target channel, e.g. LinkedIn, billing tool, Email, print, website"
   based_on?: Research, "research that feeds this writing"
 settings:
   validation: warn
+  frontmatter:
+    date: string, "writing date in YYYY-MM-DD format"
+    title: string, "title of the written content"
+    writing_type(enum):
+    - quote
+    - contract
+    - newsletter
+    - post
+    - outline
+    - proposal
+    - article
+    - pitch-deck
+    - email-signature
+    - bio
+    - landing-copy
+    - video-script
+    - specification
+    - terms-of-sale
+    - legal-notice
+    - privacy-policy
+    - journal
+    - letter
+    - other
+    category?(enum):
+    - internal
+    - client
+    - partner
+    - personal
+    client?: ClientContext, "client involved if client scope"
+    partner?: PartnerContext, "partner involved if partnership scope"
+    status?(enum):
+    - draft
+    - review
+    - final
+    - sent
+    - archived
+    destination?: string, "target channel, e.g. LinkedIn, billing tool, Email, print, website"
+    based_on?: Research, "research that feeds this writing"
 ---
 
 # Schema, Writing
 
 Written content meant to be distributed or copied into another tool (billing tool, LinkedIn, email, website). A broad type covering many writing formats, disciplined by the `writing_type` field.
 
-Usable for the 4 categories. If a dominant `writing_type` emerges, consider promoting it to a dedicated schema later.
+Usable in every workspace zone. If a dominant `writing_type` emerges, consider promoting it to a dedicated schema later.
 
 ## Typical location
 
-- `sources/clients/{client}/{project}/YYYY-MM-DD-writing-slug.md`
-- `sources/partners/{partner}/{project}/YYYY-MM-DD-writing-slug.md`
-- `sources/internal/{project}/YYYY-MM-DD-writing-slug.md`
-- `sources/personal/{project}/YYYY-MM-DD-writing-slug.md`
-- A `content/` subfolder is possible in each case
+`sources/{zone}/{entity}/{project}/YYYY-MM-DD-writing-slug.md`, with an optional `content/` subfolder.
+
+`{zone}` is a zone under `sources/` and `{entity}` a client or partner folder; entity-less zones such as `internal` and `personal` hold their projects directly under the zone.
 
 ## Reference examples
 
@@ -83,7 +89,7 @@ A `writing` is the raw content being drafted. A `deliverable` is the finalized a
 
 ## Additional relations in markdown
 
-- `for [[Client | Partner | Internal]]`, beneficiary as a text link
+- `for [[Entity]]`, beneficiary as a text link
 
 ## Minimal example
 
@@ -91,6 +97,8 @@ A `writing` is the raw content being drafted. A `deliverable` is the finalized a
 ---
 date: 2026-02-18
 title: Vandelay SEO quote content
+type: writing
+schema_version: 1
 writing_type: quote
 category: client
 client: Vandelay

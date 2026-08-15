@@ -1,6 +1,6 @@
 ---
 name: distill
-description: Distill a recurring pattern from sources/ into knowledge/. Scans the notes to find N similar occurrences (by topic, tag, or keyword), generates a pattern, playbook, guide, runbook, or decision in knowledge/{ops,tech,business}/ with the canonical Basic Memory frontmatter, and creates back-links to the distilled sources. Core of the layered second-brain philosophy: it turns recurring artifacts into reusable knowledge. Use when a subject, technique, or process recurs at least 3 times in the workspace and deserves to be codified.
+description: "Distill a recurring pattern from sources/ into knowledge/. Scans the notes to find N similar occurrences (by topic, tag, or keyword), generates a pattern, playbook, guide, runbook, or decision in knowledge/{ops,tech,business}/ with the canonical Basic Memory frontmatter, and creates back-links to the distilled sources. Core of the layered second-brain philosophy: it turns recurring artifacts into reusable knowledge. Use when a subject, technique, or process recurs at least 3 times in the workspace and deserves to be codified."
 argument-hint: "<topic|--auto> [-t ops|tech|business] [-k pattern|playbook|guide|runbook|decision] [-m N] [-a auto]"
 model: opus
 allowed-tools:

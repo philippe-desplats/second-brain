@@ -62,4 +62,4 @@ Jane is the single point of contact and the decision-maker for the website work.
 
 ## Relations
 
-- No partner involvement on this account (direct client).
+- referred_by [[Proseware]]

@@ -29,7 +29,7 @@ This is **NOT a code project**. It is a second brain: a general-purpose workspac
 
 Before answering any question about an entity, a project, or past work:
 
-1. **Query Basic Memory first** (if the MCP server is connected): `search_notes` for semantic discovery, `build_context` on a `memory://` URI to follow relations, `recent_activity` for what changed recently.
+1. **Query Basic Memory first** (if the MCP server is connected): `search_notes` for discovery, with `search_type` (`text`, `vector` or `semantic`, `hybrid` by default, `title`, `permalink`) and the filters that map onto this workspace's frontmatter: `note_types` (the `type:` field, stored lowercase, so `note_types=["meeting"]`), `tags`, `status`, `after_date` for recency, and `min_similarity` to tighten vector recall. Then `build_context` on a `memory://` URI to follow relations (`depth`, `timeframe`, `max_related`), and `recent_activity` for what changed recently.
 2. **Then read the files** for authoritative content: the entity's `CLAUDE.md`, then the relevant project folder, then `sources/internal/CONTEXT.md` for business context.
 3. If no local data exists, say so explicitly and ask whether to create a context file.
 
@@ -78,6 +78,8 @@ Unused zones may have been pruned by `/sb-init` depending on the profile; trust 
 
 - `sources/clients/{client}/{project}/...` ✅
 - `sources/clients/{client}/file.md` ❌ FORBIDDEN (except `CLAUDE.md`)
+
+This rule governs **entity** roots. `sources/internal/` is a zone root, not an entity, and it holds exactly two zone-level files by design: `CONTEXT.md` (the business context) and `second-brain-charter.md` (written by `/sb-init`). Everything else filed under `sources/internal/` goes in a project folder like any other zone.
 
 When a skill produces a deliverable, follow `.claude/skills/references/save-conventions.md` for path resolution, subfolder mapping, and naming.
 

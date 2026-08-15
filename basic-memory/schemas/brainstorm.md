@@ -2,44 +2,54 @@
 title: Brainstorm
 type: schema
 entity: brainstorm
-schema_version: 1
+version: 1
 schema:
-  date: string, "session date in YYYY-MM-DD format"
-  title: string, "brainstorm subject"
-  category?(enum):
-  - internal
-  - client
-  - partner
-  - personal
-  mode?(enum):
-  - solo
-  - collective
-  process?: string, "process used, e.g. 4 phases, divergence-convergence"
-  participants?(array): string, "participants if collective session"
+  idea?(array): string, "raw idea, even if not fully formed"
+  question?(array): string, "question explored"
+  pro?(array): string, "argument for an option"
+  con?(array): string, "argument against an option"
+  decision?(array): string, "decision emerging at the end of the session"
+  for?: Entity, "beneficiary if a scope is identified"
   client?: ClientContext, "client involved if the brainstorm is scoped to a client"
   partner?: PartnerContext, "partner involved if the brainstorm is scoped to a partnership"
-  status?(enum):
-  - draft
-  - converged
-  - archived
   about?: Topic, "brainstorm subject"
   feeds?: Strategy, "strategy fed by this brainstorm"
 settings:
   validation: warn
+  frontmatter:
+    date: string, "session date in YYYY-MM-DD format"
+    title: string, "brainstorm subject"
+    category?(enum):
+    - internal
+    - client
+    - partner
+    - personal
+    mode?(enum):
+    - solo
+    - collective
+    process?: string, "process used, e.g. 4 phases, divergence-convergence"
+    participants?(array): string, "participants if collective session"
+    client?: ClientContext, "client involved if the brainstorm is scoped to a client"
+    partner?: PartnerContext, "partner involved if the brainstorm is scoped to a partnership"
+    status?(enum):
+    - draft
+    - converged
+    - archived
+    about?: Topic, "brainstorm subject"
+    feeds?: Strategy, "strategy fed by this brainstorm"
 ---
 
 # Schema, Brainstorm
 
 Ideation session, creative exploration, or challenge of a problem. Not a conclusive document, rather an open space that can later produce research, a strategy, or a project.
 
-Usable for all 4 categories. The `mode` field distinguishes solo sessions (individual reflection) from collective sessions (with `participants` filled in).
+Usable in every workspace zone. The `mode` field distinguishes solo sessions (individual reflection) from collective sessions (with `participants` filled in).
 
 ## Typical location
 
-- `sources/clients/{client}/{project}/YYYY-MM-DD-brainstorm-slug.md`
-- `sources/partners/{partner}/{project}/YYYY-MM-DD-brainstorm-slug.md`
-- `sources/internal/{project}/YYYY-MM-DD-brainstorm-slug.md`
-- `sources/personal/{project}/YYYY-MM-DD-brainstorm-slug.md`
+`sources/{zone}/{entity}/{project}/YYYY-MM-DD-brainstorm-slug.md`
+
+`{zone}` is a zone under `sources/` and `{entity}` a client or partner folder; entity-less zones such as `internal` and `personal` hold their projects directly under the zone.
 
 ## Reference examples
 
@@ -63,7 +73,7 @@ Usable for all 4 categories. The `mode` field distinguishes solo sessions (indiv
 
 ## Additional relations in markdown
 
-- `for [[Client | Partner | Internal]]`, beneficiary if a scope is identified
+- `for [[Entity]]`, beneficiary if a scope is identified
 
 ## Minimal example
 
@@ -71,6 +81,8 @@ Usable for all 4 categories. The `mode` field distinguishes solo sessions (indiv
 ---
 date: 2026-02-12
 title: Brainstorm, Swarmpit to Dokploy migration
+type: brainstorm
+schema_version: 1
 category: client
 mode: solo
 process: 4 phases, exploration + challenge + synthesis + crystallization

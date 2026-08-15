@@ -38,6 +38,8 @@ Prepare the workspace by creating the project folder architecture, generating a 
 
 ### 1. Create Project Folder Architecture
 
+**Zone gate first.** Read the `zones` array in `.sb-config.json`: it lists the zones this workspace kept. If `{project_category}` is not in it, that zone was pruned at init and its directory does not exist; do NOT recreate it. Say so in one line, and go back to step 1 to pick a kept zone.
+
 Create the project folder and its internal structure based on category.
 
 **If `{project_category}` = clients:**
@@ -115,7 +117,9 @@ language: {fr | en | other}
 
 **If `{project_category}` = partners AND `{entity_name}` context file doesn't exist:**
 
-Ask the user for key partner context, then create `sources/partners/{entity_name}/CLAUDE.md` with the canonical `partner-context` schema (strict validation, see `basic-memory/schemas/partner-context.md`):
+Check the `zones` array in `.sb-config.json` before writing anything. If it does not list `partners`, the zone was pruned at init: `sources/partners/` and `basic-memory/schemas/partner-context.md` are both gone, so creating this file would write an invalid note against a deleted schema. Do NOT create it. Tell the user the workspace has no partners zone, and refile the project under a kept zone (`clients` for a paid engagement, `internal` otherwise) by going back to step 1.
+
+If `partners` is listed, ask the user for key partner context, then create `sources/partners/{entity_name}/CLAUDE.md` with the canonical `partner-context` schema (strict validation, see `basic-memory/schemas/partner-context.md`):
 
 ```markdown
 ---

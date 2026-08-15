@@ -2,41 +2,51 @@
 title: Strategy
 type: schema
 entity: strategy
-schema_version: 1
+version: 1
 schema:
-  date: string, "document date in YYYY-MM-DD format"
-  title: string, "title of the plan or strategy"
-  category?(enum):
-  - internal
-  - client
-  - partner
-  - personal
+  goal?(array): string, "objective to reach"
+  milestone?(array): string, "roadmap milestone"
+  decision?(array): string, "structuring decision"
+  risk?(array): string, "identified risk"
+  kpi?(array): string, "success indicator"
+  for?: Entity, "beneficiary entity"
+  produces?(array): Deliverable, "expected deliverable"
   client?: ClientContext, "client involved if client scope"
   partner?: PartnerContext, "partner involved if partnership scope"
-  effort?: string, "effort estimate, e.g. 3 days, 2 weeks"
-  status?(enum):
-  - draft
-  - active
-  - executed
-  - archived
-  scope?: string, "scope covered"
   implements?: Research, "research or study the strategy implements"
 settings:
   validation: warn
+  frontmatter:
+    date: string, "document date in YYYY-MM-DD format"
+    title: string, "title of the plan or strategy"
+    category?(enum):
+    - internal
+    - client
+    - partner
+    - personal
+    client?: ClientContext, "client involved if client scope"
+    partner?: PartnerContext, "partner involved if partnership scope"
+    effort?: string, "effort estimate, e.g. 3 days, 2 weeks"
+    status?(enum):
+    - draft
+    - active
+    - executed
+    - archived
+    scope?: string, "scope covered"
+    implements?: Research, "research or study the strategy implements"
 ---
 
 # Schema, Strategy
 
 Action plan, roadmap, architecture, positioning, communication angle, financial projection, learning plan. Forward-looking, committing document, structured by phases or steps.
 
-Usable for the 4 categories, client (project plan), partnership (shared roadmap), internal (product roadmap), personal (learning plan, career plan).
+Usable in every workspace zone: project plan, shared roadmap, product roadmap, learning plan, career plan.
 
 ## Typical location
 
-- `sources/clients/{client}/{project}/YYYY-MM-DD-strategy-slug.md`
-- `sources/partners/{partner}/{project}/YYYY-MM-DD-strategy-slug.md`
-- `sources/internal/{project}/YYYY-MM-DD-strategy-slug.md`
-- `sources/personal/{project}/YYYY-MM-DD-strategy-slug.md`
+`sources/{zone}/{entity}/{project}/YYYY-MM-DD-strategy-slug.md`
+
+`{zone}` is a zone under `sources/` and `{entity}` a client or partner folder; entity-less zones such as `internal` and `personal` hold their projects directly under the zone.
 
 ## Reference examples
 
@@ -60,7 +70,7 @@ Usable for the 4 categories, client (project plan), partnership (shared roadmap)
 
 ## Additional relations in markdown
 
-- `for [[Client | Partner | Internal]]`, beneficiary as a text link
+- `for [[Entity]]`, beneficiary as a text link
 - `produces [[Deliverable]]`, expected deliverables
 
 ## Minimal example
@@ -69,6 +79,8 @@ Usable for the 4 categories, client (project plan), partnership (shared roadmap)
 ---
 date: 2026-02-12
 title: Action plan, Swarmpit to Dokploy migration
+type: strategy
+schema_version: 1
 category: client
 client: Globex
 effort: 3 days

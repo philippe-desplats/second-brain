@@ -59,7 +59,7 @@ The daily inbound flow of the second brain. Everything that arrives (emails, tra
 | `{type_override}` | string | step-00 (from `-t`) |
 | `{content_type}` | string | step-01 (one of the canonical schema types) |
 | `{entity}` | string | step-01 (entity slug, or `internal`/`personal`) |
-| `{zone}` | string | step-01 (`clients`, `partners`, `internal`, `personal`) |
+| `{zone}` | string | step-01 (one of the `zones` array in `.sb-config.json`) |
 | `{project}` | string | step-01 (project slug under the entity) |
 | `{item_date}` | string | step-01 (YYYY-MM-DD, from content or today) |
 | `{type_meta}` | object | step-01 (type-specific: direction/seq for emails, participants for meetings...) |

@@ -31,8 +31,6 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import yaml
-
 WORKSPACE = Path(__file__).resolve().parent.parent.parent
 IGNORED_SEGMENTS = {".git", "node_modules", ".obsidian", ".claude"}
 DEFAULT_OUTPUT_DIR = WORKSPACE / "atlas" / "maps"
@@ -74,6 +72,79 @@ class Note:
         return self.path.relative_to(WORKSPACE).as_posix()
 
 
+def parse_frontmatter_yaml(fm_text: str) -> dict:
+    """Parse the frontmatter subset this workspace uses, standard library only.
+
+    Handles top-level `key: value` scalars (quoted or not, colons allowed
+    inside the value), inline sequences `key: [a, b]`, block sequences with
+    `- item` on the following lines, blank lines and full-line comments.
+
+    Deliberate limits, this is not a general YAML parser: scalars are always
+    returned as strings (callers stringify every value they read), a nested
+    mapping is consumed without being parsed and its key maps to an empty
+    string, and block scalars (`|`, `>`), trailing `# comments`, anchors and
+    multi-document streams are not interpreted. It never raises: a line it
+    cannot read is skipped, so a malformed block yields a partial dict.
+
+    Deliberately duplicated in auto_link_entities.py rather than extracted:
+    every script in this folder stays runnable on its own. The two copies must
+    remain identical, change one and change the other.
+    """
+
+    def scalar(raw: str) -> str:
+        """Strip one matching pair of surrounding quotes, and empty an explicit null."""
+        raw = raw.strip()
+        if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ('"', "'"):
+            return raw[1:-1]
+        if raw in ("null", "~"):
+            return ""
+        return raw
+
+    result: dict = {}
+    lines = fm_text.split("\n")
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        i += 1
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if line.startswith((" ", "\t", "-")):
+            continue  # nested or orphan line, consumed with its parent key
+        if ":" not in line:
+            continue
+        key, _, rest = line.partition(":")
+        key = key.strip()
+        rest = rest.strip()
+        if not key:
+            continue
+        if rest.startswith("[") and rest.endswith("]"):
+            result[key] = [scalar(it) for it in rest[1:-1].split(",") if it.strip()]
+            continue
+        if rest:
+            result[key] = scalar(rest)
+            continue
+        # Bare key: either a block sequence or a nested mapping. Consume the
+        # whole indented block, only a sequence produces a value.
+        items: list = []
+        is_sequence = None
+        while i < len(lines):
+            nxt = lines[i]
+            nxt_stripped = nxt.strip()
+            if not nxt_stripped or nxt_stripped.startswith("#"):
+                i += 1
+                continue
+            if not nxt.startswith((" ", "\t", "-")):
+                break
+            if is_sequence is None:
+                is_sequence = nxt_stripped.startswith("- ")
+            if is_sequence and nxt_stripped.startswith("- "):
+                items.append(scalar(nxt_stripped[2:]))
+            i += 1
+        result[key] = items if is_sequence else ""
+    return result
+
+
 def parse_frontmatter(text: str) -> tuple[dict, str]:
     if not text.startswith("---"):
         return {}, text
@@ -87,13 +158,7 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
         return {}, text
     fm_text = "\n".join(lines[1:end])
     body = "\n".join(lines[end + 1 :])
-    try:
-        fm = yaml.safe_load(fm_text) or {}
-        if not isinstance(fm, dict):
-            return {}, text
-    except yaml.YAMLError:
-        return {}, text
-    return fm, body
+    return parse_frontmatter_yaml(fm_text), body
 
 
 def iter_notes(root: Path):
@@ -285,7 +350,7 @@ def main(argv: list[str]) -> int:
         rows = build_partners_active(notes)
         generated.append(
             write_index(
-            args.output_dir,
+                args.output_dir,
                 "partners-active",
                 "Active partners",
                 "All partners with status: active in their CLAUDE.md.",

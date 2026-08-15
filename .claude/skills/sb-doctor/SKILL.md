@@ -93,6 +93,24 @@ command -v bm >/dev/null 2>&1 && bm status --project {basic_memory_project from 
 
 Unindexed files mean search misses them. Fix: `bm reindex --project {basic_memory_project}`.
 
+### 10. Graph orphan cross-check (🔵, only if `bm` is installed)
+
+```bash
+command -v bm >/dev/null 2>&1 && bm orphans --project {basic_memory_project from .sb-config.json} --json | python3 -c "import json,sys; d=json.load(sys.stdin); z=('sources/','knowledge/','atlas/'); print(d.get('error','') if isinstance(d,dict) else '\n'.join(e['file_path'] for e in d if e['file_path'].startswith(z) and not e['file_path'].endswith('-static.md')))"
+```
+
+Reads the indexed graph where check 2 reads the raw files, so only the filtered paths are comparable. Raw `bm orphans` covers every indexed entity of the project, `LICENSE`, the Python scripts, `docs/`, `archives/`, images, none of which check 2 scans; the filter keeps the three zones it does scan, minus the `-static.md` indexes it also ignores. Anything the filter drops is out of scope, never a finding. Report a finding only for a filtered path absent from check 2's list: the index is stale, or a relation the raw scan resolved failed to parse. Fix: `bm reindex --project {basic_memory_project}` for that divergence, `## Relations` blocks for a genuinely unlinked note, same fix as check 2. If the workspace is not a registered Basic Memory project, the command prints its error instead of a path list: report SKIPPED with that reason.
+
+### 11. Schema validation (🟡, only if `bm` is installed)
+
+```bash
+command -v bm >/dev/null 2>&1 && for t in $(ls basic-memory/schemas/*.md | xargs -n1 basename | sed 's/\.md$//' | grep -v README); do bm schema validate "$t" --strict --project {basic_memory_project from .sb-config.json}; done
+```
+
+The type argument is not optional in practice: omitting it does not validate everything as the help text claims, it reports `No notes found of type 'unknown'` (observed on 0.21.1 and 0.22.1). Hence the loop over the schema names. A type with no note yet answers `No notes found of type '{t}'`, which is normal on a young workspace, not a finding.
+
+Validates every note carrying a `type:` that matches a schema, against both that schema's frontmatter contract and its body contract. Fix: add the missing observation or relation to the note body, or correct the frontmatter field; `bm schema diff {type}` shows where a whole type has drifted from its schema. `--strict` exits with code 1 on validation errors, so this check also runs unattended in a pipeline. If `bm` is absent, the workspace is not a registered Basic Memory project, or nothing is indexed yet, report SKIPPED with that reason.
+
 </checks>
 
 <report>

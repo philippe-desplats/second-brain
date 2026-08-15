@@ -2,57 +2,15 @@
 title: Partner Context
 type: schema
 entity: partner-context
-schema_version: 1
+version: 1
 schema:
-  partner: string, "partner's full name or legal entity name"
-  status(enum):
-  - active
-  - inactive
-  - prospect
-  - ex-partner-now-competitor
-  partnership_type(enum):
-  - commercial
-  - technical
-  - strategic
-  - white-label
-  - mixed
-  last_updated: string, "date of last update in YYYY-MM-DD format"
-  active_tracks(array): string, "concrete collaboration areas"
-  business_referral?: string, "who brings what to whom"
-  contract?(enum):
-  - affiliation
-  - reseller
-  - white-label
-  - co-ownership
-  - informal
-  client_facets?(array): string, "areas where the partner is a client of ours"
-  vendor_facets?(array): string, "areas where we are a client of the partner"
-  legal_form?: string, "legal form, free text, e.g. LLC, sole proprietorship, nonprofit"
-  company_id?: string, "company registration number"
-  vat_id?: string, "VAT or tax identification number"
-  tone?(enum):
-  - professional
-  - friendly
-  - technical
-  - direct
-  - informal
-  - formal
-  addressing?(enum):
-  - informal
-  - formal
-  - variable
-  primary_channel?(enum):
-  - email
-  - slack
-  - teams
-  - whatsapp
-  - video
-  - direct
-  language?(enum):
-  - fr
-  - en
-  - other
-  constraints?(array): string, "specific constraints"
+  active-track?(array): string, "detail of a collaboration area"
+  business-referral?(array): string, "detail of a business flow"
+  contact?(array): string, "key person"
+  preference?(array): string, "additional preference"
+  risk?(array): string, "risk, misalignment, dependency, indirect competition"
+  resells?(array): Service, "service resold"
+  competes_with?(array): Entity, "direct competitor"
   manages?(array): ClientContext, "clients operationally managed by the partner"
   owns?(array): ClientContext, "clients owned by the partner"
   brings_lead?(array): ClientContext, "leads brought by the partner"
@@ -60,6 +18,61 @@ schema:
   affiliated_with?(array): PartnerContext, "other affiliated partners"
 settings:
   validation: strict
+  frontmatter:
+    partner: string, "partner's full name or legal entity name"
+    status(enum):
+    - active
+    - inactive
+    - prospect
+    - ex-partner-now-competitor
+    partnership_type(enum):
+    - commercial
+    - technical
+    - strategic
+    - white-label
+    - mixed
+    last_updated: string, "date of last update in YYYY-MM-DD format"
+    active_tracks(array): string, "concrete collaboration areas"
+    business_referral?: string, "who brings what to whom"
+    contract?(enum):
+    - affiliation
+    - reseller
+    - white-label
+    - co-ownership
+    - informal
+    client_facets?(array): string, "areas where the partner is a client of ours"
+    vendor_facets?(array): string, "areas where we are a client of the partner"
+    legal_form?: string, "legal form, free text, e.g. LLC, sole proprietorship, nonprofit"
+    company_id?: string, "company registration number"
+    vat_id?: string, "VAT or tax identification number"
+    tone?(enum):
+    - professional
+    - friendly
+    - technical
+    - direct
+    - informal
+    - formal
+    addressing?(enum):
+    - informal
+    - formal
+    - variable
+    primary_channel?(enum):
+    - email
+    - slack
+    - teams
+    - whatsapp
+    - video
+    - direct
+    language?(enum):
+    - fr
+    - en
+    - other
+    constraints?(array): string, "specific constraints"
+    manages?(array): ClientContext, "clients operationally managed by the partner"
+    owns?(array): ClientContext, "clients owned by the partner"
+    brings_lead?(array): ClientContext, "leads brought by the partner"
+    co_delivered_with?(array): ClientContext, "clients we co-deliver to"
+    affiliated_with?(array): PartnerContext, "other affiliated partners"
 ---
 
 # Schema, Partner Context
@@ -71,6 +84,8 @@ This schema enforces `partner:` as the identity field (not `client:`).
 ## Location
 
 - `sources/partners/{partner}/CLAUDE.md`
+
+Live example in this repository, `sources/partners/proseware/CLAUDE.md`.
 
 ## Required markdown sections
 
@@ -130,6 +145,7 @@ Full detail in [README.md](README.md), mandatory symmetric pairs section.
 ---
 partner: Alex Martin
 type: partner-context
+schema_version: 1
 status: active
 partnership_type: white-label
 last_updated: 2026-04-08
@@ -162,4 +178,19 @@ Friendly and direct tone, informal address, email and video channel.
 
 ## Partnership nature
 White label type. Alex brings marketing leads, we deliver technically under their brand. Active tracks on white label and prospect sourcing.
+
+## Observations
+
+- [active-track] White label delivery for Alex's marketing clients, running since February 2026
+- [business-referral] Qualified leads brought by Alex, billed by us with a rebate still to define
+- [contact] Alex Martin, sole interlocutor, decides alone
+- [preference] Prefers a short call over a long email when a scope is unclear
+- [risk] Single point of contact, nothing moves while Alex is away
+
+## Relations
+
+- manages [[Bloom (Alex Martin)]]
+- owns [[Bloom (Alex Martin)]]
+- brings_lead [[Taylor Brooks]]
+- brings_lead [[Jordan Kim]]
 ```
