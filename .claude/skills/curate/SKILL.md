@@ -86,6 +86,7 @@ Out of scope: writing or moving files directly; that is the job of the delegated
 | `{candidates_distill}` | list of dicts | step-01 |
 | `{candidates_archive}` | list of dicts | step-01 |
 | `{candidates_moc}` | list of dicts | step-01 |
+| `{candidates_prune}` | list of dicts | step-01 |
 | `{validated_actions}` | list | step-02 |
 | `{executed_actions}` | list | step-03 |
 

@@ -11,10 +11,13 @@ candidate when nobody has touched it and nobody has linked to it for a given
 period. Editing it or linking it from anywhere clears it, so a note stays as
 long as it takes part in the workspace.
 
-Age comes from git when the file is tracked, and falls back to the filesystem
-mtime otherwise. This matters: git does not preserve mtimes, so on a fresh
-clone every note looks brand new and a purely mtime-based run would report
-nothing for months and then flag the whole vault at once.
+Age is the LATER of the last commit date and the filesystem mtime. Neither
+alone is safe: git does not preserve mtimes, so on a fresh clone a purely
+mtime-based run reports nothing for months and then flags the whole vault at
+once; git alone would call a note edited this morning but last committed in
+January untouched since January. Taking the later date means uncommitted work
+counts as touched, which is the conservative direction for a tool whose
+mistakes propose deleting things.
 
 This script proposes. It never deletes, never moves, never edits a note. The
 output is a list for a human to accept or reject, in line with the workspace
@@ -170,7 +173,14 @@ def load_notes(root: Path, git: dict[str, dt.date]) -> list[Note]:
             title=fm.get("title") or path.stem,
             ntype=fm.get("type", ""),
             outgoing={m.group(1).strip() for m in WIKILINK_RE.finditer(text)},
-            mtime=git.get(rel) or dt.date.fromtimestamp(path.stat().st_mtime),
+            # The LATER of the two. Git alone would call a note edited this
+            # morning but last committed in January 'untouched since January',
+            # and a pruning tool that proposes today's work is worse than one
+            # that proposes nothing.
+            mtime=max(
+                git.get(rel, dt.date.min),
+                dt.date.fromtimestamp(path.stat().st_mtime),
+            ),
         ))
     return notes
 

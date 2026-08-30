@@ -177,17 +177,23 @@ questions:
 
 Create `README.md` at the project root. This file serves as **persistent project context** that any skill or future session can read to understand the project immediately.
 
-**Mandatory frontmatter** for Basic Memory indexing (canonical schema `basic-memory/schemas/project-brief.md`, strict validation):
+**Mandatory frontmatter** for Basic Memory indexing (canonical schema `basic-memory/schemas/project-brief.md`, strict validation).
+`type` and `schema_version` are not optional: a brief without them belongs to no schema, so no index and no Bases view will ever list it.
+`topics` carries the slugs a MOC filters on, and `last_updated` is what those views sort by, so a brief without either is invisible to every map of content:
 
 ```markdown
 ---
 title: {Project Name, human-readable}
+type: project-brief
+schema_version: 1
 category: {internal | client | partner | personal}
 client: {Canonical client name}    # only if category=client
 partner: {Canonical partner name}  # only if category=partner
 created: {YYYY-MM-DD}
+last_updated: {YYYY-MM-DD}
 status: active
 owner: {Owner Name}
+topics: [{topic-slug}, {other-topic-slug}]
 ---
 
 # {Project Name, human-readable}

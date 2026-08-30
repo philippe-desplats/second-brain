@@ -34,6 +34,14 @@ Structural changes to this workspace. Content changes (notes, projects) are trac
 - The README no longer implies a cognitive benefit. It states plainly that no evidence supports a second brain improving memory, output or decision quality, and narrows the promise to what is checkable: structured, portable, answerable by an agent.
 - "Enforced by the tooling" nuanced to "applied by the skills that write your notes". Obsidian enforces nothing; the conventions hold because the skills apply them. The weekly review is now presented as the one thing tooling cannot take over.
 
+### Fixed, second verification round
+
+- `propose_pruning.py` took the git commit date unconditionally, so a note edited this morning but last committed in January was proposed as untouched since January. It now takes the later of the commit date and the mtime, which counts uncommitted work as touched.
+- `audit_field_usage.py` tested its skip list against absolute path segments, so any workspace living under a folder named `tmp`, `.git` or `node_modules` audited zero notes and reported "nothing measurable" for all seventeen types.
+- `ops-init-project` wrote a project brief with neither `type` nor `schema_version`, so a project created by the skill belonged to no schema and appeared in no index or view. It now writes both, plus `topics` and `last_updated`, without which no map of content can ever list the project.
+- The pruning group `curate` collects was never stored nor counted: its total stopped at three lists, so a vault with forty pruning candidates and nothing else reported "Clean workspace" and exited. It is now a fourth group, presented in the report and excluded from batch mode, since a batch accept on deletions is the one thing this skill exists to prevent.
+- Four documentation claims that survived the first round: `atlas/home.md` still advertised thirty emails against a limit of fourteen, `.claude/rules/atlas.md` still described a view as "awaiting a reply" after it was renamed for not knowing that, `.claude/rules/frontmatter.md` listed twelve maintenance scripts when there are fourteen, and `generate_indexes.py` still claimed "the same lookups" and described emails as filtered on modification time rather than on their `date` field.
+
 ### Fixed
 
 - Eight dead wiki-links in `atlas/home.md`, five in the index list and three in its `## Relations` section, all pointing at index files nothing produced.

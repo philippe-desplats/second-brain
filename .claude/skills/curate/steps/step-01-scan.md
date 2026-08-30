@@ -176,14 +176,15 @@ Accumulation is the failure mode this whole review exists to fight, and deletion
 python3 basic-memory/scripts/propose_pruning.py --days 180
 ```
 
-A candidate is a note untouched for the period with no inbound and no outbound link. Fold the list into the report as its own group, alongside distill, archive and moc. Present it exactly like the others, as a proposal the owner accepts line by line. An unlinked note is not automatically worthless; wiring it in is as valid an outcome as deleting it.
+A candidate is a note untouched for the period with no inbound and no outbound link. Add its rows to `{candidates_prune}`. Never act on them here: this group is a proposal the owner accepts line by line, exactly like the other three. An unlinked note is not automatically worthless; wiring it in is as valid an outcome as deleting it.
 
 ### 6. Synthesis
 
-Store the 3 lists in the state variables:
+Store the 4 lists in the state variables:
 - `{candidates_distill}`
 - `{candidates_archive}`
 - `{candidates_moc}`
+- `{candidates_prune}`
 
 Present a minimal summary in step-01 (the detail is in step-02):
 
@@ -192,11 +193,12 @@ Curation scan complete:
 - {N1} distill candidates detected
 - {N2} archive candidates detected
 - {N3} MOC candidates detected (new or update)
+- {N4} pruning candidates detected
 
-Total: {N1 + N2 + N3} suggested actions.
+Total: {N1 + N2 + N3 + N4} suggested actions.
 ```
 
-If total = 0:
+If total = 0 (all four counts, a vault full of pruning candidates is not a clean vault):
 
 ```
 Clean workspace, no curation action needed right now.

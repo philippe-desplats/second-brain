@@ -4,14 +4,15 @@ Generate agent-readable static indexes from frontmatter metadata.
 
 Obsidian Bases views render dynamic indexes inside Obsidian. Outside
 Obsidian (Zed, CLI, agents reading raw markdown), a `.base` file is inert
-configuration rather than a readable table. This script materializes the same lookups as static markdown
-files so any consumer sees a real table.
+configuration rather than a readable table. This script materializes the equivalent lookups as static markdown files so
+any consumer sees a real table. Equivalent, not identical: `recent-emails`
+cuts at fourteen days here while its `.base` twin caps at fourteen rows.
 
 Indexes generated (under atlas/maps/):
     clients-active-static.md       all type=client-context with status=active
     partners-active-static.md      all type=partner-context with status=active
     projects-active-static.md      all type=project-brief with status=active
-    recent-emails-static.md        type=email modified in last 14 days
+    recent-emails-static.md        type=email whose `date` is in the last 14 days
     decisions-recent-static.md     observations [decision] in last 90 days
 
 Each generated file is overwriteable on each run. They live next to the

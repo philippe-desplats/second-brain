@@ -32,7 +32,7 @@ Bases views refresh automatically when opened in Obsidian. Bases is a core plugi
 - [[clients-active.base|clients-active]], clients with status: active
 - [[partners-active.base|partners-active]], partners with status: active
 - [[projects-active.base|projects-active]], project briefs with status: active
-- [[recent-emails.base|recent-emails]], the 30 most recent emails
+- [[recent-emails.base|recent-emails]], the most recent emails
 - `decisions-recent`, decisions observed in the last 90 days
 
 `decisions-recent` is static only, and the `-static.md` files are generated rather than committed, so they appear after the first run of `basic-memory/scripts/generate_indexes.py`. It reads `- [decision]` observations from note bodies, which Bases filters cannot reach.

@@ -6,6 +6,8 @@ category: partner
 partner: Proseware
 created: 2026-05-22
 status: active
+last_updated: 2026-06-24
+topics: [lead-sourcing, partnerships]
 owner: Sam Rivera
 ---
 

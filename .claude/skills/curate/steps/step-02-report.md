@@ -45,8 +45,20 @@ next_step: steps/step-03-execute.md
 │ -> {suggested_command}
 └──────────────────────────────────────────────────────────
 
-Total: {N1 + N2 + N3} suggested actions
+🧹 PRUNE ({N4} candidates)
+┌──────────────────────────────────────────────────────────
+│ {age_days}d  {path}
+│ untouched and unlinked since {last_modified}
+│ -> delete, or link it into the workspace
+└──────────────────────────────────────────────────────────
+
+Total: {N1 + N2 + N3 + N4} suggested actions
 ```
+
+The prune group has no delegated skill behind it: there is no `/prune`. Each
+line is decided in place, and the two acceptable outcomes are deleting the note
+or wiring it in. Deleting is a `git rm`, and it happens only on an explicit
+yes, one line at a time, never in batch mode.
 
 ### 2. Report mode, write and stop
 
@@ -62,7 +74,7 @@ All actions are automatically added to `{validated_actions}`. Move to step-03 wi
 
 ### 3. Interactive mode, per-candidate validation
 
-**For each candidate** in the order `candidates_distill` -> `candidates_archive` -> `candidates_moc`:
+**For each candidate** in the order `candidates_distill` -> `candidates_archive` -> `candidates_moc` -> `candidates_prune`:
 
 Present via AskUserQuestion:
 
@@ -88,6 +100,9 @@ questions:
 **If "Edit"**: open a free-text question to adjust, validate the new command, add to `{validated_actions}`.
 
 ### 4. Batch mode (volume > 10 candidates)
+
+**Pruning candidates are excluded from batch mode.** A batch accept on deletions is exactly the failure this skill exists to prevent, so they stay one by one whatever the volume.
+
 
 If total candidates > 10, offer a batch shortcut before individual validation:
 

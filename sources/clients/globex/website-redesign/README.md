@@ -6,6 +6,8 @@ category: client
 client: Globex
 created: 2026-06-12
 status: active
+last_updated: 2026-06-24
+topics: [website-redesign, catalog-search]
 owner: Jane Doe
 ---
 

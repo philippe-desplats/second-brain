@@ -95,8 +95,11 @@ def parse_frontmatter(text: str) -> dict[str, str] | None:
 
 def iter_notes(root: Path):
     for path in sorted(root.rglob("*.md")):
-        rel = path.relative_to(root).as_posix()
-        if any(part in SKIP_DIRS for part in path.parts):
+        rel_path = path.relative_to(root)
+        rel = rel_path.as_posix()
+        # Test the RELATIVE parts: an absolute path containing a segment named
+        # tmp or .git would otherwise silence the whole audit.
+        if any(part in SKIP_DIRS for part in rel_path.parts):
             continue
         if rel.startswith(SKIP_PREFIXES):
             continue
