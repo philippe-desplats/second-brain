@@ -41,3 +41,6 @@ tmp/
 # Obsidian volatile state (personal view state, not portable)
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
+
+# Curation reminders (ephemeral, self-deleting after the review)
+inbox/*-note-curation-reminder.md
