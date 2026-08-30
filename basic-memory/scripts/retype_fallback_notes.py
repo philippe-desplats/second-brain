@@ -55,6 +55,10 @@ def determine_target_type(path: Path) -> str:
         return "deliverable"
     if "transcripts" in parts or "-transcript-" in name or "-recorder-" in name:
         return "transcript"
+    if "clippings" in parts or "-clipping-" in name:
+        return "clipping"
+    if "sessions" in parts or "-session-" in name:
+        return "session"
     if "-research-" in name or "-audit-" in name or "-benchmark-" in name:
         return "research"
     if "-strategy-" in name or "-roadmap-" in name or "-plan-" in name:

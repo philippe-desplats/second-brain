@@ -13,8 +13,8 @@ This is NOT a code project. It is a second brain: a markdown workspace for captu
 | `CLAUDE.md` | Canonical instructions: owner profile, zones, filing rules, conventions |
 | `.sb-config.json` | Machine-readable workspace configuration |
 | `.claude/rules/*.md` | Detailed rules: frontmatter, emails, entities, knowledge, atlas, communication |
-| `.claude/skill-registry.md` | Catalog of the 13 workflow skills and when to use each |
-| `basic-memory/schemas/*.md` | The 15 canonical frontmatter schemas every note conforms to |
+| `.claude/skill-registry.md` | Catalog of the 14 workflow skills and when to use each |
+| `basic-memory/schemas/*.md` | The 17 canonical frontmatter schemas every note conforms to |
 | `sources/{zone}/{entity}/CLAUDE.md` | Per-entity context and communication preferences; read before writing anything that entity will see |
 
 If `CLAUDE.md` says the profile is NOT CONFIGURED, stop and tell the owner to run the setup skill (`.claude/skills/sb-init/`) first.

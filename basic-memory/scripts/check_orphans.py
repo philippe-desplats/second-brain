@@ -80,6 +80,23 @@ def extract_links(text: str) -> set[str]:
     return {m.group(1).strip() for m in WIKILINK_RE.finditer(text)}
 
 
+def is_journal(text: str) -> bool:
+    """True when the note declares note_type: journal in its frontmatter.
+
+    A daily journal entry legitimately links to nothing. Flagging it would fill
+    the report with noise on any workspace that actually journals, so the whole
+    type is out of scope rather than each entry having to earn an exemption.
+    """
+    if not text.startswith("---"):
+        return False
+    for line in text.split("\n")[1:]:
+        if line == "---":
+            break
+        if line.startswith("note_type:"):
+            return line.partition(":")[2].strip().strip('"').strip("'") == "journal"
+    return False
+
+
 def load_notes(root: Path) -> list[Note]:
     notes: list[Note] = []
     for path in root.rglob("*.md"):
@@ -89,6 +106,8 @@ def load_notes(root: Path) -> list[Note]:
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
+            continue
+        if is_journal(text):
             continue
         title = extract_title(text, path.stem)
         outgoing = extract_links(text)

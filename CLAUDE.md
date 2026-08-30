@@ -33,6 +33,8 @@ Before answering any question about an entity, a project, or past work:
 2. **Then read the files** for authoritative content: the entity's `CLAUDE.md`, then the relevant project folder, then `sources/internal/CONTEXT.md` for business context.
 3. If no local data exists, say so explicitly and ask whether to create a context file.
 
+**Resuming work on a project**: read its last session memory first, `sources/{zone}/{entity}/{project}/sessions/` sorted by name, most recent last, or `search_notes` with `note_types=["session"]`. It carries what was done, what is next, and what is blocked, written by `/close-session` at the end of the previous session. Everything else in the project is context; that file is the state.
+
 **NEVER** invent context. When the user mentions a name or asks "what did we do for X", always search local files before responding.
 
 ## File organization: three zones
@@ -83,11 +85,13 @@ This rule governs **entity** roots. `sources/internal/` is a zone root, not an e
 
 When a skill produces a deliverable, follow `.claude/skills/references/save-conventions.md` for path resolution, subfolder mapping, and naming.
 
-Subfolder conventions: `emails/` for correspondence, `meetings/` for meeting notes, `transcripts/` for transcripts, `deliverables/` for final deliverables; everything else (research, brainstorm, note, strategy) at the project root. Do NOT pre-create empty subdirectories.
+Subfolder conventions: `emails/` for correspondence, `meetings/` for meeting notes, `transcripts/` for transcripts, `clippings/` for captured web pages, `sessions/` for end-of-session memories, `deliverables/` for final deliverables; everything else (research, brainstorm, note, strategy) at the project root. Do NOT pre-create empty subdirectories.
 
 ### File naming
 
-`YYYY-MM-DD-{type}-slug.md` with types: `research`, `brainstorm`, `writing`, `meeting`, `strategy`, `note`.
+`YYYY-MM-DD-{type}-slug.md` with types: `research`, `brainstorm`, `writing`, `meeting`, `strategy`, `note`, `clipping`, `session`.
+
+The daily journal is a `note` named `YYYY-MM-DD-note-journal.md`, one per day, in `sources/personal/journal/` (or `sources/internal/journal/` when the `personal` zone was pruned). Obsidian's Daily notes plugin is preconfigured to write exactly that.
 
 Emails: `YYYY-MM-DD-{seq}-{direction}-slug.md` where `seq` is the sequential number for the day (`01`, `02`, ...) and `direction` is `out` (sent), `in` (received), or `reply`. See `.claude/rules/emails.md` and `templates/email-template.md`.
 

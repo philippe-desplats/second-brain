@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "0.1.0",
+  "name": "Second brain clipping",
+  "behavior": "create",
+  "noteNameFormat": "{{date|date:\"YYYY-MM-DD\"}}-clipping-{{title|kebab|safe_name}}",
+  "path": "inbox",
+  "noteContentFormat": "# {{title}}\n\n> Captured from [{{site}}]({{url}}) on {{date|date:\"YYYY-MM-DD\"}}. Personal working copy, kept for retrieval.\n\n## Observations\n\n<!-- [quote] a passage worth keeping verbatim -->\n<!-- [takeaway] what this changes for us, in our own words -->\n<!-- [question] a question this raises -->\n\n## Relations\n\n<!-- about [[Topic]], client [[Client]], cited_in [[Deliverable]] -->\n\n---\n\n## Source\n\n{{content}}\n",
+  "properties": [
+    {
+      "name": "title",
+      "value": "{{title}}",
+      "type": "text"
+    },
+    {
+      "name": "type",
+      "value": "clipping",
+      "type": "text"
+    },
+    {
+      "name": "schema_version",
+      "value": "1",
+      "type": "number"
+    },
+    {
+      "name": "date",
+      "value": "{{date|date:\"YYYY-MM-DD\"}}",
+      "type": "date"
+    },
+    {
+      "name": "source_url",
+      "value": "{{url}}",
+      "type": "text"
+    },
+    {
+      "name": "author",
+      "value": "{{author}}",
+      "type": "text"
+    },
+    {
+      "name": "published",
+      "value": "{{published|date:\"YYYY-MM-DD\"}}",
+      "type": "date"
+    },
+    {
+      "name": "site",
+      "value": "{{site}}",
+      "type": "text"
+    },
+    {
+      "name": "status",
+      "value": "unread",
+      "type": "text"
+    },
+    {
+      "name": "tags",
+      "value": "clipping",
+      "type": "multitext"
+    }
+  ],
+  "triggers": []
+}

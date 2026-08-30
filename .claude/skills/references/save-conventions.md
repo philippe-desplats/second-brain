@@ -45,6 +45,7 @@ Universal save logic for all skills that produce deliverables. Every skill that 
 | Email (new, reply) | `emails/` | `email` | see Email Convention below |
 | Meeting notes / minutes | `meetings/` | `meeting` | `meeting` |
 | Raw transcript | `transcripts/` | `transcript` | `transcript` |
+| Session memory (end of a working session) | `sessions/` | `session` | `session` |
 | Contract / quote / signed deliverable | `deliverables/` | `deliverable` | `writing` |
 | Research / audit / benchmark / watch | project root | `research` | `research` |
 | Brainstorm / ideation | project root | `brainstorm` | `brainstorm` |

@@ -97,6 +97,10 @@ def detect_target_type(path: Path) -> str | None:
         return "deliverable"
     if "transcripts" in ancestors:
         return "transcript"
+    if "clippings" in ancestors:
+        return "clipping"
+    if "sessions" in ancestors:
+        return "session"
 
     # Dated prefix patterns
     if DATED_PREFIX.match(stem):
@@ -114,6 +118,10 @@ def detect_target_type(path: Path) -> str | None:
             return "writing"
         if after.startswith("note-") or after == "note":
             return "note"
+        if after.startswith("clipping-") or after == "clipping":
+            return "clipping"
+        if after.startswith("session-") or after == "session":
+            return "session"
         # Email legacy patterns outside emails/ folder still get caught above
         # Sequential email pattern `01-out-*` etc.
         m = re.match(r"^\d{2}-(out|in|reply)-", after)

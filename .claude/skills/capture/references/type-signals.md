@@ -21,6 +21,15 @@ Match the raw content against these signal sets, strongest first. One dominant s
 - Attendee list near the top; dates and owners attached to actions
 - Distinguish from transcript: meeting = digested structure; transcript = verbatim flow
 
+## clipping
+
+- Frontmatter already carries `type: clipping` and a `source_url`: the Web Clipper wrote it, nothing to detect, file it as is
+- A bare URL, or a URL plus a one-line reason for keeping it
+- Prose in a third-party voice: an article body, a documentation page, a forum thread, with the owner absent from it
+- Distinguish from research: `research` is what the owner produced about sources, a `clipping` IS the source
+
+**On a bare URL**: fetch the page if a fetch tool is available, otherwise ask the owner to paste the content. Never reconstruct a page from memory; a clipping that does not match its `source_url` is worse than no clipping.
+
 ## research
 
 - External sources: URLs, citations, tool comparisons, benchmark tables

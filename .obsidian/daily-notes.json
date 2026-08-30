@@ -1,0 +1,5 @@
+{
+  "folder": "sources/personal/journal",
+  "format": "YYYY-MM-DD-[note-journal]",
+  "template": "templates/journal-template.md"
+}

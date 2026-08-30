@@ -18,6 +18,7 @@ Central router for the workspace skills. Consult this table before invoking any 
 | Turn notes or a transcript into meeting minutes | `/ops-meeting-minutes` |
 | Draft a commercial proposal | `/ops-proposal` |
 | Start a new project or work session with proper structure | `/ops-init-project` |
+| Close a working session and record where it stopped | `/close-session` |
 | Get a dashboard of the week's activity | `/ops-weekly-pulse` |
 
 ## Maintenance cycle
@@ -40,6 +41,7 @@ Central router for the workspace skills. Consult this table before invoking any 
 | `ops-meeting-minutes` | "make minutes from this", notes or `@transcript`, `-e {entity}` `-i` internal | raw notes, transcript, or recap | client-facing or internal minutes in `meetings/` with meeting frontmatter | none |
 | `ops-proposal` | "proposal for X", `{entity} - {need}` | entity + scope interview | structured proposal (understanding, approach, deliverables, timeline, investment) with writing frontmatter; never invents pricing | none |
 | `ops-init-project` | "new project for X", session bootstrap | intent description | project folder + README/context files from schemas | none |
+| `close-session` | "checkpoint", "close the session", "save where we are", `-p {project}` `-c` `-a` | the session itself | session memory in `{project}/sessions/` with done, next, blockers and decisions | none |
 | `ops-weekly-pulse` | "what happened this week" | scan of the configured zones | weekly dashboard in `sources/internal/weekly-pulse/` | none |
 
 ## Conventions every skill follows

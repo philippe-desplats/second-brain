@@ -19,7 +19,7 @@ next_step: steps/step-02-file.md
 
 ### 1. Detect the content type
 
-If `{type_override}` is set, use it. Otherwise load `references/type-signals.md` and match `{raw_content}` against the signal matrix. Every capture resolves to exactly one canonical schema type (typical inbound: `email`, `transcript`, `meeting`, `note`, `research`, `brainstorm`).
+If `{type_override}` is set, use it. Otherwise load `references/type-signals.md` and match `{raw_content}` against the signal matrix. Every capture resolves to exactly one canonical schema type (typical inbound: `email`, `transcript`, `meeting`, `clipping`, `note`, `research`, `brainstorm`).
 
 Confidence rule: one dominant signal set → proceed; two plausible types → ask with AskUserQuestion (two options plus Other).
 
@@ -29,6 +29,7 @@ If `{entity_override}` is set, verify `sources/*/{entity_override}/` exists and 
 
 1. List candidate entities: `ls -d sources/*/*/` (entity zones present on disk, e.g. clients and partners when kept; internal and personal are project-based, not entity-based).
 2. Match signals from the content against each entity's `CLAUDE.md`: entity name, contact names, email domains, project vocabulary.
+   **A `clipping` carries none of those signals**: an external article never names your client. Match it on subject instead, against the entity's sector and its projects' vocabulary, and treat a subject match as confident only when one entity clearly fits. Otherwise the clip goes to a watch project (`sources/internal/watch/`) or stays in `inbox/`. Filing a clip under the wrong client is worse than leaving it unfiled: it will surface in that client's context forever.
 3. Decide the zone:
    - Matched entity → its zone (`clients`, or `partners` when that zone exists)
    - Owner-internal content (strategy, infra, own business) → `internal`
@@ -53,9 +54,12 @@ ls -d sources/{zone}/{entity}/*/ 2>/dev/null
 | email | `direction` (in/out/reply, from the header orientation relative to the owner), `from`, `to[]`, `cc[]`, `subject`, sent date and time |
 | meeting | `participants[]`, meeting date, format (notes vs report) |
 | transcript | `participants[]`, recording date, `duration` if visible, `language` |
+| clipping | `source_url`, `author`, `published`, `site` from the page or its frontmatter; `date` is the capture date |
 | research / brainstorm / note | topic keywords for the slug and `topics[]` |
 
 `{item_date}` = the date the artifact happened (email sent date, meeting date), NOT today, unless nothing is detectable; then today with a note.
+
+**One exception, `clipping`.** For a captured page the event IS the capture, so `{item_date}` is today and the source's own publication date goes to the `published` field. Filing an article under its publication date would scatter a batch of clips across months and lose the only date that says when it entered the workspace.
 
 ### 5. Show the classification card
 

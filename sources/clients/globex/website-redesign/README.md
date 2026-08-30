@@ -35,12 +35,16 @@ website-redesign/
   README.md          this brief
   emails/            client correspondence
   meetings/          kickoff and sync minutes
+  clippings/         external pages captured for this project
+  sessions/          end-of-session memories, the point of resumption
 ```
 
 ## Decisions and notes
 
 - 2026-06-16: scope confirmed by email, mobile-first is the priority
 - 2026-06-22: kickoff held, three anchor decisions locked (see the kickoff minutes)
+- 2026-06-23: content inventory done, 31 dead pages pending client arbitration
+- 2026-06-24: search research suggests reference-first lookup, to test with the buyer panel
 
 ## Observations
 

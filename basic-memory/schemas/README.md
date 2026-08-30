@@ -11,14 +11,14 @@ status: active
 
 This folder contains the **canonical Picoschema schemas** that describe the note types of the workspace. Each schema formalizes a pattern the second brain relies on, so the AI agent and the maintenance scripts share one vocabulary.
 
-**There are 15 schemas today.** This sentence is the only place that number is written down, so it is the one line to update when a schema is added or removed.
+**There are 17 schemas today.** This sentence is the only place that number is written down, so it is the one line to update when a schema is added or removed.
 
 This README doubles as the design manifest: the type catalog, the strict/warn philosophy, the design decisions, the relation vocabulary, and the mandatory symmetric pairs.
 
 ## Principle, mixed warn and strict
 
 - **`validation: strict`** (stable context and entity types), client-context, partner-context, person, service, topic, project-brief. These types have settled shapes, so records must validate.
-- **`validation: warn`** (operational types), meeting, transcript, email, research, brainstorm, strategy, writing, note, deliverable. Warnings are reported without blocking.
+- **`validation: warn`** (operational types), meeting, transcript, email, clipping, research, brainstorm, strategy, writing, note, session, deliverable. Warnings are reported without blocking.
 
 Moving additional operational types to strict is optional and conditioned on the stabilization of your writing practices. This follows the "structure grows with you" philosophy: let patterns emerge and flag inconsistencies without blocking, then tighten to strict once a type has settled.
 
@@ -40,11 +40,13 @@ Entity-typed fields such as `about` appear in both, written in the frontmatter a
 | [meeting.md](meeting.md) | Meeting, workshop or call report |
 | [transcript.md](transcript.md) | Raw transcript from a recording |
 | [email.md](email.md) | Incoming, outgoing or reply email |
+| [clipping.md](clipping.md) | External page captured from the web |
 | [research.md](research.md) | Research document, audit, benchmark, monitoring |
 | [brainstorm.md](brainstorm.md) | Ideation session, solo or collective |
 | [strategy.md](strategy.md) | Action plan, roadmap, architecture |
 | [writing.md](writing.md) | Written content (quote, contract, newsletter, post, bio, etc.) |
 | [note.md](note.md) | Short capture, summary, memo |
+| [session.md](session.md) | End-of-session memory, the point of resumption |
 | [deliverable.md](deliverable.md) | Finalized deliverable, commercial or internal |
 
 ### Context schemas (zone-specific)
@@ -82,7 +84,9 @@ Content requirements diverge structurally between clients (`Communication prefer
 
 ### D2, `writing` kept with an extended enum
 
-An ambiguous type historically, disciplined by an extended `writing_type(enum)` (quote, contract, newsletter, post, outline, proposal, article, pitch-deck, email-signature, bio, landing-copy, video-script, specification, terms-of-sale, legal-notice, privacy-policy, journal, letter, other).
+An ambiguous type historically, disciplined by an extended `writing_type(enum)` (quote, contract, newsletter, post, outline, proposal, article, pitch-deck, email-signature, bio, landing-copy, video-script, specification, terms-of-sale, legal-notice, privacy-policy, letter, other).
+
+`journal` was removed from this enum in 0.4.0 and moved to `note_type`. `writing` covers content drafted to be sent or published; a daily journal entry is neither, which is why the value sat unused for as long as it lived here.
 
 ### D3, `basic-memory/` location
 
@@ -142,6 +146,16 @@ field?(enum): [values]    -> observation whose value is in the set
 ```
 
 Every entry in a `schema:` block stays optional, hence the `?` on all of them. An observation is a judgement call about what a note happens to contain, never a hard requirement, and marking one required would turn every note already on disk into a validation failure. That matters most on the strict schemas, where a finding is an error rather than a warning. Evidence sits in `basic_memory/schema/parser.py` and `basic_memory/schema/validator.py`.
+
+### D11, `session` and `clipping` are their own types
+
+Both were added in 0.4.0, and both could have been squeezed into `note`. Neither should have been.
+
+`session` records the end of a working session so the next one resumes from a point instead of a search. Basic Memory filters by the `type:` field, through `note_types` in `search_notes`, and never by an inner field such as `note_type`. A session filed as a `note` would therefore be invisible to the one query that justifies writing it. The retrieval path decides the type, not the size of the file.
+
+`clipping` holds a page someone else wrote. It carries four fields no other type has (`source_url`, `author`, `published`, `site`), and it is fed automatically by the Obsidian Web Clipper through `templates/obsidian-web-clipper.json`, which needs a stable target schema. The line it draws is the same one `transcript` draws against `meeting`: raw external material on one side, your own worked output on the other.
+
+The journal took the opposite decision in the same release. It is a `note` with `note_type: journal`, because nothing about a daily entry needs its own retrieval path or its own fields. The test is not "does this feel distinct", it is "does anything break if it stays a note".
 
 ## Relation vocabulary
 

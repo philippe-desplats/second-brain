@@ -22,6 +22,7 @@ settings:
     - context
     - cheatsheet
     - reading
+    - journal
     - history
     - checkpoint
     - reminder
@@ -70,11 +71,24 @@ Use `note` when no other type fits. If the content grows (more than 50 lines) or
 - `context`, brief project context
 - `cheatsheet`, personal reminder or quick reference
 - `reading`, reading note on an article, book, or doc
+- `journal`, dated daily entry, quick captures of the day
 - `history`, summarized history of exchanges
 - `checkpoint`, status point of a project
 - `reminder`, reminder of an action to take
 - `todo`, operational checklist
 - `other`, case not covered
+
+## Daily journal
+
+A journal entry is a `note` with `note_type: journal`, one file per day, filed in its own project folder:
+
+`sources/personal/journal/YYYY-MM-DD-note-journal.md`, or `sources/internal/journal/` when the `personal` zone was pruned at setup.
+
+Obsidian users get this for free: the Daily notes core plugin is preconfigured in `.obsidian/daily-notes.json` to write at that path, with that filename, from `templates/journal-template.md`. The folder ships with the workspace and must keep existing, since Obsidian does not create a missing daily-notes folder; it refuses with `Folder "..." not found`. Everyone else creates the file by hand or through `/capture`.
+
+The `category` field is deliberately absent from the journal template. It is optional, and an absent field beats a wrong one when the journal may live under either zone.
+
+An empty journal entry is valid. The point of the journal is a place to put a thought in five seconds, not a form to fill.
 
 ## Expected observations
 

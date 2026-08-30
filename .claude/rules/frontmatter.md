@@ -1,14 +1,14 @@
 # Frontmatter, Basic Memory manifesto
 
-This file is the **single entry point** for everything related to the YAML frontmatter of the workspace's markdown files. It points to the 15 Picoschema schemas that are the **canonical source** of truth for each note type.
+This file is the **single entry point** for everything related to the YAML frontmatter of the workspace's markdown files. It points to the 17 Picoschema schemas that are the **canonical source** of truth for each note type.
 
 ## Fundamental rule
 
-**Every new markdown file must have YAML frontmatter conforming to one of the 15 schemas in `basic-memory/schemas/`.**
+**Every new markdown file must have YAML frontmatter conforming to one of the 17 schemas in `basic-memory/schemas/`.**
 
 Inside a schema, the frontmatter contract lives in its `settings.frontmatter:` block, while the top-level `schema:` block describes the note body.
 
-## The 15 canonical types
+## The 17 canonical types
 
 ### Context schemas (2, strict validation)
 
@@ -31,18 +31,20 @@ Inside a schema, the frontmatter contract lives in its `settings.frontmatter:` b
 | topic | [topic.md](../../basic-memory/schemas/topic.md) | `atlas/topics/{slug}.md` |
 | service | [service.md](../../basic-memory/schemas/service.md) | `atlas/services/{slug}.md` |
 
-### Operational schemas (9, warn validation)
+### Operational schemas (11, warn validation)
 
 | Type | Schema | Location | Key observations |
 |---|---|---|---|
 | meeting | [meeting.md](../../basic-memory/schemas/meeting.md) | `{entity}/{project}/meetings/` | `[decision]`, `[action]`, `[risk]`, `[milestone]`, `[question]` |
 | transcript | [transcript.md](../../basic-memory/schemas/transcript.md) | `{entity}/{project}/transcripts/` | Raw meeting or recording transcript |
 | email | [email.md](../../basic-memory/schemas/email.md) | `{entity}/{project}/emails/` | `[decision]`, `[action]`, `[commitment]`, `[question]` |
+| clipping | [clipping.md](../../basic-memory/schemas/clipping.md) | `{entity}/{project}/clippings/` | `[quote]`, `[takeaway]`, `[question]` |
 | research | [research.md](../../basic-memory/schemas/research.md) | Project root | `[finding]`, `[source]`, `[question]`, `[hypothesis]`, `[recommendation]` |
 | brainstorm | [brainstorm.md](../../basic-memory/schemas/brainstorm.md) | Project root | `[idea]`, `[question]`, `[pro]`, `[con]`, `[decision]` |
 | strategy | [strategy.md](../../basic-memory/schemas/strategy.md) | Project root | `[goal]`, `[milestone]`, `[decision]`, `[risk]`, `[kpi]` |
 | writing | [writing.md](../../basic-memory/schemas/writing.md) | Project root | `[claim]`, `[proof]`, `[cta]` |
 | note | [note.md](../../basic-memory/schemas/note.md) | Project root or `notes/` | free categories |
+| session | [session.md](../../basic-memory/schemas/session.md) | `{entity}/{project}/sessions/` | `[done]`, `[next]`, `[blocker]`, `[decision]`, `[open-question]` |
 | deliverable | [deliverable.md](../../basic-memory/schemas/deliverable.md) | `{entity}/{project}/deliverables/` | `[commitment]`, `[clause]`, `[item]`, `[risk]` |
 
 ## Decision matrix, which type to choose?
@@ -58,10 +60,12 @@ Inside a schema, the frontmatter contract lives in its `settings.frontmatter:` b
 | Is it a structured meeting report? | `meeting` |
 | Is it a raw transcript (recording, call)? | `transcript` |
 | Is it an email sent or received? | `email` |
+| Is it a web page or article captured from outside? | `clipping` |
 | Is it sourced research (audit, benchmark, monitoring)? | `research` |
 | Is it an ideation session? | `brainstorm` |
 | Is it an action plan, roadmap, or strategy? | `strategy` |
 | Is it content being drafted? | `writing` |
+| Is it the memory of a working session, what got done and what is next? | `session` |
 | Is it a finalized deliverable (signed contract, sent quote, invoice)? | `deliverable` |
 | None of the above types fit? | `note` (catch-all) |
 
@@ -130,7 +134,7 @@ For the most common categories, see the type table above. The categories expecte
 
 ## References
 
-- `basic-memory/schemas/README.md`, design manifest: the 15 schemas, relation vocabulary, symmetric pairs, design decisions
+- `basic-memory/schemas/README.md`, design manifest: the 17 schemas, relation vocabulary, symmetric pairs, design decisions
 - `.claude/rules/emails.md`, `.claude/rules/entities.md`, specific process rules
 - `.claude/rules/communication.md`, tone and writing rules
 - Basic Memory documentation, https://docs.basicmemory.com

@@ -234,6 +234,7 @@ Read and internalize all relevant context files:
 - `sources/internal/CONTEXT.md` (already loaded from step-01)
 - `sources/clients/{entity_name}/CLAUDE.md` or `sources/partners/{entity_name}/CLAUDE.md` (if client or partner project)
 - Any existing files in the project folder (if resuming a project)
+- **The last session memory, if the project has one.** Run `ls -1 {project_path}/sessions/ 2>/dev/null | sort | tail -1`, read that file, and open the session by restating its first `[next]` item to the user. That file is the point of resumption written by `/close-session` at the end of the previous session; skipping it means re-deriving state someone already wrote down, which is the exact cost the session memory exists to remove.
 - Any existing related files in `sources/clients/`, `sources/partners/`, `sources/internal/`, or `sources/personal/` (search by project name or topic)
 
 ### 5. Search for Additional Context

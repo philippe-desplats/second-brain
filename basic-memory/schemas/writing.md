@@ -33,7 +33,6 @@ settings:
     - terms-of-sale
     - legal-notice
     - privacy-policy
-    - journal
     - letter
     - other
     category?(enum):

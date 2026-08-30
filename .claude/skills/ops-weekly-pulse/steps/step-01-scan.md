@@ -98,7 +98,9 @@ Type resolution rules (apply in order, first match wins):
 2. **If file lives in a `meetings/` subfolder** -> type = `meeting`
 3. **If file lives in a `deliverables/` subfolder** -> type = `deliverable`
 4. **If file lives in a `transcripts/` subfolder** -> type = `transcript`
-5. **Otherwise, by filename prefix after `YYYY-MM-DD-`**:
+5. **If file lives in a `clippings/` subfolder** -> type = `clipping`
+6. **If file lives in a `sessions/` subfolder** -> type = `session`
+7. **Otherwise, by filename prefix after `YYYY-MM-DD-`**:
    - `writing-` -> `writing` (deprecated, only in legacy files outside emails/)
    - `reply-` -> `email` (legacy)
    - `meeting-` -> `meeting`
@@ -106,6 +108,8 @@ Type resolution rules (apply in order, first match wins):
    - `brainstorm-` -> `brainstorm`
    - `strategy-` -> `strategy`
    - `note-` -> `note`
+   - `clipping-` -> `clipping`
+   - `session-` -> `session`
    - Any digit prefix like `01-out-`, `02-in-`, `03-reply-` (canonical email format) -> `email`
 
 Group by category:
@@ -116,6 +120,8 @@ Group by category:
 | `meeting` | Meetings / minutes |
 | `deliverable` | Deliverables |
 | `transcript` | Transcripts |
+| `clipping` | Clippings |
+| `session` | Session memories |
 | `research` | Research / Audit |
 | `brainstorm` | Brainstorm |
 | `strategy` | Strategy |

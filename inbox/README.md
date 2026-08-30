@@ -9,3 +9,11 @@ A buffer for captures that are not yet classified. When you grab something quick
 - **Classify with the three questions.** Raw artifact -> `sources/`. Distilled reusable knowledge -> `knowledge/`. Index, map, or entity -> `atlas/`.
 - The `/curate` skill flags stale inbox items during its review pass.
 - This is a staging area, not a filing zone. Do not build structure or subfolders here.
+
+## Web clippings land here
+
+`templates/obsidian-web-clipper.json` is a ready-made template for the [Obsidian Web Clipper](https://obsidian.md/clipper) browser extension. Import it once (extension settings, Templates, drag the file in) and every page you clip arrives here as `YYYY-MM-DD-clipping-slug.md`, already carrying `type: clipping` and its `source_url`, conforming to `basic-memory/schemas/clipping.md`.
+
+From there they follow the same 7-day rule as everything else: `/capture -i` files them into the project they belong to, under a `clippings/` subfolder. A clip with no project goes to a watch project, for example `sources/internal/watch/clippings/`, never to a zone root.
+
+No Obsidian? Paste the URL into `/capture` and it does the same job, one page at a time.
