@@ -171,12 +171,13 @@ subtype: runbook
 status: active
 date: YYYY-MM-DD
 topics: [incident, infra, monitoring]
-severity: routine | high | critical
 ---
 
 # Runbook, {Procedure}
 
 _Distilled from {N} real interventions._
+
+- [severity] routine | high | critical
 
 ## When to trigger
 
@@ -242,7 +243,6 @@ schema_version: 1
 subtype: decision
 status: active
 date: YYYY-MM-DD
-decision_status: accepted | superseded | deprecated
 topics: [topic1, topic2]
 ---
 

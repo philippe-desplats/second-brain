@@ -20,7 +20,7 @@ Small fixes (typos, docs, obvious bugs) can go straight to a pull request. For l
 This repository is a workspace template, not application code. The quality bar is about conventions staying coherent:
 
 - **Skills** follow the existing structure: a `SKILL.md` entry point, `steps/*.md` chained by `next_step`, explicit execution rules, human validation before any write. Register new skills in `.claude/skill-registry.md`.
-- **Schemas** in `basic-memory/schemas/` are the single source of truth for frontmatter. A schema change must update the decision matrix in `.claude/rules/frontmatter.md` and any template that uses it.
+- **Schemas** in `basic-memory/schemas/` are the single source of truth for frontmatter. A schema change must update the decision matrix in `.claude/rules/frontmatter.md` and any template that uses it. `check_consistency.py` catches the templates you forgot: it validates every frontmatter example inside a skill against the schemas, which is how three of them were found writing notes that belonged to no type.
 - **Scripts** in `basic-memory/scripts/` are Python 3 standard library only, no dependencies, and must degrade gracefully on pruned zones (missing `sources/partners/` must never crash them). Each one stays runnable on its own, so a helper two scripts need is duplicated rather than extracted: `parse_frontmatter_yaml` exists in both `generate_indexes.py` and `auto_link_entities.py` and the two copies must stay identical.
 - **Placeholders**: demo and example content uses fictional names only (Acme for the owner organization, Globex and Initech for clients, Jane Doe for people, `example.com` domains). Never use real people, companies, or paths.
 - **Language**: structural files (skills, rules, schemas, templates, docs) are written in English. No em dashes in prose.
@@ -29,11 +29,16 @@ This repository is a workspace template, not application code. The quality bar i
 - **No AI or vendor attribution** in commits, code comments, or documentation.
 - **Privacy first**: nothing in this repository may ever contain real client data, credentials, or tokens. `.mcp.json` stays gitignored; only `.mcp.json.example` is tracked.
 
+## Known debt
+
+Before reporting something as a bug, check [`docs/known-debt.md`](docs/known-debt.md). It lists what is wrong on purpose, what it costs, and what fixing it would break. An entry there has already been arbitrated; reopening one is a decision, not a chore.
+
 ## Local testing
 
 There is no build. To validate a change:
 
 ```sh
+python3 basic-memory/scripts/check_consistency.py
 python3 basic-memory/scripts/check_orphans.py
 python3 basic-memory/scripts/check_symmetric_relations.py --check
 python3 basic-memory/scripts/check_double_frontmatter.py

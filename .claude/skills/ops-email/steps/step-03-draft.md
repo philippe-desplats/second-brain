@@ -126,6 +126,7 @@ Save after approval, following `.claude/skills/references/save-conventions.md` a
 ```yaml
 ---
 type: email
+schema_version: 1
 date: YYYY-MM-DD
 time: "HH:MM"
 seq: 1

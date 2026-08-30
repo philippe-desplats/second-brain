@@ -65,6 +65,20 @@ Fix: `git mv` to the conventional path/name; `/capture` files things correctly g
 
 Fix: `python3 basic-memory/scripts/retype_files.py --dry-run` then `--apply`, or edit manually.
 
+### 5bis. Workspace self-consistency (🔴)
+
+```bash
+python3 basic-memory/scripts/check_consistency.py
+```
+
+Three classes, all of them silent failures rather than errors:
+
+- a skill template that emits frontmatter the schemas reject, so a note written from it belongs to no type and disappears from every index and every view
+- a Bases view reading a property no schema declares, so the column stays empty or the filter never matches, while the view still renders and looks fine
+- a wiki-link resolving to nothing
+
+Exit code 1 means findings. Nothing here is auto-fixable: each one is a decision about which side is wrong, the template or the schema.
+
 ### 6. Index freshness (🟡)
 
 - For each `atlas/maps/*-static.md`: read the `generated:` frontmatter date. Older than 7 days → stale.

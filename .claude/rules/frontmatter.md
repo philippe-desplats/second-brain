@@ -140,7 +140,7 @@ Check via `python3 basic-memory/scripts/check_symmetric_relations.py --check`.
 
 ## Maintenance scripts
 
-In `basic-memory/scripts/` (14 scripts):
+In `basic-memory/scripts/` (15 scripts):
 
 - `check_double_frontmatter.py`, detects files with double frontmatter (Basic Memory bug to work around)
 - `fix_double_frontmatter.py`, automatically fixes doubles by merging them
@@ -153,6 +153,7 @@ In `basic-memory/scripts/` (14 scripts):
 - `check_symmetric_relations.py`, audits symmetric pairs
 - `check_orphans.py`, flags notes with no inbound or outbound relations
 - `generate_indexes.py`, regenerates the `*-static.md` indexes in `atlas/maps/`
+- `check_consistency.py`, validates skill frontmatter templates against the schemas, flags properties a Bases view reads but no schema declares, and reports dead wiki-links
 - `audit_field_usage.py`, measures the real fill rate of every declared schema field and surfaces fields used in notes but declared nowhere
 - `propose_pruning.py`, proposes notes untouched and unlinked for a period, for human validation; never deletes
 - `curation_reminder.py`, drops a reminder note in `inbox/` and fires a best effort OS notification; scheduled via launchd, cron, or Task Scheduler, idempotent at one reminder per day, and never runs the assistant itself

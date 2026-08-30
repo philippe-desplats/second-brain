@@ -75,6 +75,7 @@ YYYY-MM-DD-{seq}-{direction}-{slug}.md
 ```yaml
 ---
 type: email
+schema_version: 1
 date: YYYY-MM-DD
 time: "HH:MM"
 seq: 1

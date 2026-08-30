@@ -43,6 +43,7 @@ Create `sources/internal/second-brain-charter.md` from `{charter}`:
 ---
 title: Second brain charter
 type: strategy
+schema_version: 1
 status: active
 date: {today}
 ---
@@ -85,6 +86,7 @@ Create `sources/internal/CONTEXT.md`:
 ---
 title: {org_name}, company context
 type: note
+schema_version: 1
 status: active
 date: {today}
 ---

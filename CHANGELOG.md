@@ -34,6 +34,11 @@ Structural changes to this workspace. Content changes (notes, projects) are trac
 - The README no longer implies a cognitive benefit. It states plainly that no evidence supports a second brain improving memory, output or decision quality, and narrows the promise to what is checkable: structured, portable, answerable by an agent.
 - "Enforced by the tooling" nuanced to "applied by the skills that write your notes". Obsidian enforces nothing; the conventions hold because the skills apply them. The weekly review is now presented as the one thing tooling cannot take over.
 
+### Added, self-consistency
+
+- `basic-memory/scripts/check_consistency.py`, wired into `/sb-doctor` and the local test suite. It catches the three defect classes that recurred across every manual review: a skill template emitting frontmatter the schemas reject, a Bases view reading a property no schema declares, and a wiki-link resolving to nothing. All three fail silently rather than loudly, which is why reading closely kept finding them and no check ever did. Its first run found six more, in `ops-email`, `sb-init`, `save-conventions` and the knowledge template.
+- `docs/known-debt.md`, recording what is wrong on purpose: the fourteen incompatible `status` vocabularies, `bm schema validate` targeting the configured project rather than the repository, the MOC view depending on a field nothing enforces, and the absence of any end-to-end test of skill instructions. Each entry states the cost and what fixing it would break, so the next reader arbitrates instead of rediscovering.
+
 ### Fixed, third verification round
 
 - `propose_pruning.py` age semantics, again. Taking the later of the commit date and the mtime was safe but made the git lookup dead code on the one path that needed it: a fresh clone gives every file the clone timestamp, which always wins. Age now comes from the commit date for a clean tracked file and from the mtime for a dirty or untracked one, which is the only rule that handles all three cases. Proven on a real clone: a file committed in 2024 is proposed, the same file edited without committing is not.
