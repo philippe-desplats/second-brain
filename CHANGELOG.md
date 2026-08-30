@@ -47,13 +47,17 @@ Phase 1, preconditions.
 Run `git status --porcelain`. If anything is uncommitted, stop and ask me to commit or stash first: I need to be able to revert this whole upgrade with one command.
 Read `boilerplate_version` in `.sb-config.json`. If it is not 0.4.0, stop and tell me which version it says.
 Confirm Obsidian 1.10 or later is installed. Below that, the hub's Bases list view will not render and you should stop here.
-
-Phase 2, infrastructure.
-Add the upstream remote if it is missing, fetch it, then check out the infrastructure paths:
+Then measure how far my infrastructure has drifted from the version I cloned:
   git remote add upstream https://github.com/philippe-desplats/second-brain.git
   git fetch upstream --tags
+  git diff --stat v0.4.0..HEAD -- .claude basic-memory/schemas basic-memory/scripts templates
+If that lists no file, my infrastructure is stock and the rest of this prompt applies as written.
+If it lists any file, STOP. I have customized the workspace, phase 2 would overwrite that work, and this is the wrong prompt. Show me the list and tell me to use the upgrade prompt for a customized workspace instead.
+
+Phase 2, infrastructure.
+Phase 1 proved my infrastructure is stock, so this checkout overwrites nothing of mine:
   git checkout v0.5.0 -- .claude basic-memory/schemas basic-memory/scripts templates
-Show me `git diff --stat --cached` afterwards. If I customized a skill or a schema locally, that customization has just been overwritten, so tell me which files in the diff look hand-edited compared with v0.4.0 and I will re-apply what matters.
+Show me `git diff --stat --cached` afterwards so I can see the size of what arrived.
 
 Phase 3, the new index views.
 Copy the four new files, which conflict with nothing because they do not exist in my workspace yet:
@@ -87,6 +91,74 @@ Phase 6, verification. Run these and show me the output:
 The last one regenerates the static indexes, which is what makes the workspace readable outside Obsidian.
 
 Phase 7, close. Set `boilerplate_version` to "0.5.0" in `.sb-config.json`. Then tell me to open `atlas/home.md` in Obsidian and confirm the two embedded views render, and to open the four `.base` files and confirm each lists what it should. A view that was never rendered is not verified, and nothing you can run will tell you.
+```
+
+### Upgrade prompt, 0.4.0 to 0.5.0, for a customized workspace
+
+Use this one if phase 1 of the prompt above told you to, meaning `git diff v0.4.0..HEAD` reports changes under `.claude`, `basic-memory/schemas`, `basic-memory/scripts` or `templates`. You have forked the infrastructure, so there is no version of this upgrade that consists of copying files over yours.
+
+What this prompt carries instead of a diff is the **intent** of each change: the problem it solves and the shape it takes upstream. Your agent reads your version of the file, reads the intent, and re-derives the change in your dialect. Where your fork already solves the problem its own way, the right move is to skip, and the prompt says so explicitly rather than leaving the agent to guess.
+
+```
+You are upgrading this second-brain workspace from boilerplate version 0.4.0 to 0.5.0. I have customized the infrastructure, so you must NOT check out upstream files over mine. For each change below, read my version of the file first, then decide between three outcomes: apply, adapt, or skip because my fork already covers the intent. Justify every skip in one line.
+
+Rules for the whole run:
+- Never overwrite one of my files wholesale. Every edit is surgical and preserves what I wrote.
+- Never delete a note, a folder, a schema field, or an enum value. When upstream narrowed something I widened, keep mine and tell me.
+- Show me a diff and wait for approval before each write.
+- If you cannot tell whether my fork already covers an intent, ask me instead of deciding.
+
+Phase 0, map my fork. Run:
+  git remote add upstream https://github.com/philippe-desplats/second-brain.git
+  git fetch upstream --tags
+  git diff --stat v0.4.0..HEAD -- .claude basic-memory/schemas basic-memory/scripts templates
+Give me the list of files I changed, and for each one a sentence on what my change appears to do. That list is the map for everything below: a change landing on a file I never touched is a plain copy, a change landing on a file I did touch is a merge.
+
+Phase 1, the intents. Work through them in order. For each, tell me apply, adapt or skip, and why.
+
+1. Live indexes must work in a fresh clone with nothing to install.
+   Upstream dropped Dataview, whose plugin has not shipped a commit in ten months, for Obsidian Bases, which is a core plugin. It ships four `.base` query files in `atlas/maps/` and converted the inline blocks in `atlas/home.md` and the MOC template.
+   In my workspace: copy the four `.base` files if I have no equivalent, convert my inline blocks, and convert any index query I wrote myself. If I deliberately rely on Dataview for queries of my own, keep the plugin, convert only the shipped index views, and tell me which of my queries still need it.
+   Read `git show v0.5.0:atlas/maps/clients-active.base` for the syntax. Requires Obsidian 1.10 or later for the list view.
+
+2. A second brain must be able to say which of its notes it did not write itself.
+   Upstream added `written_by` to the `session` and `note` schemas, optional, values `owner` and `agent`, absent meaning `owner`. It made `inbox/` the quarantine for machine-written material, with `/distill` and its approval gate as the only path into `knowledge/`.
+   In my workspace: if I already record authorship under another name, keep mine and skip. If I renamed or split these schemas, add the field to whatever plays their role. Do not add it to `clipping`, `email`, `transcript` or `meeting`, where the type already says the text is not mine.
+   Careful: Obsidian types a property name once for the whole vault. If `written_by` already means something else anywhere in my notes, stop and tell me before declaring it.
+
+3. A field that a view or a script reads must be declared by a schema.
+   Upstream declared `subtype` on `note` with seven values, `title` on both context schemas, and `topics` on `note` and `project-brief`. All three were already read by `generate_indexes.py` or by the views while belonging to no contract, which made views render empty for no visible reason.
+   In my workspace: if I extended these enums, merge the upstream values into mine rather than replacing my list. If I renamed a field, declare mine, not the upstream name. Then check the reverse: any field my own views or scripts read that no schema of mine declares has the same defect, and `basic-memory/scripts/audit_field_usage.py` from this release lists them.
+
+4. No documented path may reach an unattended mass deletion.
+   Upstream added `propose_pruning.py`, which proposes stale notes and never deletes, and wired it into `/curate` as a report-only group excluded from batch mode and from the `-a` flag.
+   In my workspace: if I forked `/curate`, apply the same property to my version, and verify my `-a` equivalent cannot accept deletions without me. If I added a deletion path of my own, this is the moment to check it has a human gate. Skip the script itself if I have no use for pruning; it is additive and safe either way.
+
+5. A note a skill creates must belong to a schema.
+   The 0.4.0 `/ops-init-project` wrote project briefs with no `type:` and client contexts with no `type:` or `schema_version:`, so notes it created were invisible to every index and every view. Upstream fixed the skill, and the same repair has to run over the notes it already wrote.
+   In my workspace: apply the fix to my fork of the skill, whatever shape it has. Then find the notes: every project `README.md` and every entity `CLAUDE.md` under my source zones whose frontmatter has no `type:`. Propose adding `type` and `schema_version: 1` matching what the file is, plus `last_updated` and `topics: []` on a brief. Nothing else. List them all and wait. Do not invent a missing `status:` or `title:`; report those and I will fill them.
+
+6. The defects that fail silently need a check that does not.
+   Upstream added `check_consistency.py`, wired into `/sb-doctor`. It catches a skill template emitting frontmatter the schemas reject, a view reading an undeclared property, a dead wiki-link, and a `topics` slug naming no entry.
+   In my workspace: copy the script, and wire it into my fork of `/sb-doctor`. Then run it. It reads my schemas and my skills, not upstream's, so on a customized workspace its first run is the most useful thing in this upgrade: it will list the places where my fork's own pieces disagree with each other.
+
+7. What upstream deliberately did NOT change, so you do not "fix" it.
+   `status` keeps fifteen different vocabularies across fifteen schemas, on purpose: each is the lifecycle of its own type. Do not harmonize them, and do not rename them per domain. If I renamed them in my fork, that was my call and you leave it alone, but tell me that upstream schemas and mine will now diverge permanently on that field.
+   `decisions-recent` stays a static index with no `.base` twin, because Bases filters properties and that index reads observations from note bodies. Do not build one.
+
+Phase 2, what falls outside every intent above.
+Run `git diff --name-only v0.4.0..v0.5.0` and list anything you have not already handled. For each, say in one line whether it matters for my fork. Documentation changes to README and CONTRIBUTING are upstream's own and I do not need them unless I want them.
+
+Phase 3, verification. Run these against MY workspace and show me the output:
+  python3 basic-memory/scripts/check_consistency.py
+  python3 basic-memory/scripts/check_orphans.py
+  python3 basic-memory/scripts/check_symmetric_relations.py --check
+  python3 basic-memory/scripts/check_double_frontmatter.py
+  python3 basic-memory/scripts/audit_field_usage.py
+  python3 basic-memory/scripts/generate_indexes.py
+Expect findings on a customized workspace, and expect some of them to be about my fork rather than about this upgrade. Sort them into the two piles and tell me which is which.
+
+Phase 4, close. Set `boilerplate_version` to "0.5.0" in `.sb-config.json`. Then write me a short record of what you skipped and why, so the next upgrade starts from a known divergence instead of rediscovering it. Finally, tell me to open the views in Obsidian and confirm they render: nothing you ran can verify that.
 ```
 
 ## 0.4.0

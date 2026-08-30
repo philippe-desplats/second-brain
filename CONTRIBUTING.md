@@ -68,7 +68,9 @@ So the throwaway clone above is not optional ceremony for a skill change. It is 
 
 ## Cutting a release
 
-Every release ships an upgrade prompt in its `CHANGELOG.md` section and in its GitHub release notes, under the heading `### Upgrade prompt, X to Y`. It is a copy-paste block a cloner hands to the agent that operates their workspace.
+Every release ships **two** upgrade prompts in its `CHANGELOG.md` section and in its GitHub release notes, under the headings `### Upgrade prompt, X to Y` and `### Upgrade prompt, X to Y, for a customized workspace`. Each is a copy-paste block a cloner hands to the agent that operates their workspace.
+
+There are two because the cloners split into two populations that need opposite things, and one prompt serving both would be a decision tree an agent navigates badly. The first prompt opens by measuring the split, `git diff --stat vX..HEAD` over the infrastructure paths, and routes to the second when it finds anything. Without that gate the first prompt overwrites a fork and reports the damage afterwards, which is what it did in its first draft.
 
 It exists because the git recipe in the README covers only part of a release. The recipe checks out `.claude`, `basic-memory/schemas`, `basic-memory/scripts` and `templates`, and deliberately never touches a data zone. Three kinds of change fall outside it, and every release so far has had at least one:
 
@@ -76,14 +78,16 @@ It exists because the git recipe in the README covers only part of a release. Th
 - **Files the cloner owns and has edited.** `atlas/home.md` is their hub. It cannot be checked out without destroying their work, so the change has to be described well enough that an agent can merge it.
 - **Their own notes, written against the old contract.** The 0.4.0 `/ops-init-project` emitted project briefs with no `type:`, which the 0.5.0 views filter on. No git operation repairs data, and a migration script cannot ask the questions a half-typed note raises.
 
-Write the prompt against the real diff, not from memory: `git diff --name-only vX..vY | grep -vE '^(\.claude/|basic-memory/(schemas|scripts)/|templates/)'` lists exactly what the recipe misses. Four properties are not negotiable, since this prompt runs unattended against somebody's only copy of their notes:
+The two differ in kind, not in length. The stock prompt carries **operations**: exact commands, exact paths, in order. The customized prompt carries **intents**: for each change, the problem it solves and the shape it took upstream, so an agent can re-derive it inside a fork whose files no longer match ours. It must also name what upstream deliberately did not change, or the agent helpfully "fixes" it, and it must allow **skip** as a first-class outcome with a one-line justification, since a fork that already solves a problem its own way should not receive our version of the solution on top.
+
+Write the stock prompt against the real diff, not from memory: `git diff --name-only vX..vY | grep -vE '^(\.claude/|basic-memory/(schemas|scripts)/|templates/)'` lists exactly what the recipe misses. Four properties are not negotiable, since this prompt runs unattended against somebody's only copy of their notes:
 
 1. **It refuses to start on a dirty tree**, so the whole upgrade stays revertible with one command.
 2. **It never deletes.** An upgrade adds and rewrites; anything else is a decision the owner makes themselves.
 3. **It gates on a diff before writing into a data zone**, and waits.
 4. **It ends with the check scripts, and with what they cannot check.** A Bases view that was never opened in Obsidian is not verified, and no script will ever say so.
 
-Test it the way a cloner will meet it: check out the previous tag into a scratch folder, run `/sb-init`, create a project so there is real data to migrate, then paste the prompt and follow it without correcting it. What you have to correct by hand is a defect in the prompt.
+Test both the way a cloner will meet them: check out the previous tag into a scratch folder, run `/sb-init`, create a project so there is real data to migrate, then paste the prompt and follow it without correcting it. What you have to correct by hand is a defect in the prompt. For the customized one, edit a skill and a schema in the scratch clone first, then check that the run preserves both.
 
 ## License
 
