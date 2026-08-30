@@ -29,6 +29,8 @@ The daily inbound flow of the second brain. Everything that arrives (emails, tra
 | `-t <type>` | Force the content type (must be one of the canonical schema types) |
 
 **Remainder** after flags: the content itself, or an `@path` reference to a file.
+
+**There is deliberately no `-a` flag**, unlike `/close-session`, `/archive`, `/curate`, `/distill` and `/moc-new`. Those five act on a target the owner named; capture *infers* its target, and the entity, project and type it guesses decide where the artifact lives for good. The approval gate exists to catch that inference, so it is the one gate with nothing to skip. Narrow the inference with `-e` and `-t` instead: they remove the guesswork rather than the review.
 </flags>
 
 <workflow>
