@@ -2,9 +2,9 @@
 """
 Generate agent-readable static indexes from frontmatter metadata.
 
-Obsidian Dataview queries render dynamic indexes inside Obsidian. Outside
-Obsidian (Zed, CLI, AI agents reading raw markdown), the queries look like
-dead text. This script materializes the same lookups as static markdown
+Obsidian Bases views render dynamic indexes inside Obsidian. Outside
+Obsidian (Zed, CLI, agents reading raw markdown), a `.base` file is inert
+configuration rather than a readable table. This script materializes the same lookups as static markdown
 files so any consumer sees a real table.
 
 Indexes generated (under atlas/maps/):
@@ -14,8 +14,10 @@ Indexes generated (under atlas/maps/):
     recent-emails-static.md        type=email modified in last 14 days
     decisions-recent-static.md     observations [decision] in last 90 days
 
-Each generated file is overwriteable on each run. They live next to their
-Dataview equivalents in atlas/maps/ and are named with the `-static` suffix.
+Each generated file is overwriteable on each run. They live next to the
+`.base` views in atlas/maps/ and are named with the `-static` suffix. The
+`decisions-recent` index has no `.base` twin: it reads observations from note
+bodies, which Bases cannot filter on.
 
 Usage:
     python3 basic-memory/scripts/generate_indexes.py
@@ -190,7 +192,9 @@ def write_index(
         "---",
         f"title: {title}",
         "type: note",
+        "schema_version: 1",
         "subtype: index",
+        f"date: {today}",
         f"generated: {today}",
         "auto_generated: true",
         "---",

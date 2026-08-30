@@ -26,6 +26,8 @@ settings:
     client?: ClientContext, "client involved if category=client"
     partner?: PartnerContext, "partner involved if category=partner"
     created?: string, "creation date in YYYY-MM-DD format"
+    last_updated?: string, "last meaningful update in YYYY-MM-DD format"
+    topics?(array): string, "topic slugs this project belongs to, read by the MOC Bases views"
     status?(enum):
     - active
     - done

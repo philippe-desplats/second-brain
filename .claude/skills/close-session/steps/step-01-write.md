@@ -43,6 +43,7 @@ client: {if client-scoped}
 partner: {if partnership-scoped}
 tags: [{free keywords}]
 about: {project title}
+written_by: agent
 ---
 ```
 

@@ -68,7 +68,7 @@ This lets you navigate from the source to the distilled pattern in the Obsidian 
 - used_in [[Playbook, Accessibility Audit]]   <- added by distill
 ```
 
-### 4. Regenerate the Dataview indexes (if the maintenance scripts are present)
+### 4. Regenerate the static indexes (if the maintenance scripts are present)
 
 ```bash
 python3 basic-memory/scripts/generate_indexes.py

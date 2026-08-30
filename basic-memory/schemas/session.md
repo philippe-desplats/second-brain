@@ -32,6 +32,9 @@ settings:
     partner?: PartnerContext, "partner involved if partnership-scoped"
     about?: ProjectBrief, "project worked on"
     continues?: Session, "previous session on the same thread"
+    written_by?(enum):
+    - owner
+    - agent
 ---
 
 # Schema, Session

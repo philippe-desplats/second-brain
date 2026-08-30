@@ -34,7 +34,7 @@ Central router for the workspace skills. Consult this table before invoking any 
 | `sb-doctor` | "check the workspace", "health check", monthly hygiene | none (scans the workspace) | health report: orphans, double frontmatter, broken conventions, stale indexes, aged inbox | Python 3 |
 | `curate` | weekly/monthly review, `-w {days}`, `-r` report-only | window of recent activity | report of distill/archive/moc candidates, delegation on approval (or report file in `atlas/reviews/` with `-r`) | Basic Memory optional |
 | `distill` | 3rd repetition of a topic, "distill X" | topic or slug, `-t {ops\|tech\|business}` `-k {kind}` | note in `knowledge/` with provenance line and back-links | Basic Memory optional |
-| `moc-new` | dense topic (10+ notes), "create a map for X" | topic slug | MOC in `atlas/maps/` (Dataview + curated list) | Obsidian Dataview for live view |
+| `moc-new` | dense topic (10+ notes), "create a map for X" | topic slug | MOC in `atlas/maps/` (Bases view + curated list) | Obsidian, Bases is a core plugin |
 | `archive` | project done/cancelled 6+ months, `--dry-run` | project slug | `git mv` to `archives/`, reference fixes, reindex | git; Basic Memory optional |
 | `ops-resume` | "summarize this", transcript or article pasted | raw content | structured summary saved via save-conventions | none |
 | `ops-email` | "write an email to X", "reply to this", `-e {entity}` `-s` | purpose or pasted thread | draft calibrated on prior emails and entity preferences, saved with email frontmatter (draft, then sent) | none |

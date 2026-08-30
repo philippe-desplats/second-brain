@@ -28,6 +28,14 @@ settings:
     - reminder
     - todo
     - other
+    subtype?(enum):
+    - moc
+    - index
+    - pattern
+    - playbook
+    - guide
+    - runbook
+    - decision
     category?(enum):
     - internal
     - client
@@ -40,7 +48,11 @@ settings:
     - active
     - archived
     tags?(array): string, "free-form keywords"
+    topics?(array): string, "topic slugs this note belongs to, read by the MOC Bases views"
     about?: Topic, "topic or project involved"
+    written_by?(enum):
+    - owner
+    - agent
 ---
 
 # Schema, Note

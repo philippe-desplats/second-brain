@@ -52,6 +52,7 @@ subtype: {kind}
 status: active
 date: {YYYY-MM-DD}
 topics: [{topic}, {related_topic_1}, {related_topic_2}]
+written_by: agent
 ---
 
 # {Human-readable title}

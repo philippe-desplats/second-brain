@@ -20,6 +20,7 @@ settings:
   validation: strict
   frontmatter:
     partner: string, "partner's full name or legal entity name"
+    title?: string, "display label used by the generated indexes, e.g. Acme, Context"
     status(enum):
     - active
     - inactive

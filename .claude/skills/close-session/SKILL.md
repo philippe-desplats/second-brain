@@ -10,6 +10,8 @@ The end of the daily loop, symmetric with `/ops-init-project` which opens it. A 
 It records the session, it does not summarize a document (that is `/ops-resume`) and it does not file inbound content (that is `/capture`).
 </objective>
 
+**Design constraints**: this skill is a review ritual. Before changing it, read `.claude/skills/references/review-rituals.md`, which states the four properties a review must keep to survive its own abandonment rate.
+
 <quick_start>
 
 ```

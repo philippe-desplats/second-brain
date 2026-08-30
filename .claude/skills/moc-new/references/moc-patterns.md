@@ -190,7 +190,7 @@ _Flat listing of clients with an active project. Regenerated automatically by `g
 **Tips**:
 - No verbose "Overview"
 - Just the facts, one line per entity
-- Ideally, double it with an Obsidian dataview block if dynamic
+- Ideally, double it with an Obsidian ```base block if dynamic
 - Produce static indexes via `generate_indexes.py` rather than writing them by hand
 
 ---

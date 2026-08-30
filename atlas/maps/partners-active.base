@@ -1,0 +1,26 @@
+filters:
+  and:
+    - note.type == "partner-context"
+    - note.status == "active"
+properties:
+  note.partner:
+    displayName: Partner
+  note.partnership_type:
+    displayName: Type
+  note.last_updated:
+    displayName: Last updated
+  file.folder:
+    displayName: Folder
+views:
+  - type: table
+    name: Active partners
+    order:
+      - partner
+      - partnership_type
+      - last_updated
+      - file.folder
+    sort:
+      - property: last_updated
+        direction: DESC
+      - property: partner
+        direction: ASC

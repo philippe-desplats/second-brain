@@ -1,0 +1,34 @@
+filters:
+  and:
+    - note.type == "project-brief"
+    - note.status == "active"
+properties:
+  note.title:
+    displayName: Project
+  note.category:
+    displayName: Category
+  note.owner:
+    displayName: Owner
+  file.folder:
+    displayName: Folder
+views:
+  - type: table
+    name: Active projects
+    order:
+      - title
+      - category
+      - owner
+      - file.folder
+    sort:
+      - property: category
+        direction: ASC
+      - property: title
+        direction: ASC
+  - type: cards
+    name: By category
+    groupBy:
+      property: category
+      direction: ASC
+    order:
+      - title
+      - owner

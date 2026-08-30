@@ -1,6 +1,6 @@
 ---
 name: archive
-description: "Archive an inactive project, client, partner, or internal project from sources/ into archives/. Confirms inactivity, physically moves the folder (git mv preserves history), updates the incoming references (other projects that point to the archived one), regenerates the Dataview indexes, and runs Basic Memory reindex. Policy: physical move WITHOUT a redundant status. Use when a project is marked `status: done` or `status: cancelled` for 6+ months, or on an explicit decision to archive."
+description: "Archive an inactive project, client, partner, or internal project from sources/ into archives/. Confirms inactivity, physically moves the folder (git mv preserves history), updates the incoming references (other projects that point to the archived one), regenerates the static indexes, and runs Basic Memory reindex. Policy: physical move WITHOUT a redundant status. Use when a project is marked `status: done` or `status: cancelled` for 6+ months, or on an explicit decision to archive."
 argument-hint: "<slug-or-path> [-t client|partner|internal|personal] [-f force] [-a auto] [--dry-run]"
 model: opus
 allowed-tools:
@@ -16,7 +16,7 @@ allowed-tools:
 ---
 
 <objective>
-Move an inactive project from `sources/{type}/{slug}/` into `archives/{type}/{slug}/`, without breaking references. Policy: physical move without a redundant status. The Dataview indexes will filter automatically (queries like `FROM "sources/clients"` ignore the archives).
+Move an inactive project from `sources/{type}/{slug}/` into `archives/{type}/{slug}/`, without breaking references. Policy: physical move without a redundant status. The indexes filter automatically, since both the Bases views and the generation script scope on `sources/` and ignore the archives.
 
 Out of scope: archiving `.claude/`, `basic-memory/`, `atlas/`, `knowledge/` (non-project zones). Out of scope: archiving an isolated note (use an `archive/` subfolder within the project for obsolete internal artifacts).
 </objective>
@@ -49,7 +49,7 @@ Out of scope: archiving `.claude/`, `basic-memory/`, `atlas/`, `knowledge/` (non
 1. **Init** -> Parse args, resolve the source path, deduce the type
 2. **Confirm** -> Present the state (last activity, incoming refs), ask for validation
 3. **Move** -> git mv into archives/, update the parent CLAUDE.md if applicable
-4. **Reindex** -> Regenerate the Dataview indexes, run Basic Memory reindex
+4. **Reindex** -> Regenerate the static indexes, run Basic Memory reindex
 </workflow>
 
 <step_files>

@@ -52,7 +52,7 @@ Total: {N1 + N2 + N3} suggested actions
 
 **If `{report_mode}` = true**:
 
-Write the full report above (plain markdown, no box-drawing characters) to `atlas/reviews/{YYYY-MM-DD}-review.md` with frontmatter `type: note`, `subtype: note`, `title: Curation review {YYYY-MM-DD}`, plus a closing line: "Report generated in scheduled mode. Run /curate -w {window_days} to review and execute these suggestions." Then print the file path and STOP; steps 3 and 03 do not run. If a report already exists for today, overwrite it (same-day reruns supersede).
+Write the full report above (plain markdown, no box-drawing characters) to `atlas/reviews/{YYYY-MM-DD}-review.md` with frontmatter `type: note`, `note_type: summary`, `title: Curation review {YYYY-MM-DD}`, plus a closing line: "Report generated in scheduled mode. Run /curate -w {window_days} to review and execute these suggestions." Then print the file path and STOP; steps 3 and 03 do not run. If a report already exists for today, overwrite it (same-day reruns supersede).
 
 ### 2bis. Auto mode, direct execution
 
@@ -157,7 +157,7 @@ Content:
 ---
 title: Curation Review, {YYYY-MM-DD}
 type: note
-subtype: note
+note_type: summary
 schema_version: 1
 date: {YYYY-MM-DD}
 status: archived

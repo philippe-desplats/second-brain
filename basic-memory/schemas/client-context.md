@@ -21,6 +21,7 @@ settings:
   validation: strict
   frontmatter:
     client: string, "client full name or legal name, entity title for wikilinks"
+    title?: string, "display label used by the generated indexes, e.g. Globex, Context"
     status(enum):
     - active
     - inactive

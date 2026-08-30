@@ -6,7 +6,45 @@ Structural changes to this workspace. Content changes (notes, projects) are trac
 
 ## Unreleased
 
-- Initial workspace bootstrap from the Second Brain Structure boilerplate.
+### Changed
+
+- Live indexes migrated from Dataview to Obsidian Bases. `atlas/maps/` now ships four `.base` files (`clients-active`, `partners-active`, `projects-active`, `recent-emails`) that work in a fresh clone with nothing to install, since Bases is a core plugin. The five live Dataview index files these replace were documented but had never been created by anything.
+- The four inline Dataview blocks, two in `atlas/home.md` plus one in `templates/atlas-moc-template.md` and one in the `moc-new` skill, became inline ```base blocks, preserving the documents' structure.
+- `.obsidian/community-plugins.json` reset to `[]`. It declared Dataview enabled while `.obsidian/plugins/` did not exist, so every clone announced a plugin that was not there.
+- `generate_indexes.py` now emits `schema_version: 1` and `date:` in the static indexes it writes, so generated files conform to the `note` schema the workspace enforces.
+- `sb-doctor` index-freshness check now reports an empty `atlas/maps/` as a finding instead of passing on an empty glob.
+
+### Added
+
+- `written_by` frontmatter field on the `session` and `note` schemas, values `owner` and `agent`, optional and absent meaning `owner`. It answers the question a second brain has to be able to answer six months later: what in my distilled knowledge did I not write myself. Deliberately not added to `clipping`, `email`, `transcript` or `meeting`, where the type already carries that information.
+- Two new sections in `.claude/rules/frontmatter.md`: one documenting that Obsidian types a property name once for the whole vault, with the five pre-existing collisions listed rather than hidden, and one defining the provenance convention and the quarantine rule.
+- Promotion and quarantine rules in `.claude/rules/knowledge.md`: `inbox/` holds machine-produced material, `/distill` and its approval gate are the only path into `knowledge/`, and approving a draft is a review rather than a transfer of authorship.
+
+- `basic-memory/scripts/audit_field_usage.py`, a read-only audit reporting per-type fill rates for every declared field, flagging required fields filled below a threshold, and surfacing fields used in notes but declared in no schema.
+- `subtype` declared on the `note` schema with the seven values actually in use. It was prescribed by two rules and used in twelve files while belonging to no contract. `note_type` keeps its own axis; the two are documented side by side.
+- `title` declared on both context schemas and `topics` on `note`. All three were already load-bearing, read by `generate_indexes.py` and by the MOC Bases filters, while declared nowhere.
+
+- `basic-memory/scripts/propose_pruning.py`, which proposes notes for deletion on the documented criterion, untouched and unlinked for a period. It never deletes, moves, or edits; it produces a list the owner accepts line by line, wired into the `curate` scan as a fourth group. Journals, archives, templates, generated indexes, structural files and entity types are protected by design.
+- `.claude/skills/references/review-rituals.md`, stating the four properties a review ritual must keep to survive: it draws on material already written, it tolerates gaps without breaking, it stays short and offers a smaller version, and it looks forward. `curate`, `ops-weekly-pulse` and `close-session` point at it.
+
+- A "What this optimizes, and what it does not" section in the README, declaring which failure the three-zone structure prevents (classification, reuse, machine retrieval) and which it does not (triage by urgency, recall by numeric constraint), pointing readers with those problems at PARA and Johnny.Decimal instead.
+
+### Changed, again
+
+- The README no longer implies a cognitive benefit. It states plainly that no evidence supports a second brain improving memory, output or decision quality, and narrows the promise to what is checkable: structured, portable, answerable by an agent.
+- "Enforced by the tooling" nuanced to "applied by the skills that write your notes". Obsidian enforces nothing; the conventions hold because the skills apply them. The weekly review is now presented as the one thing tooling cannot take over.
+
+### Fixed
+
+- Eight dead wiki-links in `atlas/home.md`, five in the index list and three in its `## Relations` section, all pointing at index files nothing produced.
+- `moc-new` no longer claims that a non-existent `atlas/maps/mocs-static.md` gets updated.
+- Documentation of the static index frontmatter in `.claude/rules/atlas.md` now matches what the script actually writes.
+- `check_orphans.py` no longer scans `tmp/` or `__pycache__`, so scratch files in a gitignored folder stop being reported as orphan notes.
+- Skill wording corrected from "regenerate the Dataview indexes" to "regenerate the static indexes" across `archive`, `distill`, `moc-new` and the `librarian` agent. The script only ever wrote `-static.md` files.
+
+### Notes
+
+- `decisions-recent` stays static only. It reads `- [decision]` observations from note bodies, and Bases filters on properties rather than body content.
 
 ## 0.4.0
 

@@ -76,6 +76,16 @@ Every distilled note carries a one-line provenance at the top of its body statin
 _Distilled from Globex and Initech onboardings on 2026-07-02. See Relations for sources._
 ```
 
+## Promotion and the quarantine rule
+
+Nothing reaches `knowledge/` without a human deciding it should. Two mechanisms enforce it.
+
+**The gate.** `/distill` is the only skill that writes into `knowledge/`, and it shows the draft for approval before saving. `archive` is forbidden from touching the zone, `moc-new` writes only to `atlas/maps/`, and `curate` writes nowhere itself. Approving a draft is a review, not a claim of authorship: the note keeps `written_by: agent`.
+
+**The quarantine.** `inbox/` is where machine-produced material lands while it waits to be classified. A note carrying `written_by: agent` is never moved straight into `knowledge/`; it goes through `/distill` like any other candidate, which means it must also clear the three-occurrence threshold.
+
+The reason is the failure mode this zone exists to prevent. A distilled note is read months later as settled understanding. If the owner can no longer tell which of those notes they actually thought through, the zone stops being knowledge and becomes a pile of plausible text.
+
 ## Forbidden rules
 
 - No confidential client information in `knowledge/` (always anonymized or abstracted)

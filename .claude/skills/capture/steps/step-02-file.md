@@ -53,6 +53,8 @@ Read the matching schema in `basic-memory/schemas/{content_type}.md` and produce
 {other detected relations: replies_to, follows, meeting_ref}
 ```
 
+**Set `written_by: agent` when the type declares it.** `session` and `note` carry that field; the other types do not, because their type already says the text is not the owner's own writing. Capture writes on the owner's behalf, so the value is always `agent`, never `owner`.
+
 **Leave a relation out rather than approximating it.** `about` is optional on every type that declares it. When no existing `atlas/topics/` entry actually covers the subject, omit `about`; capture does not create topics, and a near-miss topic quietly mislabels the note for good. Mention the gap in the approval gate so the owner can create the topic if it is worth one.
 
 **Relations follow the schema, not this generic shape.** Read which target type each relation expects in `basic-memory/schemas/{content_type}.md`. On a `clipping`, for instance, `about` points at a `Topic` and the entity is carried by `client` or `partner`, so a literal `about [[{Entity}]]` would be wrong.

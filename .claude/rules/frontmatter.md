@@ -90,6 +90,41 @@ If two entities share the same name (for example a person who is also a partner)
 
 Whenever a file mentions a modeled entity (client, partner, person, topic, service), use the `[[...]]` wikilink rather than plain text. This feeds the Obsidian graph and enables Basic Memory navigation.
 
+## `subtype` and `note_type`, two axes on the same type
+
+`note` is the catch-all, so it carries two classification fields that answer different questions. Both are optional and they do not compete.
+
+- **`subtype`** names the *genre* of a structural note: `moc`, `index`, `pattern`, `playbook`, `guide`, `runbook`, `decision`. It is what `atlas/` and `knowledge/` sort on, and what the Bases views filter on.
+- **`note_type`** names the *shape* of an ordinary note: `summary`, `context`, `cheatsheet`, `reading`, `journal`, `history`, `checkpoint`, `reminder`, `todo`, `other`.
+
+A note in `knowledge/` uses `subtype`. A daily journal entry uses `note_type`. Most notes use neither. Never set `subtype: note`, which says nothing; if no genre fits, leave the field out.
+
+## One property name, one meaning, vault-wide
+
+Obsidian assigns **a single type per property name across the entire vault**, not per note and not per schema. Two schemas using the same name for different things do not produce two local behaviours, they produce one global collision, and the Properties panel merges their suggested values into a single list.
+
+This constrains every schema change:
+
+- **Never reuse an existing name for a different meaning.** `author` already means "author of the captured source" in `clipping`; a field meaning "who wrote this note" must not be called `author`.
+- **Check the name against every schema before adding it**, not only against the one you are editing.
+- Known deliberate overlaps that predate this rule and are documented rather than fixed: `client` and `partner` are a required identity in the context schemas and an optional relation in eleven others; `about` targets a `Topic` in some schemas and a `ProjectBrief` in others; `implements` targets `Research` in `strategy` and `Strategy` in `deliverable`; `status` carries fourteen incompatible enums across fifteen schemas.
+
+## Provenance of the writing hand
+
+`written_by` records who actually wrote a note, with two values, `owner` and `agent`. It is optional everywhere and **absent means `owner`**, so no existing note becomes invalid.
+
+It is declared on exactly two types, `session` and `note`. `note` is the catch-all, so it also covers everything under `knowledge/`.
+
+It is deliberately **not** on `clipping`, `email`, `transcript` or `meeting`. On those, the type itself already tells you the text is not the owner's own writing, and a field that restates the type is the metadata over-engineering this workspace avoids. The field earns its place only where machine-written prose could be mistaken for the owner's thinking.
+
+The point is not bookkeeping, it is the question you can ask six months later: *what in my distilled knowledge did I not write myself?* A second brain whose owner can no longer tell their own thinking from generated text has lost the thing that made it worth keeping.
+
+Three rules follow from it:
+
+1. **Mark it.** A note drafted or rewritten by an agent carries `written_by: agent`. Approving a draft does not change that value; approval is a review, not authorship.
+2. **Quarantine it.** `inbox/` is where generated material lands. A note carrying `written_by: agent` is never promoted straight into `knowledge/`; it goes through `/distill`, whose human gate is the review.
+3. **Split the labour.** The agent files, tags, repairs links, and formats. Every judgement call stays with the owner.
+
 ## Mandatory symmetric pairs
 
 A relation declared on one side must be mirrored on the other side. Golden rule.

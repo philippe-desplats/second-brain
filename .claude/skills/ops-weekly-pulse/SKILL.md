@@ -8,6 +8,8 @@ argument-hint: "[-p <period>] [-n]"
 Scan the entire workspace for recent activity (files created/modified, client work, deliverables) and generate a structured weekly pulse report. The report surfaces active clients, dormant clients, deliverable counts by type, and actionable next steps.
 </objective>
 
+**Design constraints**: this skill is a review ritual. Before changing it, read `.claude/skills/references/review-rituals.md`, which states the four properties a review must keep to survive its own abandonment rate.
+
 <parameters>
 **Flags:**
 

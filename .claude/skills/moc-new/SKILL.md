@@ -20,7 +20,7 @@ Create a navigable MOC in `atlas/maps/` for a dense topic. The MOC acts as an Ob
 
 Aligned with the layered design (atlas/maps/ holds MOCs + indexes) and the practice of building a handful of manual MOCs for the densest topics.
 
-Out of scope: generating dynamic Dataview indexes (use `generate_indexes.py` for that). Out of scope: creating entity notes (use the conventions in `atlas/people/`, `atlas/services/`, `atlas/topics/`).
+Out of scope: generating the static indexes (use `generate_indexes.py` for that). Out of scope: creating entity notes (use the conventions in `atlas/people/`, `atlas/services/`, `atlas/topics/`).
 </objective>
 
 <quick_start>

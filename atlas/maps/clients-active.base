@@ -1,0 +1,26 @@
+filters:
+  and:
+    - note.type == "client-context"
+    - note.status == "active"
+properties:
+  note.client:
+    displayName: Client
+  note.industry:
+    displayName: Industry
+  note.last_updated:
+    displayName: Last updated
+  file.folder:
+    displayName: Folder
+views:
+  - type: table
+    name: Active clients
+    order:
+      - client
+      - industry
+      - last_updated
+      - file.folder
+    sort:
+      - property: last_updated
+        direction: DESC
+      - property: client
+        direction: ASC

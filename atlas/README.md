@@ -16,5 +16,5 @@ The navigation layer: maps, indexes, and referenceable entities. This is the met
 
 - People, services, and topics are strict-validated entity types; MOCs and indexes are `type: note`.
 - MOCs are not created by default, they emerge when a subject becomes recurring. See `templates/atlas-moc-template.md`.
-- Indexes come in pairs: a live Dataview file and a generated `*-static.md`. See `atlas/maps/README.md`.
+- Indexes come in pairs: a live `.base` view that needs no plugin install, and a generated `*-static.md` readable outside Obsidian. See `atlas/maps/README.md`.
 - No raw artifacts here (those live in `sources/`). Full rules: `.claude/rules/atlas.md`.

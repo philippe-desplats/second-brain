@@ -68,6 +68,8 @@ Fix: `python3 basic-memory/scripts/retype_files.py --dry-run` then `--apply`, or
 ### 6. Index freshness (🟡)
 
 - For each `atlas/maps/*-static.md`: read the `generated:` frontmatter date. Older than 7 days → stale.
+- If `atlas/maps/` contains no `*-static.md` at all, report it as a finding rather than passing silently. An empty glob means the indexes have never been generated, not that they are fresh.
+- The `atlas/maps/*.base` files are queries, not snapshots. They never go stale and are not checked here.
 
 Fix: `python3 basic-memory/scripts/generate_indexes.py`.
 

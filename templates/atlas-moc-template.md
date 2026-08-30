@@ -27,11 +27,23 @@ _Map of Content, entry point to navigate this subject across the workspace._
 
 ## Active projects
 
-```dataview
-TABLE status, last_updated
-FROM "sources"
-WHERE contains(topics, "{{topic-slug}}") AND status = "active"
-SORT last_updated DESC
+```base
+filters:
+  and:
+    - file.inFolder("sources")
+    - note.topics.contains("{{topic-slug}}")
+    - note.status == "active"
+views:
+  - type: table
+    name: Active projects
+    order:
+      - title
+      - status
+      - last_updated
+      - file.folder
+    sort:
+      - property: last_updated
+        direction: DESC
 ```
 
 ## Distilled knowledge

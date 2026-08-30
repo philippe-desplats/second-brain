@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 WORKSPACE = Path(__file__).resolve().parent.parent.parent
-IGNORED_SEGMENTS = {".git", "node_modules", ".obsidian", ".claude"}
+IGNORED_SEGMENTS = {".git", "node_modules", ".obsidian", ".claude", "tmp", "__pycache__"}
 IGNORED_PATH_PREFIXES = (
     "archives/",
     "templates/",

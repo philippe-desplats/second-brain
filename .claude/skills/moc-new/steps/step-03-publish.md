@@ -93,13 +93,13 @@ For EACH targeted note:
 
 Obsidian benefit: from any note in the `{topic}` ecosystem, you get back to the MOC in one click.
 
-### 5. Regenerate the Dataview indexes (if the maintenance scripts are present)
+### 5. Regenerate the static indexes (if the maintenance scripts are present)
 
 ```bash
 python3 basic-memory/scripts/generate_indexes.py
 ```
 
-The MOC does not change the usual static indexes, but if an index `atlas/maps/mocs-static.md` (list of MOCs) exists, it will be updated.
+The MOC does not change the usual static indexes. `generate_indexes.py` has no code path that lists MOCs, so nothing about the new MOC is reflected there. The MOC list on `atlas/home.md` is a live Bases view and picks it up on its own.
 
 ### 6. Basic Memory reindex (if Basic Memory is installed)
 
@@ -122,7 +122,7 @@ MOC published: {target_path}
 ✓ Strict frontmatter (type: note + subtype: {moc|index})
 ✓ {N} notes referenced with annotation
 ✓ {N} `referenced_in` back-links added (if enabled)
-✓ Dataview indexes regenerated
+✓ Static indexes regenerated
 ✓ Basic Memory reindex clean
 
 Next steps:

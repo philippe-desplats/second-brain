@@ -1,6 +1,6 @@
 ---
 name: step-03-reindex
-description: Regenerate Dataview indexes, Basic Memory reindex, final validation
+description: Regenerate static indexes, Basic Memory reindex, final validation
 prev_step: steps/step-02-move.md
 next_step: null
 ---
@@ -9,13 +9,13 @@ next_step: null
 
 ## MANDATORY EXECUTION RULES:
 
-- ✅ ALWAYS regenerate the Dataview indexes (they filter out the archives automatically)
+- ✅ ALWAYS regenerate the static indexes (they filter out the archives automatically)
 - ✅ ALWAYS run `bm reindex` so Basic Memory forgets the old path and indexes the new one (if Basic Memory is installed)
 - ✅ ALWAYS run `fix_double_frontmatter.py` after reindex (known Basic Memory bug)
 
 ## EXECUTION SEQUENCE:
 
-### 1. Regenerate the Dataview indexes (if the maintenance scripts are present)
+### 1. Regenerate the static indexes (if the maintenance scripts are present)
 
 ```bash
 python3 basic-memory/scripts/generate_indexes.py
@@ -68,7 +68,7 @@ Archive complete:
 
 ✓ {source_path} -> {target_path}
 ✓ Parent CLAUDE.md updated
-✓ Dataview indexes regenerated
+✓ Static indexes regenerated
 ✓ Basic Memory reindex clean
 ✓ {N} remaining incoming refs (historical traceability, OK)
 
@@ -102,7 +102,7 @@ Run `/archive {candidate}` for the next one.
 
 ## SUCCESS METRICS:
 
-✅ Dataview indexes regenerated
+✅ Static indexes regenerated
 ✅ Basic Memory reindex clean
 ✅ 0 double frontmatter
 ✅ New path validated

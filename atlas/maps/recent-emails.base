@@ -1,0 +1,38 @@
+filters:
+  and:
+    - note.type == "email"
+properties:
+  note.subject:
+    displayName: Subject
+  note.date:
+    displayName: Date
+  note.direction:
+    displayName: Direction
+  file.folder:
+    displayName: Folder
+views:
+  - type: table
+    name: Recent emails
+    order:
+      - date
+      - direction
+      - subject
+      - file.folder
+    sort:
+      - property: date
+        direction: DESC
+    limit: 14
+  - type: table
+    name: Sent, no reply logged
+    filters:
+      and:
+        - note.direction == "out"
+        - note.status == "sent"
+    order:
+      - date
+      - subject
+      - file.folder
+    sort:
+      - property: date
+        direction: DESC
+    limit: 20

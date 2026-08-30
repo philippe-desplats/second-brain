@@ -168,6 +168,16 @@ Add to `{candidates_moc}` (category "update"):
 
 For each list, sort by descending `score`. The most "obvious" candidates rise to the top.
 
+### Pruning candidates (if the maintenance scripts are present)
+
+Accumulation is the failure mode this whole review exists to fight, and deletion is the only operation that reduces it. Collect the candidates, never act on them here:
+
+```bash
+python3 basic-memory/scripts/propose_pruning.py --days 180
+```
+
+A candidate is a note untouched for the period with no inbound and no outbound link. Fold the list into the report as its own group, alongside distill, archive and moc. Present it exactly like the others, as a proposal the owner accepts line by line. An unlinked note is not automatically worthless; wiring it in is as valid an outcome as deleting it.
+
 ### 6. Synthesis
 
 Store the 3 lists in the state variables:

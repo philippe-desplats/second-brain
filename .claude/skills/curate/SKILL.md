@@ -24,6 +24,8 @@ Aligned with the LYT/PARA philosophy: "a second brain is maintained, not built o
 Out of scope: writing or moving files directly; that is the job of the delegated skills. Out of scope: archiving or distilling without user validation.
 </objective>
 
+**Design constraints**: this skill is a review ritual. Before changing it, read `.claude/skills/references/review-rituals.md`, which states the four properties a review must keep to survive its own abandonment rate.
+
 <quick_start>
 
 ```bash
