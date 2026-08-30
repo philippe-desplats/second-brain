@@ -28,6 +28,67 @@ The live indexes stop depending on a community plugin that has not shipped a com
 
 If you customized a schema or a script locally, re-apply your change after checking out this update, or exclude that file from the checkout. Once applied, set `boilerplate_version` to `0.5.0` by hand in `.sb-config.json`, which is yours and stays out of the update recipe. You can delete the Dataview plugin from your vault if nothing else in it uses it.
 
+### Upgrade prompt, 0.4.0 to 0.5.0
+
+Most of this release lands through the update recipe in the README, but three things do not: the four `.base` files live in `atlas/maps/`, which the recipe deliberately never touches; `atlas/home.md` is a file you own and customized, so it has to be merged rather than checked out; and any client or project created by the 0.4.0 `/ops-init-project` is missing the `type:` the new views filter on, so it will not appear in them until it is repaired.
+
+Paste this into the agent that operates your workspace, from the workspace root.
+
+```
+You are upgrading this second-brain workspace from boilerplate version 0.4.0 to 0.5.0. Work through the phases in order and stop at the gate in phase 4.
+
+Rules for the whole run:
+- Never delete a note, a folder, or a frontmatter field. This upgrade only adds and rewrites.
+- Never write into sources/, knowledge/, atlas/, archives/ or inbox/ without showing me the exact diff first and waiting for my approval.
+- If a step's precondition is not met, stop and tell me. Do not improvise around it.
+- Report what you changed at the end, file by file.
+
+Phase 1, preconditions.
+Run `git status --porcelain`. If anything is uncommitted, stop and ask me to commit or stash first: I need to be able to revert this whole upgrade with one command.
+Read `boilerplate_version` in `.sb-config.json`. If it is not 0.4.0, stop and tell me which version it says.
+Confirm Obsidian 1.10 or later is installed. Below that, the hub's Bases list view will not render and you should stop here.
+
+Phase 2, infrastructure.
+Add the upstream remote if it is missing, fetch it, then check out the infrastructure paths:
+  git remote add upstream https://github.com/philippe-desplats/second-brain.git
+  git fetch upstream --tags
+  git checkout v0.5.0 -- .claude basic-memory/schemas basic-memory/scripts templates
+Show me `git diff --stat --cached` afterwards. If I customized a skill or a schema locally, that customization has just been overwritten, so tell me which files in the diff look hand-edited compared with v0.4.0 and I will re-apply what matters.
+
+Phase 3, the new index views.
+Copy the four new files, which conflict with nothing because they do not exist in my workspace yet:
+  git checkout v0.5.0 -- atlas/maps/clients-active.base atlas/maps/partners-active.base atlas/maps/projects-active.base atlas/maps/recent-emails.base
+If my workspace has no partners zone, delete `atlas/maps/partners-active.base` after copying: a view over a folder that does not exist renders empty and is only clutter.
+Then edit `.obsidian/community-plugins.json`: remove "dataview" from the array. Leave every other plugin alone, and if I use Dataview elsewhere in this vault for my own queries, say so and leave it in place.
+
+Phase 4, my hub. This is the one file you must merge rather than replace.
+`atlas/home.md` is mine and I have edited it. Read `git show v0.5.0:atlas/home.md` and apply only these four changes to my copy, preserving everything else I wrote:
+  1. The two ```dataview blocks become the ```base blocks from the v0.5.0 version, one for the maps of content, one for distilled knowledge.
+  2. The generated-indexes list: the five wiki-links become [[clients-active.base|clients-active]], [[partners-active.base|partners-active]], [[projects-active.base|projects-active]], [[recent-emails.base|recent-emails]], and decisions-recent as plain text, since it stays static only.
+  3. The ## Relations section: the three `contains` links get the `.base` extension, and a fourth is added for recent-emails.
+  4. Any sentence naming Dataview now names Bases.
+Show me the diff and wait for my approval before writing.
+
+Phase 5, repairing my notes. This is what makes the new views actually show something.
+The 0.4.0 `/ops-init-project` wrote project briefs with no `type:` and no `schema_version:`, and client contexts with the same gap, so those notes belong to no schema and no view can list them.
+Find them: every `README.md` under a project folder whose frontmatter has no `type:`, and every entity `CLAUDE.md` under sources/ whose frontmatter has no `type:`.
+For each one, propose adding, and nothing else:
+  - a project README.md: `type: project-brief` and `schema_version: 1`, plus `last_updated` set to today and `topics: []` if absent
+  - a client CLAUDE.md: `type: client-context` and `schema_version: 1`
+  - a partner CLAUDE.md: `schema_version: 1`, and `type: partner-context` if absent
+List every file you found with the fields you would add, and wait for my approval. Do not guess a `status:` or a `title:` that is missing; report those separately and I will fill them.
+
+Phase 6, verification. Run these and show me the output:
+  python3 basic-memory/scripts/check_consistency.py
+  python3 basic-memory/scripts/check_orphans.py
+  python3 basic-memory/scripts/check_symmetric_relations.py --check
+  python3 basic-memory/scripts/check_double_frontmatter.py
+  python3 basic-memory/scripts/generate_indexes.py
+The last one regenerates the static indexes, which is what makes the workspace readable outside Obsidian.
+
+Phase 7, close. Set `boilerplate_version` to "0.5.0" in `.sb-config.json`. Then tell me to open `atlas/home.md` in Obsidian and confirm the two embedded views render, and to open the four `.base` files and confirm each lists what it should. A view that was never rendered is not verified, and nothing you can run will tell you.
+```
+
 ## 0.4.0
 
 Fills the gaps a mapping of the workspace against the usual second-brain categories left open: the end of a session was never recorded, a captured web page had no type, and the daily journal existed only as an unused enum value. Two schemas added, one skill added, one Obsidian misconfiguration fixed.
