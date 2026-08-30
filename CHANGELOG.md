@@ -34,6 +34,14 @@ Structural changes to this workspace. Content changes (notes, projects) are trac
 - The README no longer implies a cognitive benefit. It states plainly that no evidence supports a second brain improving memory, output or decision quality, and narrows the promise to what is checkable: structured, portable, answerable by an agent.
 - "Enforced by the tooling" nuanced to "applied by the skills that write your notes". Obsidian enforces nothing; the conventions hold because the skills apply them. The weekly review is now presented as the one thing tooling cannot take over.
 
+### Fixed, accumulated debt
+
+- `CONTRIBUTING.md` documented `bm schema validate` as a local test. It runs against whichever Basic Memory project is configured on the machine, which is the contributor's own vault and not the clone, so the documented command returned a green result about something else. It now gives the register, validate and unregister sequence that actually targets the clone, and names the six checks that run on a bare clone without Basic Memory at all.
+- `check_consistency.py` gained a fourth class: a `topics` slug naming no entry in `atlas/topics/`. The MOC views filter on that field, so an unresolved slug produces a view that renders empty and reads like an empty vault rather than a broken filter. Reported as a warning and not an error, since writing a brief before its topic note is legitimate order of work.
+- `CONTRIBUTING.md` now states what the checks cover and what they do not. Nothing executes a skill, so nothing verifies that following its steps produces what it claims; the throwaway clone is the only test of that, which makes it a requirement for a skill change rather than optional ceremony.
+- The `status` field carrying a different vocabulary on each of fifteen schemas was recorded as debt. It is not: each vocabulary is the lifecycle of its own type, and every one of them is correct. Renaming per domain would trade a right field name for a cluttered one and break every vault already cloned, to tidy a dropdown. `.claude/rules/frontmatter.md` now argues the decision instead of filing it, and tells contributors not to harmonize the enums.
+- `docs/known-debt.md` removed. A list of things wrong on purpose becomes a place to put things rather than fix them; each of its entries is now either corrected or argued where the decision belongs.
+
 ### Added, self-consistency
 
 - `basic-memory/scripts/check_consistency.py`, wired into `/sb-doctor` and the local test suite. It catches the three defect classes that recurred across every manual review: a skill template emitting frontmatter the schemas reject, a Bases view reading a property no schema declares, and a wiki-link resolving to nothing. All three fail silently rather than loudly, which is why reading closely kept finding them and no check ever did. Its first run found six more, in `ops-email`, `sb-init`, `save-conventions` and the knowledge template.

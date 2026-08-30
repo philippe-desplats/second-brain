@@ -29,10 +29,6 @@ This repository is a workspace template, not application code. The quality bar i
 - **No AI or vendor attribution** in commits, code comments, or documentation.
 - **Privacy first**: nothing in this repository may ever contain real client data, credentials, or tokens. `.mcp.json` stays gitignored; only `.mcp.json.example` is tracked.
 
-## Known debt
-
-Before reporting something as a bug, check [`docs/known-debt.md`](docs/known-debt.md). It lists what is wrong on purpose, what it costs, and what fixing it would break. An entry there has already been arbitrated; reopening one is a decision, not a chore.
-
 ## Local testing
 
 There is no build. To validate a change:
@@ -43,12 +39,32 @@ python3 basic-memory/scripts/check_orphans.py
 python3 basic-memory/scripts/check_symmetric_relations.py --check
 python3 basic-memory/scripts/check_double_frontmatter.py
 python3 basic-memory/scripts/generate_indexes.py --output-dir /tmp/idx-test
-# optional, requires Basic Memory and an indexed workspace. The type argument is not optional:
-# omitting it validates nothing and still exits 0.
-for t in $(ls basic-memory/schemas/*.md | xargs -n1 basename | sed 's/\.md$//' | grep -v README); do bm schema validate "$t" --strict; done
+python3 basic-memory/scripts/audit_field_usage.py
 ```
 
+Those six run on a bare clone and validate this repository. They are the ones that matter.
+
+**`bm schema validate` does not validate this repository unless you make it.** It runs against whichever Basic Memory project is configured on your machine, which is your own vault, not the clone. Running it without registering the clone first returns a green result about something else entirely. To actually validate the clone:
+
+```sh
+bm project add sb-clone .          # register this working copy
+for t in $(ls basic-memory/schemas/*.md | xargs -n1 basename | sed 's/\.md$//' | grep -v README); do
+  bm schema validate "$t" --project sb-clone --strict
+done
+bm project remove sb-clone         # leave your machine as you found it
+```
+
+The type argument is not optional either: omitting it validates nothing and still exits 0.
+
 For skill changes, clone the repo to a scratch folder, run `/sb-init` there with a fictional persona, and exercise the skill you touched. The demo client (Globex) gives you a filed workspace to test retrieval against.
+
+### What the checks cover, and what they do not
+
+`check_consistency.py` validates the frontmatter examples inside skills, the properties their views read, the links they contain, and the topic slugs they reference. That is the static surface, and it is where most defects have been found.
+
+It does not execute a skill. Nothing verifies that following a skill's steps in order produces what the skill claims, that two skills agree with each other, or that a step still refers to a file the last change did not move. Those defects exist and have all been found by a human or an agent reading closely, never by a check.
+
+So the throwaway clone above is not optional ceremony for a skill change. It is the only test that covers the behaviour, and running the skill end to end there is what stands between a plausible-looking instruction and a working one.
 
 ## License
 

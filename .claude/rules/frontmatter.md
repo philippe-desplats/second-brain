@@ -107,7 +107,15 @@ This constrains every schema change:
 
 - **Never reuse an existing name for a different meaning.** `author` already means "author of the captured source" in `clipping`; a field meaning "who wrote this note" must not be called `author`.
 - **Check the name against every schema before adding it**, not only against the one you are editing.
-- Known deliberate overlaps that predate this rule and are documented rather than fixed: `client` and `partner` are a required identity in the context schemas and an optional relation in eleven others; `about` targets a `Topic` in some schemas and a `ProjectBrief` in others; `implements` targets `Research` in `strategy` and `Strategy` in `deliverable`; `status` carries fourteen incompatible enums across fifteen schemas.
+- Known deliberate overlaps, documented rather than fixed: `client` and `partner` are a required identity in the context schemas and an optional relation in eleven others; `about` targets a `Topic` in some schemas and a `ProjectBrief` in others; `implements` targets `Research` in `strategy` and `Strategy` in `deliverable`.
+
+### Why `status` keeps fifteen different vocabularies
+
+`status` is declared on fifteen schemas and almost every one gives it a different enum: `paid` on a deliverable, `unread` on a clipping, `scheduled` on a meeting, `prospect` on a client context. Obsidian merges them into one suggested-value list, so the dropdown on any note offers values that make no sense for it.
+
+**This is deliberate and it stays.** Each vocabulary is the lifecycle of its own type, and every one of them is right: a deliverable really does go from draft to paid, a clipping really is unread or read. Renaming per domain, `deliverable_status` and `clipping_status`, would trade a correct field name for a cluttered one, break every vault already cloned from this template, and buy nothing but a tidier dropdown.
+
+What follows for a contributor: do not "harmonize" these enums, and do not read a noisy `status` dropdown as a defect. If you add a schema, give `status` the vocabulary its type actually needs rather than borrowing one that nearly fits.
 
 ## Provenance of the writing hand
 

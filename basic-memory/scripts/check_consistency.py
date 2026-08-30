@@ -23,6 +23,12 @@ caught by a command rather than by whoever happens to look closely.
        Found nine times by hand, eight of them in the workspace hub, all
        pointing at index files that no code path ever created.
 
+    4. A `topics` slug names no entry in atlas/topics/.
+       The MOC views filter on `note.topics`, so a slug resolving to nothing
+       produces a view that renders empty with no error. Found once by hand:
+       three of the four slugs on the demo briefs were invented. Reported as a
+       warning, since writing a brief before its topic note is legitimate.
+
 Read-only. It reports and exits non-zero on findings; it changes nothing.
 
 Usage:
@@ -223,10 +229,42 @@ def check_wikilinks() -> list[dict]:
     return findings
 
 
+def check_topic_slugs() -> list[dict]:
+    """Every `topics` slug should name a file in atlas/topics/.
+
+    Not an error: a brief written before its topic note is normal order of
+    work. Worth surfacing anyway, because the MOC views filter on this field
+    and an unresolved slug produces a view that renders empty and reads like
+    an empty vault rather than a broken filter.
+    """
+    topics = {p.stem for p in (WORKSPACE / "atlas" / "topics").glob("*.md")
+              if p.stem != "README"}
+    findings = []
+    for path in iter_files(WORKSPACE, "*.md"):
+        rel = path.relative_to(WORKSPACE).as_posix()
+        if rel.startswith((".claude/", "docs/", "templates/", "basic-memory/", "archives/")):
+            continue
+        text = path.read_text(encoding="utf-8")
+        if not text.startswith("---"):
+            continue
+        end = text.find("\n---", 3)
+        if end == -1:
+            continue
+        m = re.search(r"^topics:\s*\[([^\]]*)\]", text[3:end], re.M)
+        if not m:
+            continue
+        for slug in (s.strip().strip("\"'") for s in m.group(1).split(",")):
+            if slug and "{" not in slug and slug not in topics:
+                findings.append({"check": "topics", "file": rel, "severity": "warning",
+                                 "issue": f"`topics` names `{slug}`, no entry in atlas/topics/, "
+                                          "so a MOC view filtering on it stays empty"})
+    return findings
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--only", choices=["templates", "views", "links"],
+    ap.add_argument("--only", choices=["templates", "views", "links", "topics"],
                     help="run a single check")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     args = ap.parse_args(argv)
@@ -239,17 +277,20 @@ def main(argv: list[str]) -> int:
         findings += check_view_properties(schemas)
     if args.only in (None, "links"):
         findings += check_wikilinks()
+    if args.only in (None, "topics"):
+        findings += check_topic_slugs()
 
     if args.json:
         print(json.dumps({"finding_count": len(findings), "findings": findings},
                          indent=2, ensure_ascii=False))
-        return 1 if findings else 0
+        return 1 if [f for f in findings if f.get("severity") != "warning"] else 0
 
     if not findings:
         print("Consistency check: nothing to report.")
         print("  skill templates would produce valid notes")
         print("  every property a view reads is declared by a schema")
         print("  every wiki-link resolves")
+        print("  every topic slug names a real entry")
         return 0
 
     by_check: dict[str, list[dict]] = {}
@@ -257,8 +298,11 @@ def main(argv: list[str]) -> int:
         by_check.setdefault(f["check"], []).append(f)
     labels = {"templates": "Skill templates that would produce invalid notes",
               "views": "Properties read by a view but declared in no schema",
-              "links": "Wiki-links that resolve to nothing"}
-    print(f"Consistency check: {len(findings)} finding{'s' if len(findings) > 1 else ''}\n")
+              "links": "Wiki-links that resolve to nothing",
+              "topics": "Topic slugs naming no entry in atlas/topics/ (warning)"}
+    errors = [f for f in findings if f.get("severity") != "warning"]
+    print(f"Consistency check: {len(errors)} error{'s' if len(errors) != 1 else ''}, "
+          f"{len(findings) - len(errors)} warning{'s' if len(findings) - len(errors) != 1 else ''}\n")
     for check, items in by_check.items():
         print(f"{labels[check]} ({len(items)})")
         for f in items:
@@ -266,7 +310,7 @@ def main(argv: list[str]) -> int:
             print(f"  {loc}")
             print(f"    {f['issue']}")
         print()
-    return 1
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":
