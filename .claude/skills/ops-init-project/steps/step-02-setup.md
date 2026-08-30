@@ -83,6 +83,8 @@ Ask the user for key client context, then create `sources/clients/{entity_name}/
 ```markdown
 ---
 client: {Client Name}
+type: client-context
+schema_version: 1
 status: active
 last_updated: {YYYY-MM-DD}
 industry: {if known}
@@ -125,6 +127,7 @@ If `partners` is listed, ask the user for key partner context, then create `sour
 ---
 partner: {Partner Name}
 type: partner-context
+schema_version: 1
 status: active
 partnership_type: {commercial | technical | strategic | white-label | mixed}
 last_updated: {YYYY-MM-DD}
@@ -193,7 +196,7 @@ created: {YYYY-MM-DD}
 last_updated: {YYYY-MM-DD}
 status: active
 owner: {Owner Name}
-topics: [{topic-slug}, {other-topic-slug}]
+topics: [topic-slug, other-topic-slug]   # real slugs from atlas/topics/, not invented ones
 ---
 
 # {Project Name, human-readable}

@@ -168,7 +168,7 @@ Add to `{candidates_moc}` (category "update"):
 
 For each list, sort by descending `score`. The most "obvious" candidates rise to the top.
 
-### Pruning candidates (if the maintenance scripts are present)
+### Pruning candidates (if the maintenance scripts are present, and `{only_filter}` includes `prune`)
 
 Accumulation is the failure mode this whole review exists to fight, and deletion is the only operation that reduces it. Collect the candidates, never act on them here:
 
@@ -212,7 +212,7 @@ And exit without calling step-02.
 ## SUCCESS METRICS:
 
 ✅ Every candidate has a score and a numeric reason
-✅ The 3 lists are sorted by relevance
+✅ The distill, archive and MOC lists are sorted by relevance (prune rows carry no score, they are sorted by age)
 ✅ `{only_filter}` respected
 ✅ Summary presented
 

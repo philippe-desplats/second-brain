@@ -49,7 +49,7 @@ Out of scope: writing or moving files directly; that is the job of the delegated
 | `-s` | `--scope` | Scan scope: `full` (default), any zone kept in the `zones` array of `.sb-config.json` (`clients`, `partners`, `internal`, `personal`), plus `knowledge` and `topics` |
 | `-w` | `--window` | Time window in days to detect "recent" (default: 30) |
 | `-min` | `--min-inactive` | Months of inactivity to qualify a dormant entity (default: 6) |
-| `-only` | `--only` | Filter suggestion type: `distill`, `archive`, `moc`, or a comma-separated combination |
+| `-only` | `--only` | Filter suggestion type: `distill`, `archive`, `moc`, `prune`, or a comma-separated combination |
 | `-r` | `--report` | Report-only: scan and write the report to `atlas/reviews/{date}-review.md`, no questions, no delegation. Safe for headless scheduled runs. Exclusive with `-a` |
 | `-a` | `--auto` | Skip confirmations, execute all suggestions (discouraged outside tests) |
 

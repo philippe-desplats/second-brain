@@ -55,10 +55,20 @@ next_step: steps/step-03-execute.md
 Total: {N1 + N2 + N3 + N4} suggested actions
 ```
 
-The prune group has no delegated skill behind it: there is no `/prune`. Each
-line is decided in place, and the two acceptable outcomes are deleting the note
-or wiring it in. Deleting is a `git rm`, and it happens only on an explicit
-yes, one line at a time, never in batch mode.
+**The prune group is reported, never executed.** There is no `/prune` skill, and
+this one does not delete: `SKILL.md` states it orchestrates and never writes
+into the workspace, and a deletion is the most destructive write there is.
+
+So prune candidates never enter `{validated_actions}` and never reach step-03.
+They are listed with, for each line, the command the owner can run themselves:
+
+```
+git rm {path}      # recoverable from history, unlike a plain rm
+```
+
+Say plainly that wiring the note in is the other outcome, and usually the better
+one: an unlinked note is often not worthless, just never connected. Offer that
+first. The owner deletes, or does not; this skill's job ends at showing the list.
 
 ### 2. Report mode, write and stop
 
@@ -70,11 +80,17 @@ Write the full report above (plain markdown, no box-drawing characters) to `atla
 
 **If `{auto_mode}` = true**:
 
-All actions are automatically added to `{validated_actions}`. Move to step-03 without asking.
+All distill, archive and MOC actions are automatically added to `{validated_actions}`.
+Move to step-03 without asking.
+
+**Prune candidates are never added, in any mode.** They are not executable by this
+skill, so auto mode cannot delete anything: the group stays a printed list. This is
+what makes `-a` safe to run unattended, and it must stay true if a `/prune` skill is
+ever written.
 
 ### 3. Interactive mode, per-candidate validation
 
-**For each candidate** in the order `candidates_distill` -> `candidates_archive` -> `candidates_moc` -> `candidates_prune`:
+**For each candidate** in the order `candidates_distill` -> `candidates_archive` -> `candidates_moc`. Prune candidates are not part of this loop: they carry no score, no reason and no suggested command, and they are not executed here.
 
 Present via AskUserQuestion:
 
@@ -101,7 +117,7 @@ questions:
 
 ### 4. Batch mode (volume > 10 candidates)
 
-**Pruning candidates are excluded from batch mode.** A batch accept on deletions is exactly the failure this skill exists to prevent, so they stay one by one whatever the volume.
+**Pruning candidates are outside batch mode**, and outside the threshold that triggers it: they are never executed, so a vault whose only candidates are prunable must not raise a batch prompt over a set with nothing batchable in it. Count `N1 + N2 + N3` when deciding whether to batch.
 
 
 If total candidates > 10, offer a batch shortcut before individual validation:

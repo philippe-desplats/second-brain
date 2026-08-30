@@ -11,13 +11,21 @@ candidate when nobody has touched it and nobody has linked to it for a given
 period. Editing it or linking it from anywhere clears it, so a note stays as
 long as it takes part in the workspace.
 
-Age is the LATER of the last commit date and the filesystem mtime. Neither
-alone is safe: git does not preserve mtimes, so on a fresh clone a purely
-mtime-based run reports nothing for months and then flags the whole vault at
-once; git alone would call a note edited this morning but last committed in
-January untouched since January. Taking the later date means uncommitted work
-counts as touched, which is the conservative direction for a tool whose
-mistakes propose deleting things.
+Age comes from git for a tracked file with no uncommitted changes, and from
+the filesystem mtime otherwise. Neither signal alone works, and neither does
+taking the later of the two:
+
+    mtime alone   git does not preserve mtimes, so on a fresh clone every note
+                  dates from the clone. The run reports nothing for `--days`
+                  days, then flags the whole vault at once.
+    git alone     a note edited this morning but last committed in January
+                  reads as untouched since January, and the tool proposes
+                  deleting today's work.
+    max of both   safe, but on a fresh clone the mtime always wins, so the git
+                  lookup becomes dead code exactly where it was needed.
+
+Asking git which files are dirty resolves all three: a clean tracked file uses
+its commit date, a dirty or untracked one uses its mtime.
 
 This script proposes. It never deletes, never moves, never edits a note. The
 output is a list for a human to accept or reject, in line with the workspace
@@ -141,6 +149,26 @@ def git_dates(root: Path) -> dict[str, dt.date]:
     return dates
 
 
+def git_dirty(root: Path) -> set[str]:
+    """Paths with uncommitted changes, whose mtime is the honest signal.
+
+    Without this, a clean clone would fall back to mtimes that all read as the
+    clone timestamp, and the commit dates gathered above would never be used.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(root), "status", "--porcelain", "-z"],
+            capture_output=True, text=True, timeout=60, check=True,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    dirty = set()
+    for entry in out.split("\0"):
+        if len(entry) > 3:
+            dirty.add(entry[3:])
+    return dirty
+
+
 def is_journal(fm: dict[str, str], rel: str) -> bool:
     """A dated log is meant to lie still; never propose one for pruning."""
     if fm.get("note_type") == "journal":
@@ -148,7 +176,7 @@ def is_journal(fm: dict[str, str], rel: str) -> bool:
     return "/journal/" in rel or rel.endswith("-note-journal.md")
 
 
-def load_notes(root: Path, git: dict[str, dt.date]) -> list[Note]:
+def load_notes(root: Path, git: dict[str, dt.date], dirty: set[str]) -> list[Note]:
     notes = []
     for path in sorted(root.rglob("*.md")):
         rel_path = path.relative_to(root)
@@ -173,13 +201,13 @@ def load_notes(root: Path, git: dict[str, dt.date]) -> list[Note]:
             title=fm.get("title") or path.stem,
             ntype=fm.get("type", ""),
             outgoing={m.group(1).strip() for m in WIKILINK_RE.finditer(text)},
-            # The LATER of the two. Git alone would call a note edited this
-            # morning but last committed in January 'untouched since January',
-            # and a pruning tool that proposes today's work is worse than one
-            # that proposes nothing.
-            mtime=max(
-                git.get(rel, dt.date.min),
-                dt.date.fromtimestamp(path.stat().st_mtime),
+            # Commit date for a clean tracked file, mtime when it is dirty or
+            # untracked. See the module docstring for why neither signal alone,
+            # nor the later of the two, gets this right.
+            mtime=(
+                dt.date.fromtimestamp(path.stat().st_mtime)
+                if rel in dirty or rel not in git
+                else git[rel]
             ),
         ))
     return notes
@@ -219,7 +247,8 @@ def main(argv: list[str]) -> int:
     cutoff = today - dt.timedelta(days=args.days)
 
     git = git_dates(WORKSPACE)
-    notes = load_notes(WORKSPACE, git)
+    dirty = git_dirty(WORKSPACE)
+    notes = load_notes(WORKSPACE, git, dirty)
     count_inbound(notes, WORKSPACE)
 
     candidates = [n for n in notes
@@ -240,7 +269,7 @@ def main(argv: list[str]) -> int:
     lines = [
         f"# Pruning proposal, {today.isoformat()}",
         "",
-        f"_Age source: {'git history' if git else 'filesystem mtime (not a git repository)'}._",
+        f"_Age source: {'commit dates, with mtime for uncommitted work' if git else 'filesystem mtime (not a git repository)'}._",
         "",
         f"_Scanned {len(notes)} prunable notes. {len(candidates)} candidate"
         f"{'s' if len(candidates) != 1 else ''} untouched for {args.days}+ days,"

@@ -24,6 +24,7 @@ Execute in this order, which minimizes conflicts:
 2. **Distill next**: creates new files in knowledge/ (reads the sources, so ideally after archiving)
 3. **MOC last**: aggregates what now exists (integrates the archive + distill changes)
 
+
 ### 2. Execute each action
 
 For each action in `{validated_actions}` (in the order above):
@@ -57,6 +58,18 @@ Skill("moc-new", "{topic}")
 Follow the output. Capture:
 - `{published_path}` of the MOC
 - Status
+
+#### Prune, never reaches here
+
+Prune candidates are reported in step-02 and never added to `{validated_actions}`,
+so this step has nothing to execute for them. That is deliberate: `SKILL.md` states
+this skill orchestrates and never writes into the workspace, and the three handlers
+above all delegate to a skill. Deletion has no skill behind it and would have to be
+done inline, which the execution rules of this very file forbid.
+
+If a `/prune` skill is ever written, add a fourth handler here. Until then, an action
+of that kind arriving in `{validated_actions}` is a bug upstream, not something to
+handle gracefully: report it and stop.
 
 ### 3. Handle partial errors
 
