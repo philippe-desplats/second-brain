@@ -29,6 +29,18 @@ The agent interviews you briefly (tone, addressing, language, constraints) and w
 
 Use the production skills on real work: `/ops-email` for a reply you actually need to send, `/ops-meeting-minutes` after a real call. When something arrives that you cannot classify in ten seconds, drop it in `inbox/` and move on. That is what it is for.
 
+## Day 6: close a session, then reopen it
+
+At the end of a real working session, before you close the terminal:
+
+```
+> /close-session
+```
+
+It writes what got done, what comes next and what is blocking into the project, as a dated note in its `sessions/` folder. The next day, open the same project and watch the agent start from that note instead of asking you where you left off. That round trip is the whole point; you only feel it on the second day.
+
+The daily journal is the lighter version of the same idea. If you use Obsidian, the calendar icon writes today's entry into `sources/personal/journal/` with the right frontmatter already in place. A title, a dash, and room to write: that is all it asks.
+
 ## Day 7: first curation ritual
 
 ```
