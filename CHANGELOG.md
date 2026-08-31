@@ -6,6 +6,8 @@ Structural changes to this workspace. Content changes (notes, projects) are trac
 
 ## Unreleased
 
+- **`check_consistency.py` called alias-reachable links dead.** Its wiki-link resolver built its table from `title:`, `client:`, `partner:`, `name:` and `subject:` and never read `aliases:`, although the `topic` schema declares the field for exactly this purpose and the three demo topics use it. A link written as `[[onboarding]]` to a topic titled `Client Onboarding` was therefore reported as resolving to nothing, and every such link inflated a count the check exists to make actionable. Both YAML spellings of the list are now read, the inline `[a, b]` the demo topics use and the block form, so a note reformatted later does not drop out of the table. A link that genuinely resolves to nothing is still reported and the check still exits non-zero.
+
 ## 0.5.0
 
 The live indexes stop depending on a community plugin that has not shipped a commit in ten months, and the workspace gains a way to answer a question a second brain has to be able to answer: what in here did I not write myself. **Obsidian 1.10 or later is now required**, since `atlas/home.md` uses a Bases `list` view. Nothing else needs installing: Bases is a core plugin, already enabled.

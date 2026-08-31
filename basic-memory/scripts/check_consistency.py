@@ -62,6 +62,12 @@ WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)(?:\|[^\]]+)?(?:#[^\]]+)?\]\]")
 # note.x, or a bare identifier used as a column or sort key
 PROP_RE = re.compile(r"note\.([a-z_][a-z0-9_]*)")
 
+# Frontmatter fields naming the note itself, each reachable by a wiki-link.
+TARGET_FIELD_RE = re.compile(r"^(title|client|partner|name|subject)\s*:(.*)$")
+ALIAS_INLINE_RE = re.compile(r"^aliases\s*:\s*\[(.*)\]\s*$")
+ALIAS_BLOCK_RE = re.compile(r"^aliases\s*:\s*$")
+LIST_ITEM_RE = re.compile(r"^\s*-\s+(.*)$")
+
 
 def load_schemas() -> dict[str, set[str]]:
     """Return {type_name: declared field names} from settings.frontmatter."""
@@ -197,6 +203,46 @@ def strip_fences(text: str) -> str:
     return "\n".join(out)
 
 
+def unquote(value: str) -> str:
+    return value.strip().strip("\"'").strip()
+
+
+def frontmatter_targets(front: str) -> set[str]:
+    """Every name a wiki-link may use to reach the note carrying this frontmatter.
+
+    Basic Memory resolves on `title:` alone, but Obsidian also resolves
+    `aliases:`, and the `topic` schema declares the field precisely so a note
+    can be reached by its short name: a topic titled `Client Onboarding` is
+    linked as `[[onboarding]]` from the notes that mention it. A resolver
+    reading only `title:` calls every one of those links dead, which inflates
+    the count past the point where anyone can act on the number.
+
+    Both YAML spellings of a list are read, the inline `[a, b]` the demo
+    topics use and the block form, so a note reformatted later does not
+    silently drop out of the resolution table.
+    """
+    out: set[str] = set()
+    lines = front.splitlines()
+    for i, line in enumerate(lines):
+        m = TARGET_FIELD_RE.match(line)
+        if m:
+            out.add(unquote(m.group(2)))
+            continue
+        m = ALIAS_INLINE_RE.match(line)
+        if m:
+            out |= {unquote(v) for v in m.group(1).split(",")}
+            continue
+        if ALIAS_BLOCK_RE.match(line):
+            for follow in lines[i + 1:]:
+                item = LIST_ITEM_RE.match(follow)
+                if item:
+                    out.add(unquote(item.group(1)))
+                elif follow.strip():
+                    break  # the next top-level key ends the list
+    out.discard("")
+    return out
+
+
 def check_wikilinks() -> list[dict]:
     """A link to a file nothing creates is a promise the workspace breaks."""
     targets: set[str] = set()
@@ -205,10 +251,7 @@ def check_wikilinks() -> list[dict]:
         targets |= {path.stem, rel, rel[:-3]}
         text = path.read_text(encoding="utf-8")
         if text.startswith("---"):
-            for line in text[3:text.find("\n---", 3)].splitlines():
-                m = re.match(r"^(title|client|partner|name|subject)\s*:(.*)$", line)
-                if m:
-                    targets.add(m.group(2).strip().strip("\"'"))
+            targets |= frontmatter_targets(text[3:text.find("\n---", 3)])
     for path in iter_files(WORKSPACE, "*.base"):
         rel = path.relative_to(WORKSPACE).as_posix()
         targets |= {path.name, path.stem, rel}
