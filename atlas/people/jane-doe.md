@@ -1,4 +1,6 @@
 ---
+title: Jane Doe
+aliases: [Jane Doe]
 name: Jane Doe
 type: person
 schema_version: 1

@@ -82,6 +82,7 @@ Ask the user for key client context, then create `sources/clients/{entity_name}/
 
 ```markdown
 ---
+title: {Client Name}
 client: {Client Name}
 type: client-context
 schema_version: 1
@@ -125,6 +126,7 @@ If `partners` is listed, ask the user for key partner context, then create `sour
 
 ```markdown
 ---
+title: {Partner Name}
 partner: {Partner Name}
 type: partner-context
 schema_version: 1

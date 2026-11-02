@@ -1,5 +1,6 @@
 ---
 title: Globex Website Redesign
+aliases: [Globex Website Redesign]
 type: project-brief
 schema_version: 1
 category: client

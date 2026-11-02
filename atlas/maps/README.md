@@ -65,8 +65,8 @@ _Generated on YYYY-MM-DD by `generate_indexes.py`. Do not edit by hand._
 
 | Client | Path | Last updated |
 | --- | --- | --- |
-| [[Globex, Context]] | sources/clients/globex/CLAUDE.md | YYYY-MM-DD |
-| [[Initech, Context]] | sources/clients/initech/CLAUDE.md | YYYY-MM-DD |
+| [[Globex]] | sources/clients/globex/CLAUDE.md | YYYY-MM-DD |
+| [[Initech]] | sources/clients/initech/CLAUDE.md | YYYY-MM-DD |
 ```
 
 **Never edit a `-static.md` by hand.** Rerun `generate_indexes.py` to refresh it. If you leave Obsidian for good, regenerate the statics and delete the `.base` files.

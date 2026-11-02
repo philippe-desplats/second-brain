@@ -1,9 +1,10 @@
 ---
+title: Catalog Search
 name: Catalog Search
 type: topic
 schema_version: 1
 domain: tech
-aliases: [product search, part search, faceted search]
+aliases: [Catalog Search, product search, part search, faceted search]
 status: active
 related:
   - Progressive disclosure

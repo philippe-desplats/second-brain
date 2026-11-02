@@ -1,6 +1,7 @@
 ---
 date: 2026-06-05
 title: Proseware mutual referral agreement
+aliases: [Proseware mutual referral agreement]
 type: deliverable
 schema_version: 1
 deliverable_type: contract

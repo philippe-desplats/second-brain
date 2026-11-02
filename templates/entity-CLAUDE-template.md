@@ -11,7 +11,7 @@ Required by the schema, `client`, `status`, `last_updated`. Every other field is
 
 ```yaml
 ---
-title: {Entity name}, Context
+title: {Entity name}
 client: {Entity name}
 type: client-context
 schema_version: 1

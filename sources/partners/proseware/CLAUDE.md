@@ -1,5 +1,6 @@
 ---
-title: Proseware, Context
+title: Proseware
+aliases: [Proseware]
 partner: Proseware
 type: partner-context
 schema_version: 1

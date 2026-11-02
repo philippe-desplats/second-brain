@@ -1,5 +1,6 @@
 ---
-title: Globex, Context
+title: Globex
+aliases: [Globex]
 client: Globex
 type: client-context
 schema_version: 1

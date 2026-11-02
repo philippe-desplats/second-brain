@@ -1,6 +1,7 @@
 ---
 date: 2026-06-22
 title: Globex Website Redesign Kickoff
+aliases: [Globex Website Redesign Kickoff]
 type: meeting
 schema_version: 1
 participants:

@@ -1,9 +1,10 @@
 ---
+title: Client Onboarding
 name: Client Onboarding
 type: topic
 schema_version: 1
 domain: ops
-aliases: [onboarding, client kickoff]
+aliases: [Client Onboarding, onboarding, client kickoff]
 status: active
 related:
   - Project kickoff

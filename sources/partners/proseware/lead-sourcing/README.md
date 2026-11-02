@@ -1,5 +1,6 @@
 ---
 title: Proseware Lead Sourcing
+aliases: [Proseware Lead Sourcing]
 type: project-brief
 schema_version: 1
 category: partner
