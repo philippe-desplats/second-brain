@@ -16,6 +16,7 @@ schema:
 settings:
   validation: warn
   frontmatter:
+    aliases?(array): string, "the note's own title, written by add_title_aliases.py so Obsidian can resolve it"
     date: string, "email date in YYYY-MM-DD format"
     time: string, "time of sending or receipt in HH:MM format, in quotes"
     seq: integer, "chronological number within the day, starts at 1"

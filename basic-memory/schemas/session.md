@@ -16,6 +16,7 @@ schema:
 settings:
   validation: warn
   frontmatter:
+    aliases?(array): string, "the note's own title, written by add_title_aliases.py so Obsidian can resolve it"
     date: string, "session date in YYYY-MM-DD format"
     title: string, "what the session was about, in one line"
     status?(enum):

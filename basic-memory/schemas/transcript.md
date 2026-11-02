@@ -15,6 +15,7 @@ schema:
 settings:
   validation: warn
   frontmatter:
+    aliases?(array): string, "the note's own title, written by add_title_aliases.py so Obsidian can resolve it"
     date: string, "recording date in YYYY-MM-DD format"
     title: string, "descriptive title"
     source: string, "recording URL (meeting recorder, video platform)"

@@ -14,6 +14,7 @@ schema:
 settings:
   validation: warn
   frontmatter:
+    aliases?(array): string, "the note's own title, written by add_title_aliases.py so Obsidian can resolve it"
     date: string, "writing date in YYYY-MM-DD format"
     title: string, "title of the written content"
     writing_type(enum):

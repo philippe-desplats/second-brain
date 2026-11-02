@@ -13,6 +13,7 @@ schema:
 settings:
   validation: strict
   frontmatter:
+    title?: string, "must equal name:, Basic Memory resolves wiki-links on title alone"
     name: string, "topic name, will serve as the title for wikilinks"
     domain?(enum):
     - tech

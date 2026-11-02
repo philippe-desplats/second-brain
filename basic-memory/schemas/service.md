@@ -15,6 +15,8 @@ schema:
 settings:
   validation: strict
   frontmatter:
+    title?: string, "must equal name:, Basic Memory resolves wiki-links on title alone"
+    aliases?(array): string, "the note's own title, written by add_title_aliases.py so Obsidian can resolve it"
     name: string, "commercial name of the offer or service"
     service_type(enum):
     - consulting

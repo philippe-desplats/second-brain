@@ -20,8 +20,9 @@ schema:
 settings:
   validation: strict
   frontmatter:
+    aliases?(array): string, "the note's own title, written by add_title_aliases.py so Obsidian can resolve it"
     client: string, "client full name or legal name, entity title for wikilinks"
-    title?: string, "display label used by the generated indexes, e.g. Globex, Context"
+    title?: string, "must equal client:, Basic Memory resolves wiki-links on title alone"
     status(enum):
     - active
     - inactive

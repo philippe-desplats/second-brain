@@ -17,6 +17,7 @@ schema:
 settings:
   validation: strict
   frontmatter:
+    aliases?(array): string, "the note's own title, written by add_title_aliases.py so Obsidian can resolve it"
     title: string, "project title"
     category?(enum):
     - internal

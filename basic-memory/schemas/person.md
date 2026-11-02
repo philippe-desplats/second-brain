@@ -16,6 +16,8 @@ schema:
 settings:
   validation: strict
   frontmatter:
+    title?: string, "must equal name:, Basic Memory resolves wiki-links on title alone"
+    aliases?(array): string, "the note's own title, written by add_title_aliases.py so Obsidian can resolve it"
     name: string, "full name, used as the title for wikilinks"
     role?: string, "role or function"
     email?: string, "primary email address"

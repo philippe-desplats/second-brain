@@ -19,8 +19,9 @@ schema:
 settings:
   validation: strict
   frontmatter:
+    aliases?(array): string, "the note's own title, written by add_title_aliases.py so Obsidian can resolve it"
     partner: string, "partner's full name or legal entity name"
-    title?: string, "display label used by the generated indexes, e.g. Acme, Context"
+    title?: string, "must equal partner:, Basic Memory resolves wiki-links on title alone"
     status(enum):
     - active
     - inactive
