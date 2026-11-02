@@ -1,18 +1,19 @@
 # Demo Content Manifest
 
-Demo content created with the boilerplate. It exists so a new user can SEE the second brain working (a fictional client, a fictional partner who referred that client, projects, emails, a meeting, a captured article, a session memory, a signed agreement, a distilled playbook, a person, and two topics, all schema-correct and cross-linked) before filling the workspace with their own material.
+Demo content created with the boilerplate. It exists so a new user can SEE the second brain working (a fictional client, a fictional partner who referred that client, projects, emails, a meeting, a captured article, a session memory, a signed agreement, a distilled playbook, a person, and 3 topics, all schema-correct and cross-linked) before filling the workspace with their own material.
 
 `/sb-init` offers to remove it during initialization. Deleting every path listed here removes all traces of the demo. All content is fictional (client "Globex", partner "Proseware", contacts "Jane Doe" and "Morgan Ellis", domains `globex-example.com` and `proseware-example.com`).
 
 ## Removal roots
 
-Deleting these six roots removes the demo content itself:
+Deleting these 7 roots removes the demo content itself:
 
 - `sources/clients/globex/` (client context, project brief, emails, meeting, clipping, session memory)
 - `sources/partners/proseware/` (partner context, project brief, signed referral agreement)
 - `atlas/people/jane-doe.md`
 - `atlas/topics/client-onboarding.md`
 - `atlas/topics/catalog-search.md`
+- `atlas/topics/lead-sourcing.md`
 - `knowledge/ops/playbook-client-onboarding.md`
 
 Removing the partner leaves one dangling line in the client file: `sources/clients/globex/CLAUDE.md` declares `referred_by [[Proseware]]` under `## Relations`. If Globex is kept and Proseware removed, drop that line too. Keep `sources/partners/.gitkeep`, it is workspace structure, not demo content.
@@ -35,4 +36,5 @@ knowledge/ops/playbook-client-onboarding.md
 atlas/people/jane-doe.md
 atlas/topics/client-onboarding.md
 atlas/topics/catalog-search.md
+atlas/topics/lead-sourcing.md
 .claude/skills/sb-init/references/demo-manifest.md

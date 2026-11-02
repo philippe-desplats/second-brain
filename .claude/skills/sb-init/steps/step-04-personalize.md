@@ -176,7 +176,7 @@ For each zone NOT in `{zones}`:
 
 Enumeration always misses something, so finish on the grep, not on the checklist. Run, from the workspace root:
 
-`grep -rEin "partner" basic-memory/ .claude/agents/ .claude/rules/ .claude/skill-registry.md templates/ atlas/ sources/ archives/README.md AGENTS.md CLAUDE.md GETTING-STARTED.md .obsidian/`
+`grep -rEin --exclude-dir=scripts "partner" basic-memory/ .claude/agents/ .claude/rules/ .claude/skill-registry.md templates/ atlas/ sources/ archives/README.md AGENTS.md CLAUDE.md GETTING-STARTED.md .obsidian/`
 
 Clean what it reports, run it again, repeat until the only surviving lines are the generic prose deliberately kept above (`communication.md`, `knowledge.md`, `emails.md`) and you can justify each one out loud. Do NOT move to section 6 while a schema, rule, template, or atlas file is still in the output.
 
@@ -199,9 +199,9 @@ Only now, with the tree in its final shape, write `zones` into `.sb-config.json`
 - **`zones` in `.sb-config.json` must equal the directories actually present under `sources/`.** Every skill resolves the zone list from that array, so a divergence in either direction is a real defect: a zone listed but absent makes a skill try to write into nothing, a zone present but unlisted makes the owner's data invisible to the whole workspace. Compare the two lists explicitly, do not assume section 5 succeeded.
 - **If `partners` was dropped, verify the full cleanup with global greps** (a partial prune is worse than none). Run them from the workspace root, and keep the `-E`: without it the `|` is a literal character in a basic regular expression, the pattern matches nothing whatever the state of the tree, and the check becomes a permanent false pass.
   - `test ! -f basic-memory/schemas/partner-context.md`
-  - `grep -rEin "PartnerContext|partner-context" basic-memory/ .claude/agents/ .claude/rules/ .claude/skill-registry.md templates/ atlas/ sources/ archives/README.md AGENTS.md CLAUDE.md GETTING-STARTED.md .obsidian/` must return nothing, no exception: a dangling `PartnerContext` type or a link to a deleted schema is always a defect.
-  - `grep -rEin "partner" basic-memory/ .claude/agents/ .claude/rules/ .claude/skill-registry.md templates/ atlas/ sources/ archives/README.md AGENTS.md CLAUDE.md GETTING-STARTED.md .obsidian/` must return nothing, or only the generic prose in `communication.md`, `knowledge.md`, and `emails.md` that section 5 deliberately keeps. Anything else is unfinished work, not an accepted exception.
-  Maintenance scripts sit outside these paths and are expected to still mention partner-context; that is by design. If any check fails, finish the cleanup NOW before moving on.
+  - `grep -rEin --exclude-dir=scripts "PartnerContext|partner-context" basic-memory/ .claude/agents/ .claude/rules/ .claude/skill-registry.md templates/ atlas/ sources/ archives/README.md AGENTS.md CLAUDE.md GETTING-STARTED.md .obsidian/` must return nothing, no exception: a dangling `PartnerContext` type or a link to a deleted schema is always a defect.
+  - `grep -rEin --exclude-dir=scripts "partner" basic-memory/ .claude/agents/ .claude/rules/ .claude/skill-registry.md templates/ atlas/ sources/ archives/README.md AGENTS.md CLAUDE.md GETTING-STARTED.md .obsidian/` must return nothing, or only the generic prose in `communication.md`, `knowledge.md`, and `emails.md` that section 5 deliberately keeps. Anything else is unfinished work, not an accepted exception.
+  `--exclude-dir=scripts` leaves out `basic-memory/scripts/`, because the maintenance scripts are expected to still mention partner-context by design. If any check fails, finish the cleanup NOW before moving on.
 - Re-read the two written files once to confirm frontmatter is valid YAML, and that `sources/internal/CONTEXT.md` carries `date` (required by the `note` schema).
 
 Report what was written and removed, in two short lists.
