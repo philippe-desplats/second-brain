@@ -6,7 +6,126 @@ Structural changes to this workspace. Content changes (notes, projects) are trac
 
 ## Unreleased
 
-- **`check_consistency.py` called alias-reachable links dead.** Its wiki-link resolver built its table from `title:`, `client:`, `partner:`, `name:` and `subject:` and never read `aliases:`, although the `topic` schema declares the field for exactly this purpose and the three demo topics use it. A link written as `[[onboarding]]` to a topic titled `Client Onboarding` was therefore reported as resolving to nothing, and every such link inflated a count the check exists to make actionable. Both YAML spellings of the list are now read, the inline `[a, b]` the demo topics use and the block form, so a note reformatted later does not drop out of the table. A link that genuinely resolves to nothing is still reported and the check still exits non-zero.
+## 0.5.1
+
+Wiki-links now resolve, in Basic Memory and in Obsidian. This release asks for 2 gestures the update recipe cannot make for you: install the Alias Linker community plugin in Obsidian, and run the title and alias passes once over your own notes. The upgrade prompts below carry both.
+
+- Wiki-links resolved almost nothing, and the rule file explained why wrongly. `.claude/rules/frontmatter.md` claimed a link resolves on `client:`, `partner:`, `name:` or `title:`, when Basic Memory reads `title:` alone and Obsidian reads the file basename alone. With every context file named `CLAUDE.md` and every brief named `README.md`, a correctly written link reached nothing in either tool. On the demo content, 22 of the 42 relations in the note zones pointed at nothing in Basic Memory. They all resolve now. The rule is rewritten around what each tool actually reads.
+- Entity titles now equal their identity field. Basic Memory needs `title:` to match the name used in links, so `align_entity_titles.py` sets it from `client:`, `partner:` or `name:`, dry-run by default. The 6 demo entity notes are aligned, and the entity template, the 2 context schemas and `/ops-init-project` stop producing the old `{Name}, Context` title or no title at all, which would have recreated the defect on the next client. The H1 keeps its wording, only the frontmatter field moves.
+- Obsidian gets its bridge. `add_title_aliases.py` copies a cited note's `title:` into its `aliases:`, and `.claude/hooks/title_aliases.py`, wired by a new project `.claude/settings.json`, reruns it after every write, so a newly cited note gets its alias in the same session. `corpus.py` holds the definition of a note both depend on. `aliases` is now declared on every schema, and `title` on `person`, `topic` and `service`, since `audit_field_usage.py` would otherwise report both as used and declared nowhere. Aliases only resolve through the Alias Linker community plugin (`johannrichard/alias-linker`), since Obsidian itself ignores them for link resolution by design. Without the plugin they sit in the frontmatter and do nothing. It is not preinstalled: `.obsidian/community-plugins.json` stays `[]`, and Bases still needs nothing.
+- `check_unresolved_relations.py` measures the real damage. It reads the Basic Memory index in read-only mode and sorts each dead target into something actionable. Reindex first. The count covers the whole workspace, so the example links in `basic-memory/schemas/` and the READMEs appear in it too, and only some of them are recognized as examples.
+- `check_consistency.py` called alias-reachable links dead. Its wiki-link resolver built its table from `title:`, `client:`, `partner:`, `name:` and `subject:` and never read `aliases:`, although the `topic` schema declares the field for exactly this purpose and the 3 demo topics use it. A link written as `[[onboarding]]` to a topic titled `Client Onboarding` was therefore reported as resolving to nothing, and every such link inflated a count the check exists to make actionable. Both YAML spellings of the list are now read, the inline `[a, b]` the demo topics use and the block form, so a note reformatted later does not drop out of the table. A link that genuinely resolves to nothing is still reported and the check still exits non-zero. It stays permissive on purpose, so it under-reports: a link reachable only through `client:` resolves in neither tool and this check will not flag it. Use `check_unresolved_relations.py` for the real count.
+
+### Upgrade prompt, 0.5.0 to 0.5.1
+
+The update recipe in the README brings the rule, the 4 scripts, the hook and the corrected templates. It cannot install a plugin in your Obsidian, and it never touches your notes, so your entity titles and aliases stay as they are until something aligns them.
+
+Paste this into the agent that operates your workspace, from the workspace root.
+
+```
+You are upgrading this second-brain workspace from boilerplate version 0.5.0 to 0.5.1. Work through the phases in order and stop at every gate.
+
+Rules for the whole run:
+- Never delete a note, a folder, or a frontmatter field. This upgrade only adds and rewrites.
+- Never write into sources/, knowledge/, atlas/, archives/ or inbox/ without showing me the exact diff first and waiting for my approval.
+- If a step's precondition is not met, stop and tell me. Do not improvise around it.
+- Report what you changed at the end, file by file.
+
+Phase 1, preconditions.
+Run `git status --porcelain`. If anything is uncommitted, stop and ask me to commit or stash first: I need to be able to revert this whole upgrade with one command.
+Read `boilerplate_version` in `.sb-config.json`. If it is not 0.5.0, stop and tell me which version it says.
+Then measure how far my infrastructure has drifted from the version I cloned:
+  git remote add upstream https://github.com/philippe-desplats/second-brain.git
+  git fetch upstream --tags
+  git diff --stat v0.5.0..HEAD -- .claude basic-memory/schemas basic-memory/scripts templates
+If that lists no file, my infrastructure is stock and the rest of this prompt applies as written.
+If it lists any file, STOP. I have customized the workspace, phase 2 would overwrite that work, and this is the wrong prompt. Show me the list and tell me to use the upgrade prompt for a customized workspace instead.
+
+Phase 2, infrastructure.
+Phase 1 proved my infrastructure is stock, so this checkout overwrites nothing of mine:
+  git checkout v0.5.1 -- .claude basic-memory/schemas basic-memory/scripts templates
+Show me `git diff --stat --cached` afterwards so I can see the size of what arrived.
+Tell me that `.claude/settings.json` is new and wires a hook that takes effect from my next session.
+
+Phase 3, the plugin. This one is mine to do, you cannot.
+If I use Obsidian, tell me to open Settings, Community plugins, turn off Restricted mode if it is on, then Browse, search for Alias Linker, install it and enable it. Wait until I confirm.
+If I do not use Obsidian, skip this phase and say so. The aliases are harmless without it.
+
+Phase 4, my entity titles.
+Run this dry-run and show me the full output:
+  python3 -I basic-memory/scripts/align_entity_titles.py
+Every line it proposes changes the `title:` of one of my entity notes to its `client:`, `partner:` or `name:` value. Wait for my approval, then run it with `--apply`.
+A changed title breaks any link written against the old one. For each title that changed from an old value, search my note zones for `[[old title` and show me the matches. Propose rewriting each to the new title and wait for my approval. Change nothing else in those notes.
+
+Phase 5, my aliases.
+Run this dry-run and show me the output:
+  python3 -I basic-memory/scripts/add_title_aliases.py
+Wait for my approval, then run it once with `--apply`. Rerun the dry-run, which must report 0 to modify. If it lists ambiguous titles, two notes share a title: show them to me and leave them, the fix is to retitle one of them and that is my call.
+
+Phase 6, verification and close.
+Set `boilerplate_version` to "0.5.1" in `.sb-config.json`. Run:
+  python3 -I basic-memory/scripts/check_consistency.py
+  python3 -I basic-memory/scripts/check_orphans.py
+  python3 -I basic-memory/scripts/check_symmetric_relations.py --check
+If Basic Memory is configured, run `bm reindex` then `python3 -I basic-memory/scripts/check_unresolved_relations.py`, and show me the count.
+Then tell me what none of this verifies: only clicking a wiki-link in Obsidian proves Alias Linker resolves it. The Backlinks pane is no proof, it mixes linked and unlinked mentions, and unlinked mentions do read aliases.
+```
+
+### Upgrade prompt, 0.5.0 to 0.5.1, for a customized workspace
+
+Use this one if phase 1 of the prompt above told you to, meaning `git diff v0.5.0..HEAD` reports changes under `.claude`, `basic-memory/schemas`, `basic-memory/scripts` or `templates`. It carries the intent of each change rather than a diff, and it allows skipping an intent your fork already covers.
+
+```
+You are upgrading this second-brain workspace from boilerplate version 0.5.0 to 0.5.1. I have customized the infrastructure, so you must NOT check out upstream files over mine. For each change below, read my version of the file first, then decide between three outcomes: apply, adapt, or skip because my fork already covers the intent. Justify every skip in one line.
+
+Rules for the whole run:
+- Never overwrite one of my files wholesale. Every edit is surgical and preserves what I wrote.
+- Never delete a note, a folder, or a schema field.
+- Show me a diff and wait for approval before each write.
+- If you cannot tell whether my fork already covers an intent, ask me instead of deciding.
+
+Phase 0, map my fork. Run:
+  git remote add upstream https://github.com/philippe-desplats/second-brain.git
+  git fetch upstream --tags
+  git diff --stat v0.5.0..HEAD -- .claude basic-memory/schemas basic-memory/scripts templates
+Give me the list of files I changed, and for each one a sentence on what my change appears to do.
+
+Phase 1, the intents. Work through them in order. For each, tell me apply, adapt or skip, and why.
+
+1. The rule must describe what the tools actually read.
+   Basic Memory resolves a wiki-link on `title:` alone, Obsidian on the file basename alone. Upstream rewrote the Resolution section of `.claude/rules/frontmatter.md` accordingly and added an Obsidian section. Read `git show v0.5.1:.claude/rules/frontmatter.md` and port both sections into my version of the rule, keeping any resolution convention of my own that stays true.
+
+2. An entity note's `title:` must equal the name its links use.
+   Upstream added `align_entity_titles.py` and changed what writes entity notes: the entity template, `title:` descriptions in the 2 context schemas, and `/ops-init-project`, which wrote no `title:` at all. New files are a plain copy. If I renamed the entity zones, adapt the `ZONES` table at the top of the script. If my fork deliberately writes descriptive titles, tell me: the alternative is writing links against those titles, and that has to be my decision.
+   Run the script as a dry-run, show me the output, and wait. After `--apply`, search my note zones for links written against each old title and propose rewriting them.
+
+3. Obsidian needs a bridge from titles to files.
+   Upstream added `add_title_aliases.py`, plus `corpus.py`, which defines what counts as a note. If my fork excludes folders of its own from the corpus, add them to `corpus.py`. Tell me to install the Alias Linker community plugin, which I must do myself in Obsidian, then run the pass as a dry-run, show me the output, wait, and apply it once. Skip this whole intent if I do not use Obsidian.
+
+4. The aliases must not decay.
+   Upstream added `.claude/hooks/title_aliases.py` and wired it as a PostToolUse hook on Write and Edit in `.claude/settings.json`. Copy the hook. If I already have a `.claude/settings.json`, merge the entry into my `hooks` block and leave everything else in place, never replace the file. If I run hooks of my own on the same event that rewrite the same notes, tell me: this one excludes the written note on a Write to avoid racing them.
+
+5. The check must see aliases, and the real damage must be measurable.
+   `check_consistency.py` now reads `aliases:` when building its wiki-link table, in both YAML spellings. If I forked that script, port the change rather than copying the file. `check_unresolved_relations.py` is new and additive: it reads the Basic Memory index in read-only mode.
+
+6. What upstream deliberately did NOT change, so you do not "fix" it.
+   Context files stay named `CLAUDE.md` and briefs stay named `README.md`. No file was renamed and no link was rewritten to `[[file|label]]`, because that would break Basic Memory.
+   H1 headings keep the `{Name}, Context` wording. Only the frontmatter `title:` moved.
+   `check_consistency.py` stays permissive about `client:`, `partner:`, `name:` and `subject:`.
+   Alias Linker is not preinstalled, `.obsidian/community-plugins.json` stays `[]`.
+
+Phase 2, what falls outside every intent above.
+Run `git diff --name-only v0.5.0..v0.5.1` and list anything you have not already handled. For each, say in one line whether it matters for my fork. Demo notes and documentation are upstream's own and I do not need them unless I want them.
+
+Phase 3, verification. Run these against MY workspace and show me the output:
+  python3 -I basic-memory/scripts/check_consistency.py
+  python3 -I basic-memory/scripts/check_orphans.py
+  python3 -I basic-memory/scripts/check_symmetric_relations.py --check
+If Basic Memory is configured, run `bm reindex` then `python3 -I basic-memory/scripts/check_unresolved_relations.py`.
+Expect findings on a customized workspace, and sort them into what comes from this upgrade and what comes from my fork.
+
+Phase 4, close. Set `boilerplate_version` to "0.5.1" in `.sb-config.json`. Write me a short record of what you skipped and why. Finally, tell me to click a wiki-link in Obsidian: nothing you ran can verify that Alias Linker resolves it, and the Backlinks pane is no proof, since unlinked mentions read aliases.
+```
 
 ## 0.5.0
 
