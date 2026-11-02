@@ -73,11 +73,35 @@ Inside a schema, the frontmatter contract lives in its `settings.frontmatter:` b
 
 ### Resolution
 
-`[[Entity]]` wikilinks resolve to a note where one of these fields matches the value:
-- `client:` (for `sources/clients/{X}/CLAUDE.md`)
-- `partner:` (for `sources/partners/{X}/CLAUDE.md`)
-- `name:` (for `person`, `topic`, `service`)
-- `title:` (fallback for everything else)
+Basic Memory resolves a wiki-link on the `title:` field only. It never looks at `client:`, `partner:` or `name:`. A note whose `title:` differs from the name used in links is unreachable through the graph: the link still renders, the note is still searchable, but the edge points to nothing and a context traversal stops there.
+
+The rule that follows, for every entity note:
+
+- `sources/clients/{X}/CLAUDE.md`, set `title:` equal to `client:`
+- `sources/partners/{X}/CLAUDE.md`, set `title:` equal to `partner:`
+- `atlas/{people,topics,services}/*.md`, set `title:` equal to `name:`
+- descriptive wording (a suffix, a tagline) belongs in the H1 or in an observation, never in `title:`
+
+Resolution is exact, case-sensitive and accent-sensitive. A link written with a surname in capitals does not reach a note titled in normal case.
+
+Audit the corpus with `python3 basic-memory/scripts/align_entity_titles.py` (dry-run by default) and measure the damage with `python3 basic-memory/scripts/check_unresolved_relations.py`, which reads the indexed database, so reindex first.
+
+### Obsidian resolution, `aliases:`
+
+Obsidian resolves a wiki-link on the file basename only, case-insensitive. It reads neither `title:` nor `aliases:` for resolution, which is an intentional design decision rather than a gap. Every context file being `CLAUDE.md` and every project brief being `README.md`, a link written for Basic Memory reaches nothing in Obsidian and the graph shows ghost nodes.
+
+Two things close that gap, and both are needed.
+
+- Every note that a wiki-link cites carries its own `title:` verbatim in `aliases:`, right after `title:`. The field is written by a pass, never by hand. `basic-memory/scripts/add_title_aliases.py` adds it, and the `.claude/hooks/title_aliases.py` hook reruns it after every write, so a newly cited note gets its alias in the same session. Basic Memory ignores the field, `title:` stays its only resolution key.
+- Alias resolution itself comes from a community plugin. Install Alias Linker (`johannrichard/alias-linker`), which resolves a bare wiki-link written on an alias when the native lookup fails. Without it the aliases sit in the frontmatter and resolve nothing.
+
+Two traps. The Backlinks pane is not proof that an alias resolves, it lists linked and unlinked mentions together and unlinked mentions do read `aliases:`. And a title shared by 2 notes gets no alias, the pass lists it as ambiguous and the fix is to retitle one of them, never to alias both.
+
+Hand-written aliases stay. A topic that declares real synonyms keeps them, the pass prepends the title without dropping anything.
+
+Audit with `python3 basic-memory/scripts/add_title_aliases.py`, a dry-run whose report of 0 to modify means no alias is missing.
+
+Note on `check_consistency.py`: it accepts `client:`, `partner:`, `name:` and `subject:` as resolution keys on top of `title:` and `aliases:`. That is deliberately permissive, so it under-reports. A link reachable only through `client:` resolves in neither tool and that check will not flag it. Use `check_unresolved_relations.py` for the real count.
 
 ### Collision case
 
@@ -148,7 +172,7 @@ Check via `python3 basic-memory/scripts/check_symmetric_relations.py --check`.
 
 ## Maintenance scripts
 
-In `basic-memory/scripts/` (15 scripts):
+In `basic-memory/scripts/` (19 scripts):
 
 - `check_double_frontmatter.py`, detects files with double frontmatter (Basic Memory bug to work around)
 - `fix_double_frontmatter.py`, automatically fixes doubles by merging them
@@ -161,6 +185,10 @@ In `basic-memory/scripts/` (15 scripts):
 - `check_symmetric_relations.py`, audits symmetric pairs
 - `check_orphans.py`, flags notes with no inbound or outbound relations
 - `generate_indexes.py`, regenerates the `*-static.md` indexes in `atlas/maps/`
+- `align_entity_titles.py`, sets the `title:` of entity notes to their identity field, dry-run by default
+- `add_title_aliases.py`, copies a cited note's `title:` into its `aliases:`, also run by the `.claude/hooks/title_aliases.py` hook
+- `check_unresolved_relations.py`, reports the wiki-links that resolve to nothing in the Basic Memory index
+- `corpus.py`, not a pass: the shared definition of what counts as a note, imported by `add_title_aliases.py`
 - `check_consistency.py`, validates skill frontmatter templates against the schemas, flags properties a Bases view reads but no schema declares, and reports dead wiki-links
 - `audit_field_usage.py`, measures the real fill rate of every declared schema field and surfaces fields used in notes but declared nowhere
 - `propose_pruning.py`, proposes notes untouched and unlinked for a period, for human validation; never deletes
