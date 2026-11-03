@@ -6,6 +6,29 @@ Structural changes to this workspace. Content changes (notes, projects) are trac
 
 ## Unreleased
 
+## 0.5.2
+
+The 0.5.1 upgrade prompt for a customized workspace is corrected. A run on a forked workspace showed 3 gaps, and the prompt in the 0.5.1 section below now closes them. Nothing else changed, no rule, schema, script, hook or template.
+
+- It never asked for the schema declarations. 0.5.1 declared `aliases` on every schema and `title` on `person`, `topic` and `service`, and a literal reading of the intents skipped all of it. Validation does not reject an undeclared field, so nothing failed, but `audit_field_usage.py` then reports both as used in notes and declared in no schema. Intents 2 and 3 now carry the declarations, and the verification phase runs that audit.
+- It did not warn that a renamed zone breaks other scripts. It adapted the `ZONES` table of `align_entity_titles.py` and stopped there, while `check_symmetric_relations.py` hard-codes `sources/partners`, scans 0 partners in a renamed zone and flags every client relation as an orphan. Intent 2 now asks for a search of the old zone paths, and the verification phase names the symptom.
+- It asked for an approval before every single write, more than 30 on a small fork. Approvals are now grouped by intent, one diff per intent, and each pass that rewrites notes keeps its own gate.
+- A second run on a fresh fork copy found 3 smaller gaps, now closed. The zone search covered paths but not the bare zone name in the skills and `.sb-config.json`, the verification looked for an audit section that is printed only when it has entries, and the `settings.json` merge did not forbid reformatting the file.
+
+### Upgrade prompt, 0.5.1 to 0.5.2
+
+A stock workspace has nothing to apply: set `boilerplate_version` to "0.5.2" in `.sb-config.json`.
+
+If you already ran the 0.5.1 prompt for a customized workspace, paste this into the agent that operates your workspace, from the workspace root.
+
+```
+You are upgrading this second-brain workspace from boilerplate version 0.5.1 to 0.5.2. This release corrects the 0.5.1 upgrade prompt for a customized workspace and changes no infrastructure file. Do not check out anything from upstream. For each step below, show me one diff covering every file it touches and wait for my approval before writing.
+
+1. Run `git fetch upstream --tags`, then `python3 -I basic-memory/scripts/audit_field_usage.py`, and look for its section titled "Fields used in notes but declared in no schema". The audit prints it only when it has an entry, so tell me whether it appeared, even when it did not. For every `aliases` or `title` listed there, propose declaring the field in that schema with the line upstream uses, which `git show v0.5.2:basic-memory/schemas/person.md` carries for both. Also declare `aliases?` on any schema of mine that still lacks it, since the alias pass writes the field on any cited note.
+2. If I renamed an entity zone, search `basic-memory/scripts` and `.claude` for the old path, for example `sources/partners`, and list every hit. Then search `.claude/skills` and `.sb-config.json` for the bare zone name, since `/ops-init-project` reads the `zones` array and takes a renamed zone for a pruned one. `check_symmetric_relations.py` is the one that fails silently. Propose the edits and wait.
+3. Set `boilerplate_version` to "0.5.2" in `.sb-config.json`. Rerun the audit and `python3 -I basic-memory/scripts/check_symmetric_relations.py --check`, and show me both outputs.
+```
+
 ## 0.5.1
 
 Wiki-links now resolve, in Basic Memory and in Obsidian. This release asks for 2 gestures the update recipe cannot make for you: install the Alias Linker community plugin in Obsidian, and run the title and alias passes once over your own notes. The upgrade prompts below carry both.
@@ -81,7 +104,7 @@ You are upgrading this second-brain workspace from boilerplate version 0.5.0 to 
 Rules for the whole run:
 - Never overwrite one of my files wholesale. Every edit is surgical and preserves what I wrote.
 - Never delete a note, a folder, or a schema field.
-- Show me a diff and wait for approval before each write.
+- Group your writes by intent. For each intent, show me one diff covering every file it touches and wait for one approval. A pass that rewrites my notes (titles, links, aliases) keeps its own gate, dry-run first. Never apply a change I have not seen in a diff, and never carry an approval over to the next intent.
 - If you cannot tell whether my fork already covers an intent, ask me instead of deciding.
 
 Phase 0, map my fork. Run:
@@ -96,14 +119,14 @@ Phase 1, the intents. Work through them in order. For each, tell me apply, adapt
    Basic Memory resolves a wiki-link on `title:` alone, Obsidian on the file basename alone. Upstream rewrote the Resolution section of `.claude/rules/frontmatter.md` accordingly and added an Obsidian section. Read `git show v0.5.1:.claude/rules/frontmatter.md` and port both sections into my version of the rule, keeping any resolution convention of my own that stays true.
 
 2. An entity note's `title:` must equal the name its links use.
-   Upstream added `align_entity_titles.py` and changed what writes entity notes: the entity template, `title:` descriptions in the 2 context schemas, and `/ops-init-project`, which wrote no `title:` at all. New files are a plain copy. If I renamed the entity zones, adapt the `ZONES` table at the top of the script. If my fork deliberately writes descriptive titles, tell me: the alternative is writing links against those titles, and that has to be my decision.
+   Upstream added `align_entity_titles.py` and changed what writes entity notes: the entity template, `title:` descriptions in the 2 context schemas, and `/ops-init-project`, which wrote no `title:` at all. It also declared `title?` on `person`, `topic` and `service`, which had no such field: port that declaration into my versions of those schemas. New files are a plain copy. If I renamed the entity zones, adapt the `ZONES` table at the top of the script. A zone rename also breaks scripts this upgrade does not touch, and they fail silently: `check_symmetric_relations.py` hard-codes `sources/partners`, scans 0 partners in a renamed zone and flags every client relation as an orphan, and `add_about_relations.py`, `generate_indexes.py` and `retype_files.py` hard-code it too. Search `basic-memory/scripts` and `.claude` for my old zone paths and list every hit. Then search `.claude/skills` and `.sb-config.json` for the bare zone name, `partners` for example, and list those hits too: skills compare it against the `zones` array of `.sb-config.json`, so `/ops-init-project` takes a renamed zone for a pruned one and refuses to create the entity. Fixing them is my fork's debt rather than this upgrade's, so propose the edits and wait. If my fork deliberately writes descriptive titles, tell me: the alternative is writing links against those titles, and that has to be my decision.
    Run the script as a dry-run, show me the output, and wait. After `--apply`, search my note zones for links written against each old title and propose rewriting them.
 
 3. Obsidian needs a bridge from titles to files.
-   Upstream added `add_title_aliases.py`, plus `corpus.py`, which defines what counts as a note. If my fork excludes folders of its own from the corpus, add them to `corpus.py`. Tell me to install the Alias Linker community plugin, which I must do myself in Obsidian, then run the pass as a dry-run, show me the output, wait, and apply it once. Skip this whole intent if I do not use Obsidian.
+   Upstream added `add_title_aliases.py`, plus `corpus.py`, which defines what counts as a note. If my fork excludes folders of its own from the corpus, add them to `corpus.py`. Upstream also declared `aliases?` on every schema, since the pass writes the field on any cited note whatever its type: port that declaration into each of my schemas that lacks it, including any schema I added. `git diff v0.5.0..v0.5.1 -- basic-memory/schemas` shows the exact line. Validation does not reject an undeclared field, so skipping this breaks nothing visible, but `audit_field_usage.py` then reports the field as used and declared nowhere. Tell me to install the Alias Linker community plugin, which I must do myself in Obsidian, then run the pass as a dry-run, show me the output, wait, and apply it once. Skip this whole intent if I do not use Obsidian.
 
 4. The aliases must not decay.
-   Upstream added `.claude/hooks/title_aliases.py` and wired it as a PostToolUse hook on Write and Edit in `.claude/settings.json`. Copy the hook. If I already have a `.claude/settings.json`, merge the entry into my `hooks` block and leave everything else in place, never replace the file. If I run hooks of my own on the same event that rewrite the same notes, tell me: this one excludes the written note on a Write to avoid racing them.
+   Upstream added `.claude/hooks/title_aliases.py` and wired it as a PostToolUse hook on Write and Edit in `.claude/settings.json`. Copy the hook. If I already have a `.claude/settings.json`, merge the entry into my `hooks` block and leave everything else in place, never replace the file. Edit it as text: insert the new entry and leave every other line as I wrote it, since loading and dumping the JSON reformats the whole file and buries the change in the diff. If I run hooks of my own on the same event that rewrite the same notes, tell me: this one excludes the written note on a Write to avoid racing them.
 
 5. The check must see aliases, and the real damage must be measurable.
    `check_consistency.py` now reads `aliases:` when building its wiki-link table, in both YAML spellings. If I forked that script, port the change rather than copying the file. `check_unresolved_relations.py` is new and additive: it reads the Basic Memory index in read-only mode.
@@ -121,7 +144,9 @@ Phase 3, verification. Run these against MY workspace and show me the output:
   python3 -I basic-memory/scripts/check_consistency.py
   python3 -I basic-memory/scripts/check_orphans.py
   python3 -I basic-memory/scripts/check_symmetric_relations.py --check
+  python3 -I basic-memory/scripts/audit_field_usage.py
 If Basic Memory is configured, run `bm reindex` then `python3 -I basic-memory/scripts/check_unresolved_relations.py`.
+The audit prints a section titled "Fields used in notes but declared in no schema" only when it has an entry, so its absence is the pass. If it appears, it must not list `aliases` or `title`. Tell me whether it appeared, even when it did not. If the symmetric check reports 0 partners scanned while I have partners, a renamed zone is the cause, see intent 2.
 Expect findings on a customized workspace, and sort them into what comes from this upgrade and what comes from my fork.
 
 Phase 4, close. Set `boilerplate_version` to "0.5.1" in `.sb-config.json`. Write me a short record of what you skipped and why. Finally, tell me to click a wiki-link in Obsidian: nothing you ran can verify that Alias Linker resolves it, and the Backlinks pane is no proof, since unlinked mentions read aliases.
