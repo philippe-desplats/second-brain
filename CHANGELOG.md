@@ -6,6 +6,185 @@ Structural changes to this workspace. Content changes (notes, projects) are trac
 
 ## Unreleased
 
+## 0.6.0
+
+Every script now reads and writes frontmatter through one tested module. Until this release, 19 frontmatter readers spread over 17 files each implemented part of the YAML grammar, each misread a shape Basic Memory writes on sync, and the passes that rewrite notes rewrote what they had misread. This release ships the fixed scripts, a check that finds the damage the old ones left, and asks you to repair it behind a diff, since no checkout repairs data. A workspace that already ran the 0.5.3 prompt still needs this one: that prompt repaired one shape, list items under an inline `aliases:` line, its detection command misses the indented line the 0.5.3 pass leaves under a long alias, and the 0.5.3 pass kept producing that line after every write.
+
+- The grammar is implemented once. On sync, Basic Memory writes block lists at column 0, folds any value past 80 columns onto a second line, and breaks quoted values the same way. Each script carried its own reader, none of them tested, and each knew a different subset: one skipped column-0 lists, another read a folded value on its first line only, a third read `notes: |` as the value `|`. `frontmatter.py` now reads and writes every shape those readers met, with one quoting policy, and keeps every line it does not need to touch byte for byte. `corpus.py` gives the one walk every pass uses, `note_types.py` the one table both retyping passes read, `check_helpers.py` the schema loader and the wiki-link table the checks share. `CONTRIBUTING.md` used to require each script to duplicate its reader, it now forbids it. The suite runs with `python3 -I -m unittest discover -s basic-memory/scripts -p 'test_*.py'`, over 230 tests on inputs shaped the way Basic Memory writes them.
+- `add_title_aliases.py` broke long aliases, and its hook made it worse on every write. Basic Memory folds an alias longer than about 76 characters over 2 lines, which is what the alias of any title past 80 columns becomes. The 0.5.3 pass read the first line only, wrote an inline list over the key, and left the second line indented under it. That is invalid YAML, and on the next run the pass read the broken list as one more alias and wrapped it into a quoted item, so the line grew by a nested copy of itself after every write. The pass also built its ambiguity guard after dropping the note excluded by the hook, so a title shared by 2 notes could get an alias, it copied a title holding a backslash without escaping it and added a copy without backslashes on every later run, leaving a frontmatter PyYAML rejects, which the damage check finds without PyYAML and rebuilds from the title, it never matched a title with escaped quotes, and on Windows its paths never matched a note zone. All 5 are fixed.
+- `retype_fallback_notes.py` broke the frontmatter it retyped. It dropped the newline after the opening delimiter, so the file started `---title:` and no reader saw a frontmatter at all. It also retyped a note in `knowledge/` that declares a `subtype`, against `.claude/rules/knowledge.md`. `retype_files.py` inserted `type:` after the first line of the block, which put it inside a `tags:` list, and its second run read the result as correct. Under any other first field the same insertion landed between the key and the rest of its value: a folded title, plain, single-quoted or double-quoted, an indented list, a `|` block. YAML then reads a truncated or empty first field and `type: meeting plan for Q3` or `type: meeting - a - b`, which mostly stays valid YAML, so PyYAML sees nothing, and the 0.6.0 `retype_files.py --apply` would delete those lines for good. The damage check finds all of these from the shape alone, with or without PyYAML, and both prompts repair them before any 0.6.0 pass writes a note. The 2 passes also typed the same file differently. Both now ask `note_types.py`, where the word right after the date wins, as the naming convention says.
+- `fix_double_frontmatter.py` wrote on every invocation, `--dry-run` included. When it dropped a duplicate key it kept that key's list items, which reattached to the key above, and a body that opened on a `---` rule was taken for a second frontmatter and swallowed. 4 skills ran it unconditionally after every reindex: `/archive`, `/distill`, `/moc-new` and `/curate`. It now previews by default and writes only with `--apply`, the 4 skills run `check_double_frontmatter.py` first and repair only after you approve, and `/sb-doctor` documents the same.
+- `align_entity_titles.py` replaced only the first line of a folded title, so the rest reattached to the identity: `Initech` plus a stray `2026` read as `Initech 2026`, and the second run reported the note compliant. It also wrote `title: Initech: Studio` unquoted, which is invalid YAML. Both are fixed, and `regen_titles.py` no longer gives an entity context file a `{Name}, Context` title.
+- `add_observations_from_frontmatter.py` lost most of what it should write once Basic Memory had rewritten a note. It ignored column-0 lists, wrote a folded value truncated at its first line, and wrote `- [notes] |` for a block scalar. It also copied a quoted value into the body as written, quotes stripped and nothing decoded, `l''atelier` for `l'atelier` and `\"` for `"`, and `add_about_relations.py` wrote the same misread name into `- about` links, which then resolved to nothing. The 0.6.0 pass decodes, so on a note it already annotated it would add the right observation next to the stale one: the damage check finds the stale ones, and the prompts repair them first. On the demo content rewritten by Basic Memory, it planned 3 of the 9 observations of `Catalog Search`, 3 of 8 for `Client Onboarding`, 3 of 7 for `Lead Sourcing`, and cut the referral terms of Proseware at "the first engagement,". The new pass plans exactly what the old one planned on the original demo, and its dry-run now lists the observations the old one skipped.
+- `add_about_relations.py` and `auto_link_entities.py` wrote where no pass may write. Both ignored the exclusions of `corpus.py` and wrote into `repo-files/`, which ships to a client repository, `prompts/`, `captures/` and `tmp/`, and `auto_link_entities.py` also linked the Markdown files at the workspace root: on the demo, `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md` and `GETTING-STARTED.md`. Every writing pass now walks corpus notes only. `add_about_relations.py` covers emails and meetings, the 2 types whose path names their entity, and stops linking internal notes to `Internal`, a note that does not exist: it uses `organization` from `.sb-config.json` and skips them while it is null.
+- The checks read whole titles. `check_consistency.py` truncated a folded title, so a link to the full title was reported dead and a link to its first line resolved, the false positive 0.5.3 listed as not fixed. `check_orphans.py` and `propose_pruning.py` missed links on full titles and aliases, `generate_indexes.py` wrote truncated titles into the indexes, `auto_link_entities.py` wrote links to them into note bodies, and `check_consistency.py` ignored a `topics:` block list. `check_symmetric_relations.py` printed its usage and exited 1 when run without an argument, as `/sb-doctor` ran it, exited 0 on a real asymmetry with `--check`, never checked the partner side of `co_delivered_with`, and read a link carrying a display label as a missing target. It now runs the check without an argument and exits 1 on any asymmetry. `check_unresolved_relations.py` counted every Basic Memory project in the index, it now counts the one `basic_memory_project` names, and says so when it is null. `curation_reminder.py` wrote a note without `schema_version` and notified on every run.
+- `check_frontmatter_damage.py` is new and read-only. It knows the 15 shapes the 0.5.1 to 0.5.3 passes are known to leave, including any key line swallowed by another field that the retyping and title passes now refuse to touch, prints one line per hit with the exact repair when one can be computed, and says "needs review" when the repair takes a judgement, a list item whose key was lost, an observation a human may have shortened. With `--include-excluded` it also scans the folders `corpus.py` excludes. Wiki-links that `auto_link_entities.py` inserted look exactly like yours, so it names the files that hold some and leaves the question to `git log -p`. A frontmatter PyYAML rejects in a shape it does not know is reported, never repaired, and only when PyYAML is importable. On the demo content rewritten by Basic Memory, one run of each 0.5.3 pass leaves 1 hit, the truncated Proseware observation. A copy of the demo seeded with the notes those passes break, long titles, a double frontmatter, a hand-written block scalar, an identity that needs quotes, a title with a backslash, meetings with no `type:` under a long plain or single-quoted title, an indented list or a block scalar, an entity named in single quotes with an apostrophe, then run through the 0.5.2 alias pass and every 0.5.3 pass, gave 28 hits in 23 files, the 14 known shapes, the same with and without PyYAML. Following the stock prompt below on that copy repaired all of them.
+- The writing passes converge in sequence, not in one run. A pass that adds links, `auto_link_entities.py`, can create new alias candidates, so a second full cycle of the passes may still add aliases, and a third changes nothing. Measured on the demo content.
+- The 0.5.3 upgrade prompts are corrected in place. Both checked the tags with `git rev-parse --verify v0.5.2 v0.5.3`, which takes a single revision and always fails, so an agent following them literally stopped at phase 1. They now check one tag per call. A workspace that never got past that step can use the prompt below directly.
+- Not changed, deliberately: the schemas, the note types, the templates, when the hook fires and its wiring in `.claude/settings.json`, and every script's name, arguments and defaults, except the 2 above. The hook only asks `corpus.py` for the note zones now, instead of keeping its own copy of the list. The alias pass still writes an inline list. `auto_link_entities.py` still scans the whole vault on every run, and the hook still reruns the full alias pass after every write.
+
+### Upgrade prompt, 0.5.3 to 0.6.0
+
+The update recipe in the README brings every fixed script and the damage check. It never touches your notes, so a note an old pass damaged stays damaged until something repairs it. This prompt accepts a workspace on 0.5.1, 0.5.2 or 0.5.3: 0.5.2 changed no infrastructure file, and 0.5.3 changed only `basic-memory/scripts/add_title_aliases.py`.
+
+It is only for a workspace that never ran `/sb-init`. `/sb-init` personalizes `basic-memory/schemas`, `.claude/rules` and `templates`, the service types, the category enums and every trace of a zone it prunes, so on an initialized workspace phase 1 always finds drift and stops. An initialized workspace uses the prompt for a customized workspace below, which keeps those edits.
+
+Paste this into the agent that operates your workspace, from the workspace root.
+
+```
+You are upgrading this second-brain workspace to boilerplate version 0.6.0, from 0.5.1, 0.5.2 or 0.5.3. Work through the phases in order and stop at every gate.
+
+Rules for the whole run:
+- Never delete a note, a folder, or a frontmatter field. This upgrade only adds and rewrites.
+- Never write into sources/, knowledge/, atlas/, archives/ or inbox/ without showing me the exact diff first and waiting for my approval.
+- If a step's precondition is not met, stop and tell me. Do not improvise around it.
+- Report what you changed at the end, file by file.
+- Run no 0.6.0 script with `--apply` before phase 4 is done. The new passes read some damaged shapes as valid frontmatter, `retype_files.py --apply` would delete for good the lines of a title, a list or a block caught in type-inside-folded-title, and `add_observations_from_frontmatter.py --apply` would add the right observation next to each undecoded-quote-in-body one instead of replacing it.
+
+Phase 1, preconditions.
+Run `git status --porcelain`. If it prints anything, stop and ask me to commit or stash first: I need to be able to revert this whole upgrade with one command.
+Read `initialized` in `.sb-config.json`. If it is true, stop and tell me to use the upgrade prompt for a customized workspace: `/sb-init` edited my schemas, rules and templates, the drift check below would list them, and phase 2 would overwrite them.
+Read `boilerplate_version` in `.sb-config.json`. It must be 0.5.1, 0.5.2 or 0.5.3. If it says anything else, stop and tell me which version it says. The baseline for the next step is v0.5.2 when it says 0.5.1 or 0.5.2, since their infrastructure is identical, and v0.5.3 when it says 0.5.3.
+Then fetch the tags, one check per tag:
+  git remote get-url upstream || git remote add upstream https://github.com/philippe-desplats/second-brain.git
+  git fetch upstream --tags
+  git rev-parse --verify --quiet 'v0.5.2^{commit}'
+  git rev-parse --verify --quiet 'v0.5.3^{commit}'
+  git rev-parse --verify --quiet 'v0.6.0^{commit}'
+If any of the 3 prints nothing, stop and tell me which tag is missing. Then measure how far my infrastructure has drifted from my baseline, replacing BASELINE with v0.5.2 or v0.5.3:
+  git diff --stat BASELINE..HEAD -- .claude basic-memory/schemas basic-memory/scripts templates
+If that lists no file, my infrastructure is stock and the rest of this prompt applies as written.
+If it lists any file, STOP. I have customized the workspace, phase 2 would overwrite that work, and this is the wrong prompt. Show me the list and tell me to use the upgrade prompt for a customized workspace instead.
+
+Phase 2, infrastructure.
+It comes before any repair: the hook in `.claude/settings.json` reruns the alias pass after every write you make, and the old pass would damage more notes while you repair the first ones.
+  git checkout v0.6.0 -- .claude basic-memory/schemas basic-memory/scripts templates
+Show me `git diff --cached --stat`. Every path it lists must sit under those 4 directories. This release changes nothing in a data zone, so there is nothing else to check out. Outside the recipe it changes only `CHANGELOG.md`, `CONTRIBUTING.md` and `.sb-config.json`: the first 2 are upstream's own documents and I do not need them, the third you edit in phase 5.
+From here on, the hook runs the fixed alias pass after each of your writes, and may add an alias to a cited note on its own, without a diff. That is expected: those writes show in the final `git diff`, and the next phase reruns the check before every shape, so they never leave a stale line number behind.
+
+Phase 3, find the damage. Run, from the workspace root:
+  python3 -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded
+Show me its full output. Each hit is one line, `path:line: shape: what -> repair`. If its output ends with the note that PyYAML is not importable, rerun it once with an interpreter that has PyYAML, any python3 where `python3 -c 'import yaml'` succeeds, or `uvx --with pyyaml python -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded` when `uv` is installed. If neither is available, go on without it and tell me that a frontmatter broken in a shape the check does not know was not looked for. If it exits 0, tell me no note is damaged and go to phase 5.
+
+Phase 4, repair, one shape at a time.
+Take the shapes in this order, skipping the ones the check did not report: broken-opener, type-inside-folded-title, stray-alias-items, orphan-continuation, unescaped-backslash-alias, type-inside-list, concatenated-title, unquoted-title, truncated-wikilink, undecoded-quote-in-body, observation-block-indicator, observation-truncated, detached-list-items, pass-write-in-excluded-folder, invalid-yaml.
+The hook is the one writer you cannot hold back, and it runs the 0.6.0 alias pass after each of your writes, which is why type-inside-folded-title comes second: until it is repaired the hook reads a truncated title, and the repair also completes any alias the hook took from it.
+For each shape:
+1. Rerun the check first, since a repair shifts the line numbers of the lines below it, and work from that fresh output.
+2. For every hit whose repair reads `replace lines A-B with N lines: ...`, prepare the edit that replaces exactly those lines of the file with exactly those lines, each one JSON-decoded from its quoted form, `\"` back to `"` and `\\` back to `\`, and changes nothing else. When one file has several hits of the shape, apply them from the bottom of the file up, so the line numbers of the others stay true.
+3. For every hit that says `needs review`, show me the lines around it, run `git log -p --follow -- <path>`, and quote the commit that changed that region. Then propose a repair or propose to leave it. When the hit also carries a replacement, that replacement is your proposal. For detached-list-items, the commit usually shows the key that was dropped above the items, and the proposal puts the items back under that key, appended to its list when the block still holds the key higher up, so no key appears twice. For pass-write-in-excluded-folder, if the history shows a pass wrote them, the proposal is to remove the `- about [[...]]` line, the `## Relations` heading when nothing else sits under it, and the blank lines the same commit added around them. For invalid-yaml, never propose a repair, show me the frontmatter and leave it.
+4. Before writing anything, show me one diff covering every file of that shape and wait for my approval, then apply it. Never carry an approval over to the next shape. A repair the check gives as exact is still only a proposal: it goes into the diff like every other, and I can refuse it hit by hit. If one would shorten a title or rewrite a line I may have written that way on purpose, point it out in the diff.
+Whatever the check found, tell me that `auto_link_entities.py` before 0.6.0 also wrote wiki-links into the Markdown files at the workspace root, `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md` and `GETTING-STARTED.md`, and into the excluded files the check lists under its `note:` lines, and that those links look exactly like mine. Do not touch them: `git log -p -- <path>` on each shows which commit added which link, and removing them is my call.
+When every shape is done, rerun the check. It must exit 0, or list only invalid-yaml hits and the hits I chose to leave.
+
+Phase 5, verification and close.
+Set `boilerplate_version` to "0.6.0" in `.sb-config.json`, changing nothing else in the file. Run:
+  python3 -I -m unittest discover -s basic-memory/scripts -p 'test_*.py'
+  python3 -I basic-memory/scripts/check_consistency.py
+  python3 -I basic-memory/scripts/check_orphans.py
+  python3 -I basic-memory/scripts/check_symmetric_relations.py --check
+  python3 -I basic-memory/scripts/check_double_frontmatter.py
+  python3 -I basic-memory/scripts/generate_indexes.py --output-dir "$(mktemp -d)"
+  python3 -I basic-memory/scripts/audit_field_usage.py
+  python3 -I basic-memory/scripts/add_title_aliases.py
+  python3 -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded
+Show me the last lines of each. The test suite must end with OK. The alias dry-run must report 0 to modify: if it lists notes, show them to me and run it with `--apply` only after my approval, then rerun it. The damage check must exit 0, or list only invalid-yaml hits and the hits I chose to leave. If `check_consistency.py` reports `[[Internal]]` as a dead link, the old `add_about_relations.py` wrote it into an internal note: show me each line and propose to replace it with `[[<organization>]]`, the `organization` of `.sb-config.json`. When `organization` is null, propose to leave it until `/sb-init` sets one, and expect `check_consistency.py` to exit 1 on it until then.
+If `basic_memory_project` in `.sb-config.json` is not null, run `bm reindex` then `python3 -I basic-memory/scripts/check_unresolved_relations.py`, and show me the count.
+Then tell me what none of this verifies. The damage check knows only the shapes the old passes are known to leave. When no interpreter with PyYAML was available in phase 3, a frontmatter broken in a shape it does not know was not looked for at all. A wiki-link `auto_link_entities.py` wrote looks exactly like one I wrote, and only the git history tells them apart. A truncated observation it repaired may have been shortened by hand on purpose. And `python3 -I basic-memory/scripts/add_observations_from_frontmatter.py --dry-run` may now plan observations the old pass skipped: that dry-run is mine to read, and to apply with `--apply` if I want them.
+```
+
+### Upgrade prompt, 0.5.3 to 0.6.0, for a customized workspace
+
+Use this one if phase 1 of the prompt above told you to, meaning your workspace ran `/sb-init` or `git diff` against your baseline tag reports changes under `.claude`, `basic-memory/schemas`, `basic-memory/scripts` or `templates`. An initialized workspace always lands here, since `/sb-init` edits its schemas, rules and templates. It carries the intent of each change rather than a diff, and it allows skipping an intent your fork already covers.
+
+```
+You are upgrading this second-brain workspace to boilerplate version 0.6.0, from 0.5.1, 0.5.2 or 0.5.3. I have customized the infrastructure, so you must NOT check out upstream files over mine. For each change below, read my version of the file first, then decide between 3 outcomes: apply, adapt, or skip because my fork already covers the intent. Justify every skip in one line.
+
+Rules for the whole run:
+- Never overwrite one of my files wholesale. Every edit is surgical and preserves what I wrote. A file I never changed may be checked out from v0.6.0, since that overwrites nothing of mine.
+- Never delete a note, a folder, or a schema field.
+- Group your writes by intent. For each intent, show me one diff covering every file it touches and wait for one approval. A pass that rewrites my notes keeps its own gate, dry-run first. Never apply a change I have not seen in a diff, and never carry an approval over to the next intent.
+- If you cannot tell whether my fork already covers an intent, ask me instead of deciding.
+- If `initialized` is true in `.sb-config.json`, `/sb-init` personalized my infrastructure, and phase 0 lists those files as changed: `basic-memory/schemas/service.md` and its `service_type` enum, the `category` enums of the operational schemas, and, for a zone it pruned, `basic-memory/schemas/partner-context.md` removed and that zone's fields, counts and lines gone from the other schemas, `basic-memory/schemas/README.md`, `.claude/rules/frontmatter.md`, `.claude/rules/entities.md`, `.claude/rules/atlas.md`, `templates/entity-CLAUDE-template.md` and `templates/atlas-moc-template.md`. That drift is mine and expected. Preserve it, never undo it as if it were a fork change, and never bring back what it removed when you port an upstream change into one of those files. Of them, 0.6.0 changes only the Maintenance scripts section of `.claude/rules/frontmatter.md`.
+- My baseline is v0.5.2 when `boilerplate_version` in `.sb-config.json` says 0.5.1 or 0.5.2, since their infrastructure is identical, and v0.5.3 when it says 0.5.3. If it says anything else, stop and tell me.
+
+Phase 0, map my fork. Run, replacing BASELINE with my baseline:
+  git remote get-url upstream || git remote add upstream https://github.com/philippe-desplats/second-brain.git
+  git fetch upstream --tags
+  git rev-parse --verify --quiet 'BASELINE^{commit}'
+  git rev-parse --verify --quiet 'v0.6.0^{commit}'
+If either prints nothing, stop and tell me which tag is missing. Then run:
+  git diff --stat BASELINE..HEAD -- .claude basic-memory/schemas basic-memory/scripts templates
+  git diff --stat BASELINE..v0.6.0 -- .claude basic-memory/schemas basic-memory/scripts templates
+Give me the list of files I changed, a sentence on what each change appears to do, and the files both lists share: those are the ones where upstream's change and mine meet.
+
+Phase 1, the intents. For each, tell me apply, adapt or skip, and why. Take them in this order, which is not their numbering:
+  a. The copy step of intent 1, alone: the new modules, the damage check and the tests arrive together, so no test ever runs against a half-copied set.
+  b. Intent 2, the alias pass, before you write anything else: the hook reruns it after every write, and the old pass damages more notes during the repair.
+  c. Intent 9, the damage check and its repair, before any 0.6.0 pass writes a note: the new passes read some damaged shapes as valid frontmatter, `retype_files.py --apply` would delete for good the lines of a title, a list or a block caught in type-inside-folded-title, and `add_observations_from_frontmatter.py --apply` would add the right observation next to each undecoded-quote-in-body one instead of replacing it.
+  d. The rest of intent 1, the readers of the scripts I forked.
+  e. Intents 3 to 8, then 10.
+Run no test, no check and no pass before step a is done, and no script with `--apply` before step c is done. After it, `test_frontmatter.py`, `test_check_helpers.py` and `test_check_frontmatter_damage.py` pass. Every other test file tests one upstream script, and stays red while my copy of that script is still the old one: run it by its own name, `python3 -I -m unittest discover -s basic-memory/scripts -p 'test_add_title_aliases.py'` for instance, once that script is at 0.6.0. The whole suite runs in phase 3.
+
+1. One frontmatter reader, one walk, shared by every script. This is the central intent, the others follow from it.
+   Basic Memory writes block lists at column 0 and folds any value past 80 columns onto a second line. Upstream's scripts each carried their own reader, each misread some of those shapes, and the passes rewrote what they misread. Upstream replaced them with `basic-memory/scripts/frontmatter.py`, a reader and writer that keeps every untouched line byte for byte, `iter_corpus_notes` in `corpus.py`, the one walk every pass uses, `note_types.py` and `check_helpers.py`, and a test suite under `basic-memory/scripts/test_*.py` with its fixtures in `basic-memory/scripts/tests_fixtures/`.
+   The copy step. `frontmatter.py`, `note_types.py`, `check_helpers.py`, `check_frontmatter_damage.py` of intent 9, the tests and their fixtures are new files. Check them out together, in one command, so the suite never meets a module without the damage check its tests import:
+     git checkout v0.6.0 -- basic-memory/scripts/frontmatter.py basic-memory/scripts/note_types.py basic-memory/scripts/check_helpers.py basic-memory/scripts/check_frontmatter_damage.py basic-memory/scripts/tests_fixtures $(git ls-tree --name-only v0.6.0 basic-memory/scripts/ | grep '/test_')
+   If my fork already holds a file of one of those names, stop before the command and tell me. `corpus.py` existed before: if I never changed it, add it to the same command, and if I forked it, port upstream's changes into my version, keeping my exclusions and my zones: the new `rel_posix`, the `root` parameter of `is_corpus_note` and `git_ignored`, `git ls-files -z` in `git_ignored`, and backslash paths accepted by `in_note_zone` and `is_corpus_note`. `git diff BASELINE..v0.6.0 -- basic-memory/scripts/corpus.py` shows all of it. The damage check and several passes call `is_corpus_note(rel, root)`, and against the 0.5.3 version they stop on a `TypeError`. Every script upstream ships now imports these modules. A script of mine that upstream also ships and that I never changed is a plain checkout from v0.6.0. A script I forked keeps its own reader until you port it: tell me, for each forked script, whether its reader handles a column-0 list and a value folded over 2 lines. Test it on a scratch copy of the whole workspace, never on mine: each script finds the workspace from its own path, so a note copied anywhere else is never seen. Run `D=$(mktemp -d) && cp -R . "$D/ws"`, then write `$D/ws/sources/internal/shapes/2026-07-01-note-shapes.md` with this frontmatter between its 2 `---` lines:
+     title: Globex Website Redesign, discovery workshop outcomes and the content inventory
+       plan for Q3
+     type: note
+     aliases:
+     - workshop outcomes
+   Run the forked script from `$D/ws/basic-memory/scripts/`, dry-run first, and read what it reports or writes for that note. If its reader misses either shape, propose porting it onto `frontmatter.py`. If my fork reads frontmatter with a real YAML parser, its reading was never affected, but check its writing: a pass that writes a line by hand can still write invalid YAML, the way upstream's wrote `title: Initech: Studio`.
+   Whatever you decide here, intent 9 runs the damage check: a fork that kept its own readers needs it most.
+
+2. The alias pass must not break long aliases. Basic Memory folds an alias past about 76 characters over 2 lines. The 0.5.3 `add_title_aliases.py` read the first line, wrote an inline list over the key and left the second line indented under it, and every later run nested the broken list into itself. Upstream also fixed 4 smaller defects in it: the ambiguity guard must see every note before the hook's `--exclude` is applied, a backslash in a title must be escaped on write, escaped quotes decoded on read, and a Windows path must match a note zone. `.claude/hooks/title_aliases.py` now asks `corpus.in_note_zone` instead of copying the zone list.
+
+3. The retyping passes must keep the frontmatter valid and agree. `retype_fallback_notes.py` dropped the newline after the opening `---`, so the file started `---title:`. It also retyped a `knowledge/` note that declares a `subtype`. `retype_files.py` inserted `type:` inside the first list of the block. Both now read one table, `note_types.py`, where the word right after the date in the file name wins. If I added note types or folder rules of my own to either script, carry them into `note_types.py` rather than back into the scripts.
+
+4. `fix_double_frontmatter.py` must not write unasked. It wrote on every invocation, `--dry-run` included, kept the list items of a duplicate key it dropped, and swallowed a body that opened on a `---` rule. It is now dry-run by default with `--apply` to write. The 4 skills that ran it after every reindex, `/archive`, `/distill`, `/moc-new` and `/curate`, now run `check_double_frontmatter.py` first and repair only after approval, and `/sb-doctor` documents the same. If I call it from a skill or a script of my own, add `--apply` where I really want it to write.
+
+5. Entity titles must be replaced whole and quoted when needed. `align_entity_titles.py` replaced the first line of a folded title only, and wrote `title: Initech: Studio` unquoted. `regen_titles.py` gave a context file a `{Name}, Context` title.
+
+6. The observation pass must read what Basic Memory writes. `add_observations_from_frontmatter.py` ignored column-0 lists, truncated folded values and wrote `- [notes] |` for a block scalar. If I changed its table of fields per type, keep my table.
+
+7. Passes must write only into corpus notes. `add_about_relations.py` and `auto_link_entities.py` ignored `corpus.py` and wrote into `repo-files/`, `prompts/`, `captures/` and `tmp/`, and `auto_link_entities.py` linked the Markdown files at the workspace root too. Both now walk `iter_corpus_notes`. `add_about_relations.py` covers emails and meetings only, and takes the internal entity from `organization` in `.sb-config.json` instead of writing `- about [[Internal]]`. If I excluded folders of my own, they belong in `corpus.py`. If I added a note zone, declare it in `NOTE_ZONES` of `corpus.py`: that tuple is where every writing pass, the hook and the damage check learn where notes live. The `ZONES` list at the top of `add_title_aliases.py` is not the place, it only says where the pass reads wiki-links.
+
+8. The checks must read whole titles and exit on real findings. `check_consistency.py`, `check_orphans.py`, `propose_pruning.py` and `generate_indexes.py` read a folded title on its first line. `check_symmetric_relations.py` now runs the check when given no argument, exits 1 on any asymmetry, checks both sides of `co_delivered_with` and reads `[[Target|label]]` as its target. `check_unresolved_relations.py` counts only the Basic Memory project `basic_memory_project` names. `curation_reminder.py` writes `schema_version` and notifies once. If a script or a skill of mine relies on the old exit code of `check_symmetric_relations.py`, tell me.
+
+9. Notes the old passes damaged must be repaired. The fixed passes do not repair them. The check arrived with the copy step of intent 1. Run:
+     python3 -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded
+   If I renamed or added note zones, tell me first: the check walks the zones in `NOTE_ZONES` of `corpus.py`, see intent 7. If its output ends with the note that PyYAML is not importable, rerun it once with an interpreter that has PyYAML, any python3 where `python3 -c 'import yaml'` succeeds, or `uvx --with pyyaml python -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded` when `uv` is installed. If neither is available, go on without it and tell me that a frontmatter broken in a shape the check does not know was not looked for. Each hit is one line, `path:line: shape: what -> repair`. Take the shapes in this order: broken-opener, type-inside-folded-title, stray-alias-items, orphan-continuation, unescaped-backslash-alias, type-inside-list, concatenated-title, unquoted-title, truncated-wikilink, undecoded-quote-in-body, observation-block-indicator, observation-truncated, detached-list-items, pass-write-in-excluded-folder, invalid-yaml. For each shape, rerun the check first since repairs shift line numbers. type-inside-folded-title comes second because the hook, which runs the alias pass after each of your writes, reads a truncated title until it is repaired, and the repair also completes any alias the hook took from it. Apply every `replace lines A-B with N lines: ...` exactly, each line JSON-decoded from its quoted form, changing nothing else, and from the bottom of a file up when it holds several hits of the shape. The hook may add an alias to a cited note between 2 of your writes, which is why the check reruns first. For every `needs review` hit, show me the lines around it, run `git log -p --follow -- <path>` and quote the commit that changed that region, then propose a repair or propose to leave it, the replacement it carries when it has one. For pass-write-in-excluded-folder, a pass wrote the blank lines around the relation too, the same commit shows them. Never propose a repair for invalid-yaml. Show me one diff per shape and wait. A repair the check gives as exact is still only a proposal: it goes into the diff like every other, and I can refuse it hit by hit. If one would shorten a title or rewrite a line I may have written that way on purpose, point it out in the diff. Files the check names as holding wiki-links in excluded folders stay untouched: `auto_link_entities.py` also wrote there and into the Markdown files at the workspace root, and only `git log -p` tells its links from mine. When every shape is done, the check must exit 0, or list only invalid-yaml hits and the hits I chose to leave.
+
+10. What upstream deliberately did NOT change, so you do not "fix" it.
+   The schemas, the note types and the templates: `git diff --stat v0.5.3..v0.6.0 -- basic-memory/schemas templates` lists nothing.
+   Every script keeps its name, its arguments and its defaults, with 2 exceptions: `fix_double_frontmatter.py` is now dry-run by default, and `check_symmetric_relations.py` runs the check without an argument and exits 1 on an asymmetry.
+   The alias pass still writes an inline list, `aliases: [a, b]`. Basic Memory turning it back into a column-0 block list on sync is expected, and every pass reads that form.
+   When the hook fires, and its wiring in `.claude/settings.json`, are unchanged. Only its zone test moved to `corpus.in_note_zone`, intent 2.
+   The email and meeting schemas still type `about` as a project brief, while `add_about_relations.py` links the entity. That mismatch predates this release.
+   `auto_link_entities.py` still scans the whole vault on every run, and the hook still reruns the whole alias pass after every write.
+
+Phase 2, what falls outside every intent above.
+Run `git diff --name-only BASELINE..v0.6.0` and list anything you have not already handled. For each, say in one line whether it matters for my fork. `CONTRIBUTING.md` now forbids duplicating the frontmatter reader, which matters only if I accept contributions.
+
+Phase 3, verification. Run these against MY workspace and show me the output:
+  python3 -I -m unittest discover -s basic-memory/scripts -p 'test_*.py'
+  python3 -I basic-memory/scripts/check_consistency.py
+  python3 -I basic-memory/scripts/check_orphans.py
+  python3 -I basic-memory/scripts/check_symmetric_relations.py --check
+  python3 -I basic-memory/scripts/check_double_frontmatter.py
+  python3 -I basic-memory/scripts/generate_indexes.py --output-dir "$(mktemp -d)"
+  python3 -I basic-memory/scripts/audit_field_usage.py
+  python3 -I basic-memory/scripts/add_title_aliases.py
+  python3 -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded
+The tests cover upstream's scripts: a failure in a script I forked is my fork's, sort it from what this upgrade broke. The alias dry-run must report 0 to modify on every note you repaired. If it lists notes, show them to me and run it with `--apply` only after my approval. The damage check must exit 0, or list only invalid-yaml hits and the hits I chose to leave. If `check_consistency.py` reports `[[Internal]]` as dead, the old `add_about_relations.py` wrote it: show me each line and propose to replace it with `[[<organization>]]` from `.sb-config.json`, or to leave it while `organization` is null.
+If `basic_memory_project` in `.sb-config.json` is not null, run `bm reindex` then `python3 -I basic-memory/scripts/check_unresolved_relations.py`.
+Expect findings on a customized workspace, and sort them into what comes from this upgrade and what comes from my fork.
+
+Phase 4, close. Set `boilerplate_version` to "0.6.0" in `.sb-config.json`. Write me a short record of what you skipped and why. Tell me what none of this verifies: the damage check knows only the shapes upstream's old passes left, not what a pass of my own may have written, it did not look for an unknown shape if no interpreter with PyYAML was available, and only the git history tells a link `auto_link_entities.py` wrote from one I wrote.
+```
+
 ## 0.5.3
 
 The title alias pass no longer damages notes that Basic Memory has rewritten. This release ships one fixed script, and asks you to repair the notes the old pass may already have damaged, since no checkout repairs data. Reported and fixed by @dailuong-amg in [#1](https://github.com/philippe-desplats/second-brain/pull/1).
@@ -36,7 +215,7 @@ Read `boilerplate_version` in `.sb-config.json`. It must be 0.5.2 or 0.5.1. If i
 Then measure how far my infrastructure has drifted from upstream. The baseline is v0.5.2 in both cases, since its infrastructure is identical to v0.5.1:
   git remote get-url upstream || git remote add upstream https://github.com/philippe-desplats/second-brain.git
   git fetch upstream --tags
-  git rev-parse --verify v0.5.2 v0.5.3
+  git rev-parse --verify v0.5.2 && git rev-parse --verify v0.5.3
 If either tag is missing, stop and tell me. Then run:
   git diff --stat v0.5.2..HEAD -- .claude basic-memory/schemas basic-memory/scripts templates
 If that lists no file, my infrastructure is stock and the rest of this prompt applies as written.
@@ -87,7 +266,7 @@ Rules for the whole run:
 Phase 0, map my fork. Run:
   git remote get-url upstream || git remote add upstream https://github.com/philippe-desplats/second-brain.git
   git fetch upstream --tags
-  git rev-parse --verify v0.5.2 v0.5.3
+  git rev-parse --verify v0.5.2 && git rev-parse --verify v0.5.3
 If either tag is missing, stop and tell me. Then run:
   git diff --stat v0.5.2..HEAD -- basic-memory/scripts/add_title_aliases.py .claude/hooks .claude/settings.json
 This release changes only the alias pass. Tell me whether I changed the pass, its hook or its wiring, and for each change a sentence on what it appears to do.

@@ -1,6 +1,6 @@
 {
   "schema": "sb-config/v1",
-  "boilerplate_version": "0.5.3",
+  "boilerplate_version": "0.6.0",
   "initialized": false,
   "owner": null,
   "organization": null,
