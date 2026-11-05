@@ -6,6 +6,126 @@ Structural changes to this workspace. Content changes (notes, projects) are trac
 
 ## Unreleased
 
+## 0.5.3
+
+The title alias pass no longer damages notes that Basic Memory has rewritten. This release ships one fixed script, and asks you to repair the notes the old pass may already have damaged, since no checkout repairs data. Reported and fixed by @dailuong-amg in [#1](https://github.com/philippe-desplats/second-brain/pull/1).
+
+- `add_title_aliases.py` only read an indented block list. On sync, Basic Memory 1.0 rewrites `aliases:` as a block list with no indentation, `- Title` at column 0, which is valid YAML. The pass read the field as absent, wrote an inline `aliases: [Title]` over the key line and left the old items below it. The frontmatter became invalid YAML, and every synonym the note carried fell out of the list. The dry-run that followed reported 0 to modify, and the PostToolUse hook reran the pass after every write, so the damage spread with nothing pointing at it. Both readers in the script now accept a list item at any indentation.
+- The fixed script does not repair a damaged note. It reads the inline list, finds the title in it and reports the note as compliant, stray lines included. The upgrade prompts below detect the shape the bug leaves and merge the stray items back into the list, behind a diff you approve.
+- On the demo content, a Basic Memory style rewrite followed by one run of the 0.5.2 pass damaged 9 notes, and pushed the synonyms of 2 demo topics out of their list. Whether your own workspace is affected depends on whether Basic Memory rewrote your frontmatter, and the detection step of the prompts answers that rather than a guess.
+- Not fixed here: `check_consistency.py` still reports a link as dead when its target's `title:` is folded over 2 lines. Basic Memory resolves those links, so they are false positives.
+
+### Upgrade prompt, 0.5.2 to 0.5.3
+
+The update recipe in the README brings the fixed script. It never touches your notes, so a note the old pass damaged stays damaged until something repairs it.
+
+Paste this into the agent that operates your workspace, from the workspace root.
+
+```
+You are upgrading this second-brain workspace from boilerplate version 0.5.2 to 0.5.3. Work through the phases in order and stop at every gate.
+
+Rules for the whole run:
+- Never delete a note, a folder, or a frontmatter field. This upgrade only adds and rewrites.
+- Never write into sources/, knowledge/, atlas/, archives/ or inbox/ without showing me the exact diff first and waiting for my approval.
+- If a step's precondition is not met, stop and tell me. Do not improvise around it.
+- Report what you changed at the end, file by file.
+
+Phase 1, preconditions.
+Run `git status --porcelain`. If anything is uncommitted, stop and ask me to commit or stash first: I need to be able to revert this whole upgrade with one command.
+Read `boilerplate_version` in `.sb-config.json`. It must be 0.5.2 or 0.5.1. If it says anything else, stop and tell me which version it says.
+Then measure how far my infrastructure has drifted from upstream. The baseline is v0.5.2 in both cases, since its infrastructure is identical to v0.5.1:
+  git remote get-url upstream || git remote add upstream https://github.com/philippe-desplats/second-brain.git
+  git fetch upstream --tags
+  git rev-parse --verify v0.5.2 v0.5.3
+If either tag is missing, stop and tell me. Then run:
+  git diff --stat v0.5.2..HEAD -- .claude basic-memory/schemas basic-memory/scripts templates
+If that lists no file, my infrastructure is stock and the rest of this prompt applies as written.
+If it lists any file, STOP. I have customized the workspace, phase 2 would overwrite that work, and this is the wrong prompt. Show me the list and tell me to use the upgrade prompt for a customized workspace instead.
+
+Phase 2, the fixed script.
+It comes before any repair: the hook in `.claude/settings.json` reruns the alias pass after every write you make, and the old pass would damage more notes while you repair the first ones.
+  git checkout v0.5.3 -- basic-memory/scripts/add_title_aliases.py
+Show me `git diff --cached --stat`. It must list that one file and nothing else.
+
+Phase 3, find the damage. Run, from the workspace root:
+  git ls-files -z -- 'sources/*.md' 'knowledge/*.md' 'atlas/*.md' 'archives/*.md' 'inbox/*.md' | xargs -0 awk 'FNR==1{fm=($0=="---"); a=0; next} fm&&$0=="---"{fm=0} fm&&/^aliases:[ \t]*\[/{a=1; next} fm&&a&&/^[ \t]*-[ \t]/{print FILENAME": "$0; next} {a=0}'
+Each line it prints is a list item sitting under an inline `aliases: [...]` line in a frontmatter, the shape the old pass left behind. That frontmatter is invalid YAML, and the stray items are the aliases the note held before the old pass ran, synonyms included.
+If it prints nothing, tell me no note is damaged and go to phase 5.
+
+Phase 4, repair.
+The command prints the stray items only, so read the frontmatter of each listed file to see what sits inside the brackets.
+For each file listed, rewrite its `aliases:` as one inline list: the items already inside the brackets first, in their order, then each stray item not already present, in its order, in double quotes when the value contains a comma, a colon, a bracket or a quote. Delete the stray lines. Change nothing else in the file.
+Show me one diff covering every file and wait for my approval, then apply it.
+If a frontmatter looks damaged in a way that does not match this shape, show it to me and leave it.
+Rerun the phase 3 command, which must print nothing.
+
+Phase 5, verification and close.
+Set `boilerplate_version` to "0.5.3" in `.sb-config.json`. Run:
+  python3 -I basic-memory/scripts/add_title_aliases.py
+  python3 -I basic-memory/scripts/check_consistency.py
+  python3 -I basic-memory/scripts/check_orphans.py
+  python3 -I basic-memory/scripts/check_symmetric_relations.py --check
+The alias dry-run must report 0 to modify on every note you repaired. If it lists notes to modify, show them to me and run it with `--apply` only after my approval.
+If `basic_memory_project` in `.sb-config.json` is not null, run `bm reindex` then `python3 -I basic-memory/scripts/check_unresolved_relations.py`, and show me the count.
+Then tell me what none of this verifies: the phase 3 command finds only the shape this bug leaves, not every invalid frontmatter.
+```
+
+### Upgrade prompt, 0.5.2 to 0.5.3, for a customized workspace
+
+Use this one if phase 1 of the prompt above told you to, meaning `git diff v0.5.2..HEAD` reports changes under `.claude`, `basic-memory/schemas`, `basic-memory/scripts` or `templates`. It carries the intent of each change rather than a diff, and it allows skipping an intent your fork already covers.
+
+```
+You are upgrading this second-brain workspace from boilerplate version 0.5.2 to 0.5.3. I have customized the infrastructure, so you must NOT check out upstream files over mine. For each change below, read my version of the file first, then decide between three outcomes: apply, adapt, or skip because my fork already covers the intent. Justify every skip in one line.
+
+Rules for the whole run:
+- Never overwrite one of my files wholesale. Every edit is surgical and preserves what I wrote.
+- Never delete a note, a folder, or a schema field.
+- Group your writes by intent. For each intent, show me one diff covering every file it touches and wait for one approval. Never apply a change I have not seen in a diff, and never carry an approval over to the next intent.
+- If you cannot tell whether my fork already covers an intent, ask me instead of deciding.
+- My `boilerplate_version` may say 0.5.1. 0.5.2 changed no infrastructure file, so this prompt applies as written.
+
+Phase 0, map my fork. Run:
+  git remote get-url upstream || git remote add upstream https://github.com/philippe-desplats/second-brain.git
+  git fetch upstream --tags
+  git rev-parse --verify v0.5.2 v0.5.3
+If either tag is missing, stop and tell me. Then run:
+  git diff --stat v0.5.2..HEAD -- basic-memory/scripts/add_title_aliases.py .claude/hooks .claude/settings.json
+This release changes only the alias pass. Tell me whether I changed the pass, its hook or its wiring, and for each change a sentence on what it appears to do.
+
+Phase 1, the intents. Work through them in order. For each, tell me apply, adapt or skip, and why.
+
+1. The alias pass must read a block list at any indentation.
+   On sync, Basic Memory 1.0 rewrites `aliases:` as a block list with no indentation, `- Title` at column 0, which is valid YAML. Upstream's `add_title_aliases.py` matched indented items only, in 2 places: `parse_keys()`, which reads the field, and the loop in `main()` that skips the old items when it rewrites the field. Reading the field as absent, the pass wrote an inline list over the key line and left the old items below it, which is invalid YAML. `git diff v0.5.2..v0.5.3 -- basic-memory/scripts/add_title_aliases.py` shows both regexes, `^[ \t]+-` becoming `^[ \t]*-`.
+   If my script is still upstream's, check it out from v0.5.3. If I forked it, port the 2 changes. If my fork reads frontmatter with a real YAML parser, it never had the bug, so skip and say so.
+   Do this intent before the next one: the hook reruns the pass after every write, and the old pass would damage more notes during the repair. If I rewired or removed the hook, tell me what it does now.
+
+2. Notes the old pass damaged must be repaired.
+   The fixed pass does not repair them: it finds the title in the inline list and reports the note as compliant. Run, from the workspace root, adapting the zone paths if I renamed or added note zones:
+     git ls-files -z -- 'sources/*.md' 'knowledge/*.md' 'atlas/*.md' 'archives/*.md' 'inbox/*.md' | xargs -0 awk 'FNR==1{fm=($0=="---"); a=0; next} fm&&$0=="---"{fm=0} fm&&/^aliases:[ \t]*\[/{a=1; next} fm&&a&&/^[ \t]*-[ \t]/{print FILENAME": "$0; next} {a=0}'
+   Each line it prints is a list item sitting under an inline `aliases: [...]` line, the shape the old pass left behind. The stray items are the aliases the note held before, synonyms included. If it prints nothing, say so and move on.
+   The command prints the stray items only, so read the frontmatter of each listed file to see what sits inside the brackets. For each file listed, rewrite its `aliases:` as one inline list: the items already inside the brackets first, in their order, then each stray item not already present, in its order, in double quotes when the value contains a comma, a colon, a bracket or a quote. Delete the stray lines and change nothing else. Show me one diff covering every file and wait. If a frontmatter looks damaged in a way that does not match this shape, show it to me and leave it. After applying, rerun the command, which must print nothing.
+
+3. What upstream deliberately did NOT change, so you do not "fix" it.
+   `is_continuation()` still matches indented lines only. A list item at column 0 never continued a folded scalar.
+   The pass still writes an inline list, `aliases: [a, b]`. Basic Memory turning it back into a block list on sync is expected, and the fixed pass now reads that form.
+   The hook and its wiring in `.claude/settings.json` are unchanged.
+   `check_consistency.py` still reports a link as dead when its target's `title:` is folded over 2 lines. It is a known false positive, not fixed in this release.
+
+Phase 2, what falls outside every intent above.
+Run `git diff --name-only v0.5.2..v0.5.3` and list anything you have not already handled. For each, say in one line whether it matters for my fork.
+
+Phase 3, verification. Run these against MY workspace and show me the output:
+  python3 -I basic-memory/scripts/add_title_aliases.py
+  python3 -I basic-memory/scripts/check_consistency.py
+  python3 -I basic-memory/scripts/check_orphans.py
+  python3 -I basic-memory/scripts/check_symmetric_relations.py --check
+The alias dry-run must report 0 to modify on every note you repaired. If it lists notes to modify, show them to me and run it with `--apply` only after my approval.
+If `basic_memory_project` in `.sb-config.json` is not null, run `bm reindex` then `python3 -I basic-memory/scripts/check_unresolved_relations.py`.
+Expect findings on a customized workspace, and sort them into what comes from this upgrade and what comes from my fork.
+
+Phase 4, close. Set `boilerplate_version` to "0.5.3" in `.sb-config.json`. Write me a short record of what you skipped and why. Tell me that the detection command finds only the shape this bug leaves, not every invalid frontmatter.
+```
+
 ## 0.5.2
 
 The 0.5.1 upgrade prompt for a customized workspace is corrected. A run on a forked workspace showed 3 gaps, and the prompt in the 0.5.1 section below now closes them. Nothing else changed, no rule, schema, script, hook or template.
