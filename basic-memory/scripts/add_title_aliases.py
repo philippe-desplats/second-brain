@@ -40,7 +40,6 @@ Usage:
 import argparse
 import contextlib
 import os
-import re
 import sys
 from collections import Counter
 from dataclasses import dataclass, field
@@ -49,6 +48,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import frontmatter as F  # noqa: E402
+from check_helpers import WIKILINK_RE  # noqa: E402
 from corpus import in_note_zone, is_corpus_note  # noqa: E402
 
 # Links are counted in every zone below, documentation and templates included,
@@ -56,7 +56,6 @@ from corpus import in_note_zone, is_corpus_note  # noqa: E402
 # reads. Whether a note may be written is decided note by note in `writable`.
 ZONES = ["sources", "knowledge", "atlas", "archives", "inbox", "basic-memory", "docs", "templates"]
 
-WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)")
 
 
 @dataclass

@@ -8,6 +8,8 @@ Run from the workspace root:
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import sys
@@ -84,32 +86,35 @@ class Scope(Workspace):
         self.assertEqual(self.results(apply=True), {})
 
 
+def brief(title: str, type_line: str = "type: project-brief\n") -> str:
+    return f"---\ntitle: {title}\n{type_line}schema_version: 1\n---\n\n# Brief\n"
+
+
 class Resolution(Workspace):
-    def test_client_meeting_gets_the_client(self):
+    """The link names the project brief of the note's folder, never the entity."""
+
+    def test_client_meeting_gets_its_project(self):
+        self.write("sources/clients/acme/site/README.md", brief("Acme Site Redesign"))
         path = self.write("sources/clients/acme/site/meetings/2026-01-01-meeting-k.md", MEETING)
         about.run(self.root, apply=True)
-        self.assertIn("## Relations\n\n- about [[Acme]]\n", path.read_text(encoding="utf-8"))
+        self.assertIn("## Relations\n\n- about [[Acme Site Redesign]]\n", path.read_text(encoding="utf-8"))
 
-    def test_internal_notes_are_skipped_while_organization_is_null(self):
-        self.config(None)
-        path = self.write("sources/internal/pricing/meetings/2026-01-01-meeting-r.md", MEETING)
-        results = self.results(apply=True)
-        self.assertEqual(path.read_text(encoding="utf-8"), MEETING)
-        status, _msg = results["sources/internal/pricing/meetings/2026-01-01-meeting-r.md"]
-        self.assertEqual(status, "skip")
-
-    def test_internal_notes_are_skipped_without_a_config_file(self):
-        path = self.write("sources/internal/pricing/meetings/2026-01-01-meeting-r.md", MEETING)
+    def test_partner_email_gets_its_project(self):
+        self.write("sources/partners/initech/resale/README.md", brief("Initech Resale"))
+        path = self.write("sources/partners/initech/resale/emails/2026-01-01-01-out-offer.md", MEETING)
         about.run(self.root, apply=True)
-        self.assertEqual(path.read_text(encoding="utf-8"), MEETING)
+        self.assertIn("- about [[Initech Resale]]\n", path.read_text(encoding="utf-8"))
 
-    def test_internal_notes_get_the_organization(self):
+    def test_internal_meeting_gets_its_project_whatever_the_organization(self):
         self.config("Studio Nord")
+        self.write("sources/internal/pricing/README.md", brief("Pricing 2026"))
         path = self.write("sources/internal/pricing/meetings/2026-01-01-meeting-r.md", MEETING)
         about.run(self.root, apply=True)
-        self.assertIn("- about [[Studio Nord]]\n", path.read_text(encoding="utf-8"))
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("- about [[Pricing 2026]]\n", text)
+        self.assertNotIn("Studio Nord", text)
 
-    def test_folded_personal_project_title_is_read_whole(self):
+    def test_folded_project_title_is_read_whole(self):
         self.write("sources/personal/learning/README.md",
                    "---\ntitle: Learning Rust the slow way, a personal project about systems"
                    " programming and patience\n  for real\ntype: project-brief\n---\n\n# L\n")
@@ -119,29 +124,77 @@ class Resolution(Workspace):
                       " programming and patience for real]]\n",
                       path.read_text(encoding="utf-8"))
 
-    def test_quoted_entity_name_is_decoded(self):
-        self.write("sources/clients/globex/CLAUDE.md",
-                   "---\ntitle: 'Globex: Industrial'\nclient: 'Globex: Industrial'\n"
-                   "type: client-context\n---\n")
-        path = self.write("sources/clients/globex/site/emails/2026-01-01-01-in-a.md", MEETING)
+    def test_quoted_project_title_is_decoded(self):
+        self.write("sources/clients/acme/site/README.md", brief("'Site: l''atelier'"))
+        path = self.write("sources/clients/acme/site/emails/2026-01-01-01-in-a.md", MEETING)
         about.run(self.root, apply=True)
-        self.assertIn("- about [[Globex: Industrial]]\n", path.read_text(encoding="utf-8"))
+        self.assertIn("- about [[Site: l'atelier]]\n", path.read_text(encoding="utf-8"))
 
-    def test_unknown_entity_is_an_error(self):
-        self.write("sources/clients/ghost/site/emails/2026-01-01-01-in-a.md", MEETING)
-        status, _msg = self.results()["sources/clients/ghost/site/emails/2026-01-01-01-in-a.md"]
-        self.assertEqual(status, "error")
+
+class MissingBrief(Workspace):
+    """A note whose project has no usable brief gets nothing and is reported."""
+
+    REL = "sources/clients/acme/site/meetings/2026-01-01-meeting-k.md"
+
+    def outcome(self):
+        path = self.write(self.REL, MEETING)
+        status, msg = self.results(apply=True)[self.REL]
+        self.assertEqual(path.read_text(encoding="utf-8"), MEETING)
+        return status, msg
+
+    def test_folder_without_a_readme(self):
+        self.assertEqual(self.outcome(), ("no-brief", "no project brief at `sources/clients/acme/site/README.md`"))
+
+    def test_readme_that_is_not_a_project_brief(self):
+        self.write("sources/clients/acme/site/README.md", brief("Site", type_line=""))
+        status, msg = self.outcome()
+        self.assertEqual(status, "no-brief")
+        self.assertIn("does not declare `type: project-brief`", msg)
+
+    def test_brief_without_a_title(self):
+        self.write("sources/clients/acme/site/README.md", "---\ntype: project-brief\n---\n\n# Site\n")
+        status, msg = self.outcome()
+        self.assertEqual(status, "no-brief")
+        self.assertIn("no usable `title:`", msg)
+
+    def test_main_prints_every_note_without_a_brief(self):
+        self.write(self.REL, MEETING)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            about.report(*about.run(self.root, apply=False), apply=False)
+        self.assertIn("[NO BRIEF] %s  no project brief at" % self.REL, buf.getvalue())
+        self.assertIn("1 without a project brief", buf.getvalue())
 
 
 class Writing(Workspace):
+    def setUp(self):
+        super().setUp()
+        self.write("sources/clients/acme/site/README.md",
+                   "---\ntitle: Acme Site\naliases: [Acme Site, the site]\ntype: project-brief\n---\n\n# S\n")
+
     def test_frontmatter_and_blank_line_are_kept_and_second_run_is_a_no_op(self):
         rel = "sources/clients/acme/site/meetings/2026-01-01-meeting-k.md"
         path = self.write(rel, MEETING)
         about.run(self.root, apply=True)
         once = path.read_text(encoding="utf-8")
-        self.assertEqual(once, MEETING + "\n## Relations\n\n- about [[Acme]]\n")
+        self.assertEqual(once, MEETING + "\n## Relations\n\n- about [[Acme Site]]\n")
         self.assertEqual(self.results(apply=True)[rel][0], "skip")
         self.assertEqual(path.read_text(encoding="utf-8"), once)
+
+    def test_note_linking_its_project_by_alias_or_label_is_left_alone(self):
+        for n, link in enumerate(("[[the site]]", "[[Acme Site|our site]]", "[[Acme Site\\|our site]]")):
+            text = MEETING + "\n## Relations\n\n- about %s\n" % link
+            rel = "sources/clients/acme/site/meetings/2026-01-0%d-meeting-k.md" % (n + 1)
+            path = self.write(rel, text)
+            self.assertEqual(self.results(apply=True)[rel][0], "skip", link)
+            self.assertEqual(path.read_text(encoding="utf-8"), text)
+
+    def test_note_linking_another_subject_still_gets_its_project(self):
+        rel = "sources/clients/acme/site/meetings/2026-01-01-meeting-k.md"
+        path = self.write(rel, MEETING + "\n## Relations\n\n- about [[Acme]]\n")
+        about.run(self.root, apply=True)
+        self.assertEqual(path.read_text(encoding="utf-8"),
+                         MEETING + "\n## Relations\n\n- about [[Acme]]\n- about [[Acme Site]]\n")
 
     def test_dry_run_writes_nothing(self):
         path = self.write("sources/clients/acme/site/meetings/2026-01-01-meeting-k.md", MEETING)
@@ -154,14 +207,14 @@ class Writing(Workspace):
         path = self.write("sources/clients/acme/site/meetings/2026-01-01-meeting-k.md", text)
         about.run(self.root, apply=True)
         self.assertEqual(path.read_text(encoding="utf-8"),
-                         MEETING + "\n## Relations\n\n- about [[Acme]]\n\n"
+                         MEETING + "\n## Relations\n\n- about [[Acme Site]]\n\n"
                                    "## Observations\n\n- [decision] Go\n")
 
     def test_note_without_frontmatter_keeps_its_text(self):
         path = self.write("sources/clients/acme/site/emails/2026-01-01-01-in-a.md", "# Hello\n")
         about.run(self.root, apply=True)
         self.assertEqual(path.read_text(encoding="utf-8"),
-                         "# Hello\n\n## Relations\n\n- about [[Acme]]\n")
+                         "# Hello\n\n## Relations\n\n- about [[Acme Site]]\n")
 
 
 if __name__ == "__main__":

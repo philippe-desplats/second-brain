@@ -1,0 +1,19 @@
+---
+type: email
+schema_version: 1
+date: 2026-07-02
+seq: 1
+direction: in
+status: sent
+from: Jane Doe
+subject: Login issue on the staging site
+category: client
+---
+
+Hi, the staging login rejects my password since this morning.
+
+Jane
+
+## Relations
+
+- about [[Globex]]

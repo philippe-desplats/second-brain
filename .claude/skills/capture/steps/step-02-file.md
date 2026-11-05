@@ -49,7 +49,7 @@ Read the matching schema in `basic-memory/schemas/{content_type}.md` and produce
 
 ## Relations
 
-- about [[{Entity display name}]]
+- about [[{Target the schema names: the project brief title for an email, a meeting or a session}]]
 {other detected relations: replies_to, follows, meeting_ref}
 ```
 

@@ -1,0 +1,13 @@
+---
+title: Rate review
+type: meeting
+schema_version: 1
+date: 2026-07-03
+---
+# Rate review
+
+Day rate stays where it is until September.
+
+## Relations
+
+- about [[Internal]]

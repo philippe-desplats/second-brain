@@ -1,0 +1,13 @@
+---
+title: Search UX notes
+type: note
+schema_version: 1
+date: 2026-06-30
+---
+
+# Search UX notes
+
+| Area | Notes |
+|------|-------|
+| Results | Every [[Catalog Search|product search]] starts from the catalog |
+| Filters | The [[Lead Sourcing|referral]] partner asked for a brand filter |

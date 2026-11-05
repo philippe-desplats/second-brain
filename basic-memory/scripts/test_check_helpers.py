@@ -110,6 +110,11 @@ class NoteNames(unittest.TestCase):
         text = "[[A]] [[B|shown]] [[C#Heading]] [[D#H|shown]] [[ E ]]"
         self.assertEqual([t for t, _ in H.link_targets(text)], ["A", "B", "C", "D", "E"])
 
+    def test_link_escaped_for_a_table_cell_reads_its_target(self):
+        # Obsidian's form inside a table row, where a bare `|` would split the cell.
+        text = r"| [[Lead Sourcing\|referral]] | [[C#H\|shown]] | [[C:\d]] |"
+        self.assertEqual([t for t, _ in H.link_targets(text)], ["Lead Sourcing", "C", "C:\\d"])
+
     def test_resolution_table_shared_name(self):
         table = H.resolution_table([("n1", {"x", "y"}), ("n2", {"y"})])
         self.assertEqual(sorted(table["y"]), ["n1", "n2"])

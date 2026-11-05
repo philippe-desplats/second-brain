@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Add an `- about [[Entity]]` relation to emails and meetings based on their path.
+Add an `- about [[Project]]` relation to emails and meetings based on their path.
 
-Scope: the two note types whose path names the entity they concern, an email
+Scope: the two note types whose path names the project they concern, an email
 filed in a project's `emails/` folder and a meeting filed in its `meetings/`
 folder, in every source zone:
 
@@ -11,33 +11,34 @@ folder, in every source zone:
   - sources/internal/{project}/emails/*.md and .../meetings/*.md
   - sources/personal/{project}/emails/*.md and .../meetings/*.md
 
-Other notes are left alone: a project brief declares its entity in `client:`
-or `partner:`, and the other types state their own subject. Only corpus notes
-are visited, through `corpus.iter_corpus_notes`, so the pass never writes into
-a folder corpus.py excludes, a `repo-files/` or `prompts/` folder among them.
+Other notes are left alone. Only corpus notes are visited, through
+`corpus.iter_corpus_notes`, so the pass never writes into a folder corpus.py
+excludes, a `repo-files/` or `prompts/` folder among them.
 
-The entity each path resolves to:
+The target is the project brief, as `basic-memory/schemas/email.md` and
+`meeting.md` type `about`: the `title:` of the `README.md` of the note's
+project folder, or of its `CLAUDE.md`, declaring `type: project-brief`. The
+entity is never the target, `client:` or `partner:` carries it. A note whose
+project has no such brief, or a brief without a title, gets nothing and is
+listed in the report with the reason. Which folder is the project and which
+file is its brief is decided by `note_types.project_brief`, the rule the
+damage check also reads.
 
-  - clients and partners, the `client:` or `partner:` field of
-    sources/{zone}/{slug}/CLAUDE.md, `title:` as a fallback
-  - internal, the `organization` of .sb-config.json. While it is null, as in a
-    workspace /sb-init has not configured, internal notes are skipped rather
-    than given a link to nothing
-  - personal, the `title:` of the project's README.md, its folder name as a
-    fallback
-
-Inserts `- about [[Canonical Name]]` inside a `## Relations` section
+Inserts `- about [[Project title]]` inside a `## Relations` section
 (created just before `## Observations` or appended at end of body). The
 frontmatter is kept byte for byte, only the body is rewritten.
 
-Idempotent: skips files that already contain an `about [[...]]` line.
+Idempotent: a note whose `about` already links its project, by the brief's
+title or one of its aliases, is skipped. A note whose `about` links something
+else, the entity an older version wrote included, gets the project added next
+to it. `check_frontmatter_damage.py` reports the entity line as
+about-entity-not-project.
 
 Usage:
     python3 basic-memory/scripts/add_about_relations.py --dry-run
     python3 basic-memory/scripts/add_about_relations.py --apply
 """
 
-import json
 import os
 import re
 import sys
@@ -45,73 +46,40 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from check_helpers import WIKILINK_RE  # noqa: E402
 from corpus import WORKSPACE, iter_corpus_notes  # noqa: E402
 from frontmatter import read_file, split, write_file  # noqa: E402
+from note_types import project_brief, project_folder  # noqa: E402
 
 # The project subfolders this pass annotates, see the module docstring.
 TARGET_FOLDERS = ("emails", "meetings")
 # Path depth of a target, counted in segments: `sources/{zone}/{slug}/{project}/{folder}/{file}`
 # for an entity zone, one segment less where the zone has no entity level.
-ENTITY_ZONES = {"clients": 6, "partners": 6}
-PROJECT_ZONES = {"internal": 5, "personal": 5}
+TARGET_DEPTH = {"clients": 6, "partners": 6, "internal": 5, "personal": 5}
 
-INTERNAL = "__INTERNAL__"
-PERSONAL = "__PERSONAL__"
-
-
-def scalar(fm, key: str):
-    """The value of `key` when it is a non-empty string, else None."""
-    value = fm.get(key) if fm is not None else None
-    return value.strip() or None if isinstance(value, str) else None
-
-
-def internal_entity(root: Path = WORKSPACE):
-    """The internal entity name, the `organization` of .sb-config.json, or None."""
-    try:
-        config = json.loads((root / ".sb-config.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    name = config.get("organization") if isinstance(config, dict) else None
-    return name.strip() or None if isinstance(name, str) else None
-
-
-def build_entity_map(root: Path = WORKSPACE):
-    """Return {(zone, slug) -> canonical_name} from the clients' and partners' CLAUDE.md."""
-    mapping = {}
-    for zone, field in (("clients", "client"), ("partners", "partner")):
-        for p in sorted((root / "sources" / zone).glob("*/CLAUDE.md")):
-            _doc, fm = read_file(p)
-            canonical = scalar(fm, field) or scalar(fm, "title")
-            if canonical:
-                mapping[(zone, p.parent.name)] = canonical
-    return mapping
+ABOUT_PREFIX_RE = re.compile(r"^\s*-\s+about\s+(?=\[\[)", re.MULTILINE)
 
 
 def find_target_files(root: Path = WORKSPACE):
-    """Return a list of (path, rel, slug) for every email and meeting to annotate.
-
-    `slug` is `(zone, entity)` for a client or a partner, INTERNAL for an
-    internal project, and PERSONAL followed by the folder name for a personal
-    project.
-    """
+    """Return a list of (path, rel, project folder) for every email and meeting to annotate."""
     targets = []
     for path, rel in iter_corpus_notes(root, zones=("sources",)):
         parts = rel.split("/")
         if len(parts) < 2 or parts[-2] not in TARGET_FOLDERS:
             continue
-        zone = parts[1]
-        if ENTITY_ZONES.get(zone) == len(parts):
-            targets.append((path, rel, (zone, parts[2])))
-        elif zone == "internal" and PROJECT_ZONES[zone] == len(parts):
-            targets.append((path, rel, INTERNAL))
-        elif zone == "personal" and PROJECT_ZONES[zone] == len(parts):
-            targets.append((path, rel, PERSONAL + parts[2]))
+        if TARGET_DEPTH.get(parts[1]) == len(parts):
+            targets.append((path, rel, project_folder(rel)))
     return targets
 
 
-def has_about_relation(body: str) -> bool:
-    """Check whether the body already contains an `about [[...]]` line."""
-    return bool(re.search(r"^\s*-\s+about\s+\[\[.+?\]\]", body, re.MULTILINE))
+def about_targets(body: str):
+    """The target of every `- about [[...]]` line of the body."""
+    targets = []
+    for m in ABOUT_PREFIX_RE.finditer(body):
+        link = WIKILINK_RE.match(body, m.end())
+        if link is not None:
+            targets.append(link.group(1).strip())
+    return targets
 
 
 def inject_about_line(body: str, canonical: str) -> str:
@@ -122,7 +90,7 @@ def inject_about_line(body: str, canonical: str) -> str:
     - Else create `## Relations` section just before `## Observations` if present
     - Else append at end of body
 
-    The caller has already ruled out a body holding an `about` line.
+    The caller has already ruled out a body linking the project.
     """
     about_line = f"- about [[{canonical}]]"
 
@@ -152,31 +120,30 @@ def inject_about_line(body: str, canonical: str) -> str:
     return body.rstrip() + "\n\n## Relations\n\n" + about_line + "\n"
 
 
-def resolve(slug, entity_map: dict, root: Path, internal):
-    """The canonical name a target's slug stands for, or None."""
-    if slug == INTERNAL:
-        return internal
-    if isinstance(slug, str) and slug.startswith(PERSONAL):
-        project_slug = slug[len(PERSONAL):]
-        readme = root / "sources" / "personal" / project_slug / "README.md"
-        _doc, fm = read_file(readme) if readme.is_file() else (None, None)
-        return scalar(fm, "title") or project_slug
-    return entity_map.get(slug)
+def frontmatter_reader(root: Path):
+    """`frontmatter_of(rel)` for `note_types.project_brief`, reading the disk under `root`."""
+    def frontmatter_of(rel):
+        path = root / rel
+        if not path.is_file():
+            return None
+        try:
+            return read_file(path)[1]
+        except (OSError, UnicodeDecodeError):
+            return None
+    return frontmatter_of
 
 
-def process_file(path: Path, canonical, apply: bool, internal_skip: bool = False):
+def process_file(path: Path, brief, why, apply: bool):
     """Return (status, message) for a single file."""
     with open(path, encoding="utf-8", newline="") as fh:
         text = fh.read()
     doc = split(text)
     body = doc.body if doc is not None else text
-    if has_about_relation(body):
-        return ("skip", "already has about [[...]]")
-    if internal_skip:
-        return ("skip", "internal entity not configured, `organization` is null in .sb-config.json")
-    if not canonical:
-        return ("error", "entity not resolved in entity map")
-    new_body = inject_about_line(body, canonical)
+    if brief is None:
+        return ("no-brief", why)
+    if brief.names & set(about_targets(body)):
+        return ("skip", "already links its project")
+    new_body = inject_about_line(body, brief.title)
     if new_body == body:
         return ("skip", "idempotent no-op")
     if apply:
@@ -186,20 +153,39 @@ def process_file(path: Path, canonical, apply: bool, internal_skip: bool = False
         else:
             with open(path, "w", encoding="utf-8", newline="") as fh:
                 fh.write(new_body)
-    return ("ok", f"→ about [[{canonical}]]")
+    return ("ok", f"→ about [[{brief.title}]]")
 
 
 def run(root: Path = WORKSPACE, apply: bool = False):
-    """Annotate every target under `root`. Return (entity_map, [(rel, status, message)])."""
-    entity_map = build_entity_map(root)
-    internal = internal_entity(root)
-    results = []
-    for path, rel, slug in find_target_files(root):
-        canonical = resolve(slug, entity_map, root, internal)
-        status, msg = process_file(path, canonical, apply,
-                                   internal_skip=slug == INTERNAL and internal is None)
+    """Annotate every target under `root`. Return ({folder: brief or None}, [(rel, status, message)])."""
+    frontmatter_of = frontmatter_reader(root)
+    briefs, results = {}, []
+    for path, rel, folder in find_target_files(root):
+        if folder not in briefs:
+            briefs[folder] = project_brief(folder, frontmatter_of)
+        brief, why = briefs[folder]
+        status, msg = process_file(path, brief, why, apply)
         results.append((rel, status, msg))
-    return entity_map, results
+    return {folder: brief for folder, (brief, _why) in briefs.items()}, results
+
+
+def report(briefs: dict, results: list, apply: bool) -> None:
+    """Print what `run` did or would do: every write and every note left without a brief."""
+    print(f"=== add_about_relations, mode={'APPLY' if apply else 'DRY-RUN'} ===")
+    print(f"Project briefs resolved: {sum(1 for b in briefs.values() if b is not None)} of {len(briefs)}")
+    print(f"Target files scanned: {len(results)}")
+    print()
+    counts = {"ok": 0, "skip": 0, "no-brief": 0}
+    for rel, status, msg in results:
+        counts[status] += 1
+        if status == "ok":
+            print(f"  [OK]    {rel}  {msg}")
+        elif status == "no-brief":
+            print(f"  [NO BRIEF] {rel}  {msg}")
+        # skips are silent
+    print()
+    print(f"Summary: {counts['ok']} modified, {counts['skip']} skipped, "
+          f"{counts['no-brief']} without a project brief")
 
 
 def main():
@@ -207,30 +193,8 @@ def main():
         print("Usage: python3 add_about_relations.py --dry-run | --apply")
         sys.exit(1)
     apply = sys.argv[1] == "--apply"
-
-    entity_map, results = run(WORKSPACE, apply)
-
-    print(f"=== add_about_relations, mode={'APPLY' if apply else 'DRY-RUN'} ===")
-    print(f"Entities resolved: {len(entity_map)}")
-    print(f"Target files scanned: {len(results)}")
-    print()
-
-    counts = {"ok": 0, "skip": 0, "error": 0}
-    internal_skipped = 0
-    for rel, status, msg in results:
-        counts[status] += 1
-        if status == "ok":
-            print(f"  [OK]    {rel}  {msg}")
-        elif status == "error":
-            print(f"  [ERR]   {rel}  {msg}")
-        elif msg.startswith("internal entity not configured"):
-            internal_skipped += 1
-        # other skips are silent
-
-    if internal_skipped:
-        print(f"  {internal_skipped} internal note(s) skipped: set `organization` in .sb-config.json (run /sb-init)")
-    print()
-    print(f"Summary: {counts['ok']} modified, {counts['skip']} skipped, {counts['error']} errors")
+    briefs, results = run(WORKSPACE, apply)
+    report(briefs, results, apply)
 
 
 if __name__ == "__main__":

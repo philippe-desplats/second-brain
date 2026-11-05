@@ -29,7 +29,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import frontmatter as F  # noqa: E402
-from check_helpers import scalar  # noqa: E402
+from check_helpers import WIKILINK_PATTERN, scalar  # noqa: E402
 
 WORKSPACE = Path(__file__).resolve().parent.parent.parent
 CLIENTS = WORKSPACE / "sources" / "clients"
@@ -51,7 +51,7 @@ PAIRS = {
     },
 }
 
-RELATION_RE = re.compile(r"^-\s+(\w+)\s+\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]")
+RELATION_RE = re.compile(r"^-\s+(\w+)\s+" + WIKILINK_PATTERN)
 USAGE = "Usage: python3 check_symmetric_relations.py [--check | --suggest]"
 
 

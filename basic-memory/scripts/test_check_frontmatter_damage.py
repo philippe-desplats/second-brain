@@ -3,7 +3,7 @@
 
 Every fixture under `tests_fixtures/damage/` is real damage, not a hand-written
 imitation: a note shaped the way Basic Memory writes it, then run through the
-untouched 0.5.2 or 0.5.3 script that broke it. The file names say which shape
+untouched 0.5.2, 0.5.3 or 0.6.0 script that broke it. The file names say which shape
 each one carries, and the `.txt` suffix keeps every pass and every check from
 reading a fixture as a note. Two fixtures carry the same alias bug at 2 stages, after 1
 run of the 0.5.3 hook and after 4, since the damage grows with every run.
@@ -65,6 +65,12 @@ PLACES = {
     "undecoded-about-link.txt": "sources/clients/globex/website-redesign/emails/2026-06-15-01-in-kickoff-questions.md",
     "undecoded-escapes.txt": "atlas/topics/catalog-search.md",
     "truncated-wikilink.txt": "sources/clients/globex/CLAUDE.md",
+    "about-entity-meeting.txt": "sources/clients/globex/website-redesign/meetings/2026-06-29-meeting-wireframe-review.md",
+    "about-entity-email-no-brief.txt": "sources/clients/globex/support/emails/2026-07-02-01-in-login-issue.md",
+    "about-entity-brief.txt": "sources/clients/globex/website-redesign/README.md",
+    "about-internal-meeting.txt": "sources/internal/pricing/meetings/2026-07-03-meeting-rate-review.md",
+    "about-organization-meeting.txt": "sources/internal/pricing/meetings/2026-07-04-meeting-rate-review.md",
+    "table-cell-split.txt": "sources/clients/globex/website-redesign/2026-06-30-note-search-ux.md",
 }
 
 
@@ -72,6 +78,9 @@ class DamageCase(WorkspaceCase):
     def place(self, *names):
         for name in names:
             self.ws.write(PLACES[name], (FIXTURES / name).read_text(encoding="utf-8"))
+
+    def read(self, rel):
+        return (self.ws.root / rel).read_text(encoding="utf-8")
 
     def run_json(self, *args):
         out = self.ws.run("check_frontmatter_damage.py", "--json", *args)
@@ -406,6 +415,147 @@ class TruncatedWikilink(DamageCase):
         self.assertEqual(self.hits(shape="truncated-wikilink"), [])
 
 
+class AboutEntityNotProject(DamageCase):
+    """`- about [[Entity]]` where the schema wants the project brief.
+
+    The fixtures are real output: about-entity-meeting, about-entity-email-no-brief
+    and about-organization-meeting from the 0.6.0 add_about_relations.py,
+    about-internal-meeting and about-entity-brief from the 0.5.3 one.
+    """
+
+    PROJECT = "Globex Website Redesign"
+
+    def context(self, organization=None):
+        self.ws.write("sources/clients/globex/CLAUDE.md",
+                      note("title: Globex\nclient: Globex\ntype: client-context\nschema_version: 1\n", "# Globex\n"))
+        self.ws.write("sources/clients/globex/website-redesign/README.md",
+                      note("title: %s\naliases: [%s]\ntype: project-brief\nschema_version: 1\n"
+                           % (self.PROJECT, self.PROJECT), "# Redesign\n"))
+        self.ws.write("sources/internal/pricing/README.md",
+                      note("title: Pricing 2026\ntype: project-brief\nschema_version: 1\n", "# Pricing\n"))
+        self.ws.write(".sb-config.json", json.dumps({"organization": organization}))
+
+    def test_meeting_link_to_the_client_becomes_the_project(self):
+        self.context()
+        self.place("about-entity-meeting.txt")
+        hit = self.one("about-entity-not-project")
+        self.assertEqual((hit["path"], hit["line"], hit["end_line"], hit["replacement"], hit["needs_review"]),
+                         (PLACES["about-entity-meeting.txt"], 19, 19,
+                          ["- about [[%s]]" % self.PROJECT], False))
+
+    def test_link_dropped_when_the_pass_already_added_the_project(self):
+        self.context()
+        self.place("about-entity-meeting.txt")
+        self.ws.write(PLACES["about-entity-meeting.txt"],
+                      self.read(PLACES["about-entity-meeting.txt"]).replace(
+                          "- about [[Globex]]\n", "- about [[Globex]]\n- about [[%s|the redesign]]\n" % self.PROJECT))
+        hit = self.one("about-entity-not-project")
+        self.assertEqual((hit["line"], hit["replacement"], hit["needs_review"]), (19, [], False))
+        self.assertIn("replace line 19 with 0 lines", hit["repair"])
+
+    def test_repair_then_pass_and_pass_then_repair_converge(self):
+        self.context()
+        rel = PLACES["about-entity-meeting.txt"]
+        self.place("about-entity-meeting.txt")
+        # Repair first, then the pass: the pass finds its project and writes nothing.
+        self.ws.write(rel, self.read(rel).replace("- about [[Globex]]", "- about [[%s]]" % self.PROJECT))
+        repaired = self.read(rel)
+        self.ws.run("add_about_relations.py", "--apply")
+        self.assertEqual(self.read(rel), repaired)
+        # The pass first, then the repair: the pass adds the project, the repair drops the entity line.
+        self.place("about-entity-meeting.txt")
+        self.ws.run("add_about_relations.py", "--apply")
+        hit = self.one("about-entity-not-project")
+        self.assertEqual(hit["replacement"], [])
+        lines = self.read(rel).split("\n")
+        del lines[hit["line"] - 1]
+        self.assertEqual("\n".join(lines), repaired)
+
+    def test_internal_link_written_by_0_5_x(self):
+        self.context()
+        self.place("about-internal-meeting.txt")
+        hit = self.one("about-entity-not-project")
+        self.assertEqual((hit["line"], hit["replacement"], hit["needs_review"]),
+                         (13, ["- about [[Pricing 2026]]"], False))
+
+    def test_organization_link_written_by_0_6_0(self):
+        self.context(organization="Acme")
+        self.place("about-organization-meeting.txt")
+        hit = self.one("about-entity-not-project")
+        self.assertEqual((hit["line"], hit["replacement"]), (14, ["- about [[Pricing 2026]]"]))
+
+    def test_organization_link_is_left_while_organization_is_null(self):
+        self.context()
+        self.place("about-organization-meeting.txt")
+        self.assertEqual(self.hits(shape="about-entity-not-project"), [])
+
+    def test_folder_without_a_brief_needs_review(self):
+        self.context()
+        self.place("about-entity-email-no-brief.txt")
+        hit = self.one("about-entity-not-project")
+        self.assertEqual((hit["line"], hit["replacement"], hit["needs_review"]), (19, None, True))
+        self.assertIn("sources/clients/globex/support/README.md", hit["what"])
+
+    def test_brief_whose_type_is_not_project_brief_counts_as_none(self):
+        self.context()
+        self.place("about-entity-email-no-brief.txt")
+        self.ws.write("sources/clients/globex/support/README.md", note("title: Support\n", "# Support\n"))
+        hit = self.one("about-entity-not-project")
+        self.assertIsNone(hit["replacement"])
+
+    def test_other_types_need_review_with_the_line_removed(self):
+        self.context()
+        self.place("about-entity-brief.txt")
+        hit = self.one("about-entity-not-project")
+        self.assertEqual((hit["line"], hit["replacement"], hit["needs_review"]), (65, [], True))
+
+    def test_project_link_and_other_entity_relations_are_clean(self):
+        self.context()
+        self.ws.write("sources/clients/globex/website-redesign/meetings/2026-07-01-meeting-ok.md", note(
+            "title: OK\ntype: meeting\nschema_version: 1\n",
+            "# OK\n\n## Relations\n\n- with [[Globex]]\n- about [[%s]]\n" % self.PROJECT))
+        self.assertEqual(self.hits(shape="about-entity-not-project"), [])
+
+
+class TableCellSplit(DamageCase):
+    """A link with display text in a table row. The fixture is real 0.6.0 auto_link_entities.py output.
+
+    A bare `|` ends the cell, and Basic Memory reads the escaped `\\|` form as
+    part of the target, so the repair is the bare title in both cases.
+    """
+
+    def test_alias_links_in_table_rows_become_bare_titles(self):
+        self.place("table-cell-split.txt")
+        found = self.hits(shape="table-cell-split-by-link")
+        self.assertEqual([(h["line"], h["replacement"], h["needs_review"]) for h in found], [
+            (12, ["| Results | Every [[Catalog Search]] starts from the catalog |"], False),
+            (13, ["| Filters | The [[Lead Sourcing]] partner asked for a brand filter |"], False)])
+
+    def test_escaped_alias_link_in_a_table_row_is_flagged_too(self):
+        # Obsidian reads it, Basic Memory resolves its target as `X\\` and never finds it.
+        self.ws.write("sources/internal/ops/2026-07-01-note-table.md", note(
+            "title: T\ntype: note\n", "| a | [[X\\|y]] and [[W#h\\|v]] |\n"))
+        hit = self.one("table-cell-split-by-link")
+        self.assertEqual((hit["replacement"], hit["needs_review"]), (["| a | [[X]] and [[W#h]] |"], False))
+        self.assertIn("Basic Memory", hit["what"])
+
+    def test_bare_links_code_and_prose_are_clean(self):
+        self.ws.write("sources/internal/ops/2026-07-01-note-table.md", note("title: T\ntype: note\n", (
+            "| a | [[X]] | [[Z#h]] |\n"
+            "| b | `[[X|y]]` |\n"
+            "```\n| c | [[X|y]] |\n```\n"
+            "Prose keeps [[X|y]] as written.\n")))
+        self.assertEqual(self.hits(shape="table-cell-split-by-link"), [])
+
+    def test_truncated_link_in_a_table_keeps_its_escape(self):
+        self.place("observation-truncated.txt")
+        first = "Discovery workshop, the half-day session that turns a signed scope into a shared"
+        self.ws.write("sources/internal/ops/2026-07-01-note-table.md", note(
+            "title: T\ntype: note\n", "| a | [[%s\\|workshop]] |\n" % first))
+        hit = self.one("truncated-wikilink")
+        self.assertEqual(hit["replacement"], ["| a | [[%s\\|workshop]] |" % TruncatedWikilink.FULL])
+
+
 class ExcludedFolders(DamageCase):
     def test_off_by_default(self):
         self.place("excluded-repo-files.txt", "excluded-prompts.txt")
@@ -494,7 +644,8 @@ class Workspace(DamageCase):
                     "observation-block-indicator", "pass-write-in-excluded-folder",
                     "truncated-wikilink", "unquoted-title",
                     "type-inside-folded-title", "unescaped-backslash-alias",
-                    "undecoded-quote-in-body"}
+                    "undecoded-quote-in-body", "about-entity-not-project",
+                    "table-cell-split-by-link"}
         if HAVE_YAML:
             expected.add("invalid-yaml")
         self.assertEqual(shapes, expected)

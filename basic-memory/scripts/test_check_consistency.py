@@ -56,6 +56,13 @@ class Links(WorkspaceCase):
         self.assertEqual(len(findings), 1, out.stdout)
         self.assertEqual(out.returncode, 1)
 
+    def test_link_escaped_for_a_table_cell_resolves(self):
+        self.write_long()
+        self.ws.write("sources/internal/redesign/2026-07-02-note-ref.md",
+                      note("title: Ref\ntype: note\n", f"| plan | [[{LONG_TITLE}\\|the plan]] |\n"))
+        out, findings = self.findings("links")
+        self.assertEqual(findings, [], out.stdout)
+
     def test_alias_in_block_list_resolves(self):
         self.ws.write("atlas/topics/client-onboarding.md", TOPIC)
         self.ws.write("sources/internal/ops/2026-07-02-note-ref.md",

@@ -43,6 +43,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+from dataclasses import dataclass
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -162,6 +163,85 @@ def classify(rel: str, subtype=None) -> str | None:
 def is_forced(rel: str) -> bool:
     """Does a container folder above the file force its type over the current one?"""
     return bool(set(rel.split("/")[:-1]) & FORCING_FOLDERS)
+
+
+# --------------------------------------------------------------------------
+# The project a note belongs to, and its brief.
+#
+# Emails, meetings and sessions name their project in `about`, whose schema
+# target is a ProjectBrief. The pass that writes the link and the check that
+# repairs the old one must agree on which folder is the project and which file
+# is its brief, so both ask here.
+# --------------------------------------------------------------------------
+
+ENTITY_ZONES = ("clients", "partners")
+PROJECT_ZONES = ("internal", "personal")
+BRIEF_FILES = ("README.md", "CLAUDE.md")
+# The types whose `about` targets the project brief, in their schemas.
+PROJECT_ABOUT_TYPES = frozenset({"email", "meeting", "session"})
+
+
+def entity_folder(rel: str) -> str | None:
+    """`sources/{clients|partners}/{entity}` for a note filed under an entity, else None."""
+    parts = rel.split("/")
+    if len(parts) >= 4 and parts[0] == "sources" and parts[1] in ENTITY_ZONES:
+        return "/".join(parts[:3])
+    return None
+
+
+def project_folder(rel: str) -> str | None:
+    """The project folder a note sits in, None when it sits in none.
+
+    `sources/{clients|partners}/{entity}/{project}` under an entity zone,
+    `sources/{internal|personal}/{project}` under the other 2. A file at an
+    entity or zone root belongs to no project.
+    """
+    parts = rel.split("/")
+    if len(parts) < 2 or parts[0] != "sources":
+        return None
+    depth = 4 if parts[1] in ENTITY_ZONES else 3 if parts[1] in PROJECT_ZONES else 0
+    if not depth or len(parts) <= depth:
+        return None
+    return "/".join(parts[:depth])
+
+
+@dataclass
+class Brief:
+    """A project brief: its file, its title, and every name a link may reach it by."""
+
+    rel: str
+    title: str
+    names: frozenset
+
+
+def project_brief(folder: str | None, frontmatter_of):
+    """(Brief, None) for the brief of `folder`, or (None, why there is none).
+
+    The brief is the folder's `README.md`, or its `CLAUDE.md`, declaring
+    `type: project-brief` and a non-empty `title:`. `frontmatter_of(rel)`
+    returns the parsed frontmatter of a workspace-relative path, None when the
+    file is absent or has none, so a caller reading the disk and one holding
+    parsed notes get the same answer.
+    """
+    if folder is None:
+        return None, "the note sits in no project folder"
+    why = None
+    for name in BRIEF_FILES:
+        rel = folder + "/" + name
+        fm = frontmatter_of(rel)
+        if fm is None:
+            continue
+        if fm.get("type") != "project-brief":
+            why = why or "`%s` does not declare `type: project-brief`" % rel
+            continue
+        title = fm.get("title")
+        if not isinstance(title, str) or not title.strip():
+            return None, "`%s` has no usable `title:`" % rel
+        aliases = fm.get("aliases")
+        aliases = [aliases] if isinstance(aliases, str) else aliases if isinstance(aliases, list) else []
+        names = {title.strip()} | {a.strip() for a in aliases if isinstance(a, str) and a.strip()}
+        return Brief(rel, title.strip(), frozenset(names)), None
+    return None, why or "no project brief at `%s/README.md`" % folder
 
 
 # --------------------------------------------------------------------------

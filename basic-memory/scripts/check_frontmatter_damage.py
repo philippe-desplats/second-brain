@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Find the frontmatter damage the 0.5.1 to 0.5.3 passes could leave. Read-only.
+"""Find the damage the passes up to 0.6.0 could leave. Read-only.
 
 Before 0.6.0, every pass carried its own frontmatter reader, and each one
 misread a shape Basic Memory writes on sync: block lists at column 0, values
@@ -44,6 +44,18 @@ the line it starts on and the repair, and writes nothing.
     truncated-wikilink            a wiki-link to the first line of a title folded
                                   over 2 lines, which resolves to nothing
                                   (auto_link_entities.py, add_about_relations.py)
+    about-entity-not-project      `- about [[Entity]]` in a note filed under that
+                                  entity, or `[[Internal]]` and the `organization`
+                                  in an internal one, where the email, meeting and
+                                  session schemas want the project brief. Exact on
+                                  those 3 types when the brief exists, the brief's
+                                  title, or the line removed when the note already
+                                  links its project. Needs review otherwise
+                                  (add_about_relations.py up to 0.6.0)
+    table-cell-split-by-link      `[[X|y]]` or `[[X\\|y]]` in a table row, repaired
+                                  to `[[X]]`: the bare `|` ends the cell, and Basic
+                                  Memory cannot resolve the escaped form
+                                  (auto_link_entities.py up to 0.6.0)
     pass-write-in-excluded-folder `- about [[...]]` or `## Relations` in a folder
                                   corpus.py excludes, with --include-excluded
                                   (add_about_relations.py)
@@ -56,9 +68,10 @@ Each hit prints as one line:
     path:line: shape: what -> repair
 
 A repair is exact when it can be computed: the lines to replace and the lines
-to put in their place, each one JSON-quoted. It says "needs review" when it
-takes a judgement, a list item whose key was lost, an observation a human may
-have shortened on purpose.
+to put in their place, each one JSON-quoted, 0 lines when the line goes. It
+says "needs review" when it takes a judgement, a list item whose key was lost,
+an observation a human may have shortened on purpose, an `about` line on a
+note whose schema gives it another target.
 
 Wiki-links that auto_link_entities.py wrote into excluded folders, and into
 the Markdown files at the workspace root, look exactly like links a human
@@ -91,8 +104,10 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import frontmatter as F  # noqa: E402
-from check_helpers import IDENTITY_KEYS, WIKILINK_RE, note_names  # noqa: E402
+from check_helpers import IDENTITY_KEYS, WIKILINK_RE, as_list, note_names, scalar  # noqa: E402
 from corpus import WORKSPACE, iter_corpus_notes, iter_excluded_notes  # noqa: E402
+from note_types import (NOTE_TYPES, PROJECT_ABOUT_TYPES, classify, entity_folder,  # noqa: E402
+                        project_brief, project_folder)
 
 try:
     import yaml
@@ -105,6 +120,13 @@ OBSERVATIONS_HEADING_RE = re.compile(r"^##\s+Observations\s*$")
 HEADING_RE = re.compile(r"^#{1,6}\s")
 ABOUT_RE = re.compile(r"^\s*-\s+about\s+\[\[")
 RELATIONS_RE = re.compile(r"^##\s+Relations\s*$")
+FENCE_RE = re.compile(r"^\s*```")
+INLINE_CODE_RE = re.compile(r"`[^`]*`")
+# The display text of a wiki-link, `|y` or the escaped `\|y`, up to the closing brackets.
+DISPLAY_TEXT_RE = re.compile(r"\\?\|[^\]]*(?=\]\]$)")
+ABOUT_PREFIX_RE = re.compile(r"^\s*-\s+about\s+(?=\[\[)")
+# The internal entity the 0.5.x add_about_relations.py linked, a note that never existed.
+OLD_INTERNAL_ENTITY = "Internal"
 
 # Which field an entity note is named by, as align_entity_titles.py reads it.
 IDENTITY_BY_TYPE = {"client-context": "client", "partner-context": "partner",
@@ -132,8 +154,9 @@ class Hit:
         end = self.end_line or self.line
         span = "line %d" % self.line if end == self.line else "lines %d-%d" % (self.line, end)
         n = len(self.replacement)
-        text = "replace %s with %d line%s: %s" % (
-            span, n, "" if n == 1 else "s", ", ".join(json.dumps(r, ensure_ascii=False) for r in self.replacement))
+        text = "replace %s with %d line%s" % (span, n, "" if n == 1 else "s")
+        if n:
+            text += ": " + ", ".join(json.dumps(r, ensure_ascii=False) for r in self.replacement)
         return text + (", needs review" if self.needs_review else "")
 
     def render(self) -> str:
@@ -590,6 +613,137 @@ def check_links(lines: list[str], body_start: int, rel: str, tables: LinkTables)
     return hits
 
 
+@dataclass
+class AboutTables:
+    """What an `about` link to an entity, rather than to a project, looks like.
+
+    `entities` maps an entity folder to the names of its context file,
+    `internal` holds the names the old passes gave the internal zone, and
+    `frontmatter_of` reads a note of the scan for `note_types.project_brief`.
+    """
+
+    entities: dict
+    internal: set
+    frontmatter_of: object
+
+
+def about_tables(notes, root: Path = WORKSPACE) -> AboutTables:
+    """Built from (rel, Frontmatter or None) pairs, every note of the scan."""
+    by_rel = dict(notes)
+    entities = {}
+    for rel, fm in notes:
+        folder = entity_folder(rel)
+        if folder is not None and rel == folder + "/CLAUDE.md" and fm is not None:
+            names = {scalar(fm, key) for key in IDENTITY_KEYS} | set(as_list(fm, "aliases"))
+            entities[folder] = names - {""}
+    internal = {OLD_INTERNAL_ENTITY}
+    try:
+        config = json.loads((root / ".sb-config.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        config = None
+    organization = config.get("organization") if isinstance(config, dict) else None
+    if isinstance(organization, str) and organization.strip():
+        internal.add(organization.strip())
+    return AboutTables(entities, internal, by_rel.get)
+
+
+def check_about(lines: list[str], body_start: int, rel: str, fm: F.Frontmatter | None,
+                about: AboutTables) -> list[Hit]:
+    """`- about [[Entity]]` in a note filed under that entity, or `[[Internal]]` in an internal one.
+
+    Every add_about_relations.py before 0.6.1 linked the entity. The 0.5.x
+    pass did it on every note of an entity folder and gave internal notes
+    `[[Internal]]`, the 0.6.0 one on emails and meetings, internal ones getting
+    the `organization`. The email, meeting and session schemas type `about` as
+    the project brief, and `client:` or `partner:` already carries the entity.
+    On those 3 types the repair is exact when the project has a brief: the
+    link becomes the brief's title, or the line goes when the note already
+    links its project. On any other type the schema gives `about` another
+    target, or none, so the line is proposed for removal and needs review.
+    """
+    if not rel.startswith("sources/"):
+        return []
+    zone = rel.split("/")[1] if "/" in rel else ""
+    names = about.internal if zone == "internal" else about.entities.get(entity_folder(rel) or "", set())
+    if not names:
+        return []
+    relations = []
+    for i, line in body_lines(lines, body_start):
+        prefix = ABOUT_PREFIX_RE.match(line)
+        link = WIKILINK_RE.match(line, prefix.end()) if prefix else None
+        if link is not None:
+            relations.append((i, line, link))
+    if not relations:
+        return []
+    brief, why = project_brief(project_folder(rel), about.frontmatter_of)
+    project = brief.names if brief is not None else frozenset()
+    linked = any(m.group(1).strip() in project for _, _, m in relations)
+    kind = fm.get("type") if fm is not None and fm.get("type") in NOTE_TYPES else classify(rel)
+    hits = []
+    for i, line, m in relations:
+        target = m.group(1).strip()
+        if target not in names or target in project:
+            continue
+        what = "`%s` links %s, not the project" % (
+            line.strip(), "the internal zone" if zone == "internal" else "the entity")
+        if kind not in PROJECT_ABOUT_TYPES:
+            hits.append(Hit(rel, i + 1, "about-entity-not-project",
+                            "%s. The %s schema does not give `about` the project as its target, "
+                            "so the line is proposed for removal" % (what, kind or "unknown"), i + 1, [], True))
+        elif brief is None:
+            hits.append(Hit(rel, i + 1, "about-entity-not-project",
+                            "%s, and %s, so there is no project title to link" % (what, why), None, None, True))
+        elif linked:
+            hits.append(Hit(rel, i + 1, "about-entity-not-project",
+                            "%s, and the note already links its project [[%s]]" % (what, brief.title),
+                            i + 1, []))
+        else:
+            hits.append(Hit(rel, i + 1, "about-entity-not-project",
+                            "%s, the brief `%s` names it [[%s]]" % (what, brief.rel, brief.title),
+                            i + 1, [line[:m.start()] + "[[%s]]" % brief.title + line[m.end():]]))
+            linked = True
+    return hits
+
+
+def body_lines(lines: list[str], body_start: int):
+    """Yield (index, line) for every body line outside a code fence."""
+    fenced = False
+    for i in range(body_start, len(lines)):
+        if FENCE_RE.match(lines[i]):
+            fenced = not fenced
+            continue
+        if not fenced:
+            yield i, lines[i]
+
+
+def check_table_links(lines: list[str], body_start: int, rel: str) -> list[Hit]:
+    """A wiki-link with display text inside a table row.
+
+    auto_link_entities.py before 0.6.1 wrote `[[X|y]]` there, whose bare `|`
+    ends the cell. The escaped `[[X\\|y]]` Obsidian reads is no better, Basic
+    Memory splits the target on the `|` and resolves `X\\`, which exists
+    nowhere. The repair is the bare `[[X]]` in both cases: the cell shows the
+    title instead of the word, and the link resolves in both tools. Inline code
+    is left as written.
+    """
+    hits = []
+    for i, line in body_lines(lines, body_start):
+        if not line.lstrip().startswith("|"):
+            continue
+        code = INLINE_CODE_RE.sub(lambda m: " " * len(m.group(0)), line)
+        spans = [m.span() for m in WIKILINK_RE.finditer(code) if DISPLAY_TEXT_RE.search(m.group(0))]
+        if not spans:
+            continue
+        new = line
+        for a, b in reversed(spans):
+            new = new[:a] + DISPLAY_TEXT_RE.sub("", new[a:b]) + new[b:]
+        hits.append(Hit(rel, i + 1, "table-cell-split-by-link",
+                        "%d wiki-link(s) with display text in a table row: a bare `|` ends the cell, "
+                        "and Basic Memory cannot resolve the escaped `\\|` form" % len(spans),
+                        i + 1, [new]))
+    return hits
+
+
 def check_excluded(lines: list[str], rel: str) -> list[Hit]:
     hits = []
     for i, line in enumerate(lines):
@@ -605,12 +759,14 @@ def check_excluded(lines: list[str], rel: str) -> list[Hit]:
 
 
 def check_text(text: str, rel: str, excluded: bool = False,
-               tables: LinkTables | None = None) -> list[Hit]:
-    """Every damage hit in one file's text, links checked when `tables` is given."""
+               tables: LinkTables | None = None, about: AboutTables | None = None) -> list[Hit]:
+    """Every damage hit in one file's text, links checked when `tables` is given,
+    `about` relations when `about` is."""
     lines = _lines(text)
     hits: list[Hit] = []
     found = locate_block(lines)
     body_start = 0
+    fm = None
     if found is not None:
         block, first_line, closer, glued = found
         body_start = closer + 1
@@ -633,6 +789,9 @@ def check_text(text: str, rel: str, excluded: bool = False,
                                 None, None, True))
     if tables is not None:
         hits.extend(check_links(lines, body_start, rel, tables))
+    hits.extend(check_table_links(lines, body_start, rel))
+    if about is not None and not excluded:
+        hits.extend(check_about(lines, body_start, rel, fm, about))
     if excluded:
         hits.extend(check_excluded(lines, rel))
     hits.sort(key=lambda h: h.line)
@@ -660,8 +819,9 @@ def scan(root: Path = WORKSPACE, include_excluded: bool = False):
         doc = F.split(text)
         parsed.append((rel, F.parse(doc.block) if doc is not None else None))
     tables = link_tables(parsed)
+    about = about_tables(parsed, root)
     for rel, excluded, text in texts:
-        hits.extend(check_text(text, rel, excluded, tables))
+        hits.extend(check_text(text, rel, excluded, tables, about))
         if excluded and WIKILINK_RE.search(text):
             linked.append(rel)
     return hits, linked

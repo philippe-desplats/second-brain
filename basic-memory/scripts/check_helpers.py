@@ -34,8 +34,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import frontmatter as F  # noqa: E402
 
-# A wiki-link, its target before any `|` display text or `#` heading.
-WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]")
+# A wiki-link, its target before any `|` display text or `#` heading. The
+# escaped `[[X\|y]]` Obsidian reads inside a table row also reads as `X`, should
+# a human or another tool write it. No pass writes it: Basic Memory resolves its
+# target as `X\`. Any other backslash belongs to the target. The pattern is
+# shared, so every reader of a link agrees.
+WIKILINK_PATTERN = r"\[\[((?:[^\]|#\\]|\\(?!\|))+)(?:#[^\]|]*)?(?:\\?\|[^\]]*)?\]\]"
+WIKILINK_RE = re.compile(WIKILINK_PATTERN)
 
 # The frontmatter fields a wiki-link may name a note by, beyond `aliases:`.
 #

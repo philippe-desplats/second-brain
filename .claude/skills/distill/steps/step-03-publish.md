@@ -63,7 +63,7 @@ This lets you navigate from the source to the distilled pattern in the Obsidian 
 ```markdown
 ## Relations
 
-- about [[Globex]]
+- about [[Accessibility]]
 - client [[Globex]]
 - used_in [[Playbook, Accessibility Audit]]   <- added by distill
 ```

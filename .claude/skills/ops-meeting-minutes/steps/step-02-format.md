@@ -97,7 +97,7 @@ Subject: {one-line topic}
 ## Relations
 
 - with [[{Participant}]]
-- about [[{Entity canonical name}]]
+- about [[{Project title, the `title:` of the project folder's README.md}]]
 ```
 
 **Register rules:**

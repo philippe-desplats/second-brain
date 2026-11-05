@@ -87,6 +87,33 @@ class Titles(Workspace):
         self.assertEqual(planned, text.replace("\nCatalog Search wins.", "\n[[Catalog Search]] wins."))
 
 
+class Markdown(Workspace):
+    REL = "sources/internal/pricing/2026-01-01-note-a.md"
+
+    def planned(self, body):
+        self.write(self.REL, note(body))
+        return self.plan().get(self.REL)
+
+    def test_alias_mention_in_a_table_row_becomes_the_bare_title(self):
+        # A `|` would split the cell, and Basic Memory cannot resolve `[[X\\|y]]`,
+        # so the cell shows the title instead of the original word.
+        planned = self.planned("| Area | Notes |\n|---|---|\n| UX | product search box |\n")
+        self.assertIn("| UX | [[Catalog Search]] box |\n", planned)
+        self.assertNotIn("|product search", planned)
+
+    def test_plain_link_in_a_table_row_needs_no_escape(self):
+        planned = self.planned("| Area | Notes |\n|---|---|\n| UX | Catalog Search box |\n")
+        self.assertIn("| UX | [[Catalog Search]] box |\n", planned)
+
+    def test_heading_lines_are_never_linked(self):
+        body = "".join("%s Catalog Search and product search\n\n" % ("#" * n) for n in range(1, 7))
+        self.assertIsNone(self.planned(body))
+
+    def test_code_fences_and_inline_code_are_never_linked(self):
+        body = "```\nCatalog Search\n```\n\nRun `Catalog Search` now.\n"
+        self.assertIsNone(self.planned(body))
+
+
 class Scope(Workspace):
     def test_only_corpus_notes_are_rewritten(self):
         body = note("Catalog Search here.\n")

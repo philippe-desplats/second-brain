@@ -38,6 +38,13 @@ class Orphans(WorkspaceCase):
                       note("title: Ref\ntype: note\n", f"See [[{LONG_TITLE}]].\n"))
         self.assertEqual(self.orphans(), [])
 
+    def test_link_escaped_for_a_table_cell_reaches_its_target(self):
+        self.ws.write("sources/internal/ops/2026-07-01-note-plan.md",
+                      note("title: Plan\ntype: note\n", "# Plan\n"))
+        self.ws.write("sources/internal/ops/2026-07-02-note-ref.md",
+                      note("title: Ref\ntype: note\n", "| a | [[Plan\\|the plan]] |\n"))
+        self.assertEqual(self.orphans(), [])
+
     def test_unlinked_note_is_an_orphan(self):
         self.ws.write("sources/internal/ops/2026-07-02-note-lonely.md",
                       note("title: Lonely\ntype: note\n", "Nothing here.\n"))

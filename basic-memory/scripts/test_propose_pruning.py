@@ -54,6 +54,12 @@ class Pruning(WorkspaceCase):
                       note("title: Ref\ntype: note\n", "See [[the plan|it]].\n"))
         self.assertNotIn("sources/internal/ops/2026-01-02-note-plan.md", self.candidates())
 
+    def test_inbound_link_escaped_for_a_table_cell(self):
+        self.old("sources/internal/ops/2026-01-02-note-plan.md", note("title: Plan\ntype: note\n", "Text.\n"))
+        self.ws.write("sources/internal/ops/2026-07-02-note-ref.md",
+                      note("title: Ref\ntype: note\n", "| a | [[Plan\\|it]] |\n"))
+        self.assertNotIn("sources/internal/ops/2026-01-02-note-plan.md", self.candidates())
+
     def test_only_corpus_notes_are_proposed(self):
         # A file copied into a client repository and a prompt pasted verbatim
         # are not notes, so pruning one is never proposed, however old.

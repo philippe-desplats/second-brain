@@ -19,6 +19,13 @@ Conservative by design:
   stop-list of common words are considered.
 - Skips text inside code fences (``` blocks), inline backticks, existing
   wiki-links, markdown links, URLs, and email quote lines starting with >.
+- Never links inside a heading, `#` to `######`: a link in the H1 would end
+  up in a title `regen_titles.py` reads from it.
+- Inside a Markdown table row, a line whose first non-space character is `|`,
+  a mention is always written as the bare `[[Target]]`, never with display
+  text: a bare `|` would end the cell, and Basic Memory reads the escaped
+  `\\|` form as part of the target. The cell shows the title instead of the
+  original word, so the link resolves in both Basic Memory and Obsidian.
 - Skips frontmatter (only the body is rewritten).
 - Skips email bodies under any `emails/` directory by default (high
   false-positive risk in quoted text). Use --include-emails to override.
@@ -79,6 +86,14 @@ PERMALINK_RE = re.compile(r"^permalink:\s*\S+", re.MULTILINE)
 # A path-like token: word chars + hyphens with at least one slash, also
 # protects "my-project" and "my-project/sources/..." from auto-link.
 PATH_TOKEN_RE = re.compile(r"\b[\w.-]+(?:[-/][\w.-]+)+\b")
+# A Markdown heading, `#` to `######`. A link there would become part of a
+# title regen_titles.py may read from the H1, so headings are never linked.
+HEADING_RE = re.compile(r"^ {0,3}#{1,6}(?:\s|$)")
+
+
+def is_table_row(line: str) -> bool:
+    """A Markdown table row, a line whose first non-space character is `|`."""
+    return line.lstrip().startswith("|")
 
 
 @dataclass
@@ -238,7 +253,7 @@ def scan_file(
 
     for i in range(body_start_idx, len(lines)):
         line = lines[i]
-        if line.lstrip().startswith(">"):
+        if line.lstrip().startswith(">") or HEADING_RE.match(line):
             continue
         if in_code_fence(lines, i):
             continue
@@ -273,7 +288,9 @@ def scan_file(
             canonical = entities_filtered[0].name
             original_text = line[match.start() : match.end()]
             replacement = f"[[{canonical}]]"
-            if original_text.lower() != canonical.lower():
+            # Inside a table row a `|` would end the cell, and Basic Memory
+            # cannot resolve the escaped `\\|` form, so the cell gets the bare title.
+            if original_text.lower() != canonical.lower() and not is_table_row(line):
                 replacement = f"[[{canonical}|{original_text}]]"
 
             edits.append((match.start(), match.end(), replacement, original_text, canonical))

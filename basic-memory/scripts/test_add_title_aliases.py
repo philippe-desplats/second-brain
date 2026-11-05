@@ -44,7 +44,7 @@ try:
 except ImportError:  # the stdlib-only interpreter
     yaml = None
 
-SIBLINGS = ("add_title_aliases.py", "corpus.py", "frontmatter.py")
+SIBLINGS = ("add_title_aliases.py", "check_helpers.py", "corpus.py", "frontmatter.py")
 HOOK = REPO / ".claude" / "hooks" / "title_aliases.py"
 
 LONG_TITLE = ("Globex Website Redesign, discovery workshop outcomes and the content "
@@ -288,6 +288,13 @@ class Quoting(Base):
         self.assertEqual(aliases_of(written), ['The "Fast" Track'])
         self.assert_valid_yaml(written)
         self.assertEqual(self.apply_ok()[1:3], (0, 1))
+
+    def test_link_escaped_for_a_table_cell_cites_its_target(self):
+        """`[[X\\|y]]`, the form a table row needs, cites X."""
+        self.ws.write(self.NOTE, "---\ntitle: Onboarding\ntype: note\n---\n\n# H\n")
+        self.cite("Onboarding\\|the onboarding")
+        self.assertEqual(self.apply_ok()[1], 1)
+        self.assertEqual(aliases_of(self.ws.read(self.NOTE)), ["Onboarding"])
 
     def test_apostrophe_mid_word_stays_one_item(self):
         self.ws.write(self.NOTE, "---\ntitle: Onboarding\naliases: [l'onboarding, kickoff]\ntype: note\n---\n\n# H\n")

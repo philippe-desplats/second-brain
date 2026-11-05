@@ -85,6 +85,13 @@ class Symmetric(WorkspaceCase):
         self.assertEqual(count, 0, out.stdout)
         self.assertNotIn("ORPHAN", out.stdout)
 
+    def test_display_alias_escaped_for_a_table_cell_resolved(self):
+        self.write("clients", "globex", client("Globex", "managed_by [[Proseware\\|our partner]]"))
+        self.write("partners", "proseware", partner("Proseware", "manages [[Globex\\|the client]]"))
+        out, count = self.run_check()
+        self.assertEqual(count, 0, out.stdout)
+        self.assertNotIn("ORPHAN", out.stdout)
+
     def test_unknown_target_is_an_orphan(self):
         self.write("clients", "globex", client("Globex", "owned_by [[Nobody]]"))
         out, count = self.run_check()

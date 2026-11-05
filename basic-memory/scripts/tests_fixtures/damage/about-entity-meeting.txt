@@ -1,0 +1,23 @@
+---
+title: Globex wireframe review
+type: meeting
+schema_version: 1
+date: 2026-06-29
+client: Globex
+participants:
+- Jane Doe
+---
+
+# Globex wireframe review
+
+## Decisions
+
+1. The search page keeps the filter rail on the left.
+
+## Relations
+
+- about [[Globex]]
+
+## Observations
+
+- [decision] The search page keeps the filter rail on the left

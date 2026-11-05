@@ -180,13 +180,13 @@ In `basic-memory/scripts/` (23 files, 19 scripts and the 4 modules they share):
 - `check_helpers.py`, not a pass: the schema loader and the wiki-link resolution table shared by the read-only checks
 - `check_double_frontmatter.py`, detects files with double frontmatter (Basic Memory bug to work around)
 - `fix_double_frontmatter.py`, merges the blocks of a double frontmatter, dry-run by default, `--apply` to write
-- `check_frontmatter_damage.py`, read-only, finds the frontmatter damage the 0.5.1 to 0.5.3 passes could leave, one line per hit with its repair, `--include-excluded` to also scan the folders `corpus.py` excludes
+- `check_frontmatter_damage.py`, read-only, finds the damage the passes up to 0.6.0 could leave, one line per hit with its repair, `--include-excluded` to also scan the folders `corpus.py` excludes
 - `retype_files.py`, reclassifies the `type:` based on the path and naming prefix
 - `retype_fallback_notes.py`, retypes `note` fallback to a more specific type based on path
 - `regen_titles.py`, regenerates the `title:` from the H1 when unusable
-- `add_about_relations.py`, injects `about [[Entity]]` into emails and meetings from their path, corpus notes only
+- `add_about_relations.py`, injects `about [[Project]]` into emails and meetings, the `title:` of their project folder's brief, corpus notes only, and lists the notes whose project has no brief
 - `add_observations_from_frontmatter.py`, generates the markdown observations from frontmatter fields
-- `auto_link_entities.py`, converts plain-text mentions of modeled entities into `[[wikilinks]]` in note bodies
+- `auto_link_entities.py`, converts plain-text mentions of modeled entities into `[[wikilinks]]` in note bodies, never in a heading, and always as the bare `[[Target]]` inside a table row, so the link resolves in Basic Memory too
 - `check_symmetric_relations.py`, audits symmetric pairs
 - `check_orphans.py`, flags notes with no inbound or outbound relations
 - `generate_indexes.py`, regenerates the `*-static.md` indexes in `atlas/maps/`

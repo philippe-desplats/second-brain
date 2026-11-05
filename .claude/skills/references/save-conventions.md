@@ -134,11 +134,11 @@ partner: Canonical partner name (if partner scope)
 source: Recording URL or external source (for meeting, transcript, research)
 ```
 
-And in the body, a `## Relations` section with `- about [[Canonical name]]` pointing to the parent client or partner. This densifies the Obsidian graph and enables Basic Memory navigation.
+And in the body, a `## Relations` section whose `about` follows the schema of the type: on an email, a meeting or a session it names the project, `- about [[Project title]]`, the `title:` of the project folder's `README.md` brief, and on the other types it names a topic. The client or partner is carried by `client:` or `partner:`, never by `about`. This densifies the Obsidian graph and enables Basic Memory navigation.
 
 ## For internal projects
 
-Same logic but the path is `sources/internal/{project}/...`. For files not tied to a client or partner, add `- about [[Acme]]` in the Relations section, where `Acme` is the placeholder for your own organization (rename it to your company, described in `sources/internal/CONTEXT.md`).
+Same logic but the path is `sources/internal/{project}/...`. An internal email, meeting or session links its project the same way, `- about [[Project title]]`, never your organization.
 
 ## For personal projects
 
