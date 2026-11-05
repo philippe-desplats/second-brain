@@ -213,7 +213,7 @@ Fourteen skills ship with the workspace, routed through `.claude/skill-registry.
 
 Once cloned, your workspace diverges from this boilerplate by design: your notes are yours. But the infrastructure (skills, rules, schemas, scripts, templates) keeps improving upstream, one tagged release at a time (`v0.6.2`, for example).
 
-Upgrade with the prompts each release ships, not with a bare checkout. Every section of [CHANGELOG.md](CHANGELOG.md) carries 2 upgrade prompts, to paste into the agent that operates your workspace from its root. Since 0.6.0 they also find and repair the notes that older maintenance passes damaged, which no git command does.
+From 0.6.3, run `/sb-update`: it finds the releases newer than yours, picks the right prompt for each, and runs them one at a time with every approval gate kept (`/sb-update --plan` shows the plan first). Before 0.6.3, or without the skill, upgrade with the prompts each release ships, not with a bare checkout. Every section of [CHANGELOG.md](CHANGELOG.md) carries 2 upgrade prompts, to paste into the agent that operates your workspace from its root. Since 0.6.0 they also find and repair the notes that older maintenance passes damaged, which no git command does.
 
 1. Read your version in `.sb-config.json`, the `boilerplate_version` field.
 2. Open the CHANGELOG sections newer than your version, and work through them oldest first, one release at a time.

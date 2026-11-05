@@ -7,6 +7,7 @@ Central router for the workspace skills. Consult this table before invoking any 
 | If the owner wants to... | Skill |
 |---|---|
 | Initialize or reconfigure this workspace | `/sb-init` |
+| Upgrade the workspace to a newer boilerplate release | `/sb-update` (`--plan` to preview) |
 | File inbound content (email, transcript, notes) or process the inbox | `/capture` (`-i` for inbox) |
 | Check the workspace health (orphans, conventions, frontmatter) | `/sb-doctor` |
 | Run the weekly or monthly workspace review | `/curate` |
@@ -30,6 +31,7 @@ Central router for the workspace skills. Consult this table before invoking any 
 | Skill | Triggers | Input | Output | Dependencies |
 |---|---|---|---|---|
 | `sb-init` | first run, "initialize", "set up my second brain", `-q` quick, `-r` reconfigure | interview answers | charter, CONTEXT.md, profile block, pruned zones, optional Basic Memory wiring | none (Basic Memory optional) |
+| `sb-update` | "update my second brain", "upgrade the workspace", a new release is out, `--to vX.Y.Z`, `--plan` | `boilerplate_version` and the upstream release tags | each release's upgrade prompt from the CHANGELOG run in order, with its gates, one commit per release | git, upstream remote; Python 3.10+ |
 | `capture` | "capture this", "file this email", "process my inbox", `-i` `-e {entity}` `-t {type}` | pasted content, @file, or inbox queue | artifact filed at the conventional path, schema frontmatter, verbatim body | none |
 | `sb-doctor` | "check the workspace", "health check", monthly hygiene | none (scans the workspace) | health report: orphans, double frontmatter, broken conventions, stale indexes, aged inbox | Python 3 |
 | `curate` | weekly/monthly review, `-w {days}`, `-r` report-only | window of recent activity | report of distill/archive/moc candidates, delegation on approval (or report file in `atlas/reviews/` with `-r`) | Basic Memory optional |
