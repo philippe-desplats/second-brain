@@ -72,7 +72,7 @@ def parse_keys(fm_body):
             current = m.group(1)
             out[current] = m.group(2).strip()
             continue
-        item = re.match(r"^[ \t]+-[ \t]+(.*)$", line)
+        item = re.match(r"^[ \t]*-[ \t]+(.*)$", line)
         if item and current:
             out.setdefault(current + "__list", []).append(item.group(1).strip())
             continue
@@ -237,7 +237,7 @@ def main():
         out_lines, skipping, inserted = [], False, False
         for line in lines:
             if skipping:
-                if re.match(r"^[ \t]+-[ \t]+", line) or line.strip() == "":
+                if re.match(r"^[ \t]*-[ \t]+", line) or line.strip() == "":
                     continue
                 skipping = False
             m = SCALAR_RE.match(line)
