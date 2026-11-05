@@ -489,19 +489,54 @@ class AboutEntityNotProject(DamageCase):
         self.place("about-organization-meeting.txt")
         self.assertEqual(self.hits(shape="about-entity-not-project"), [])
 
-    def test_folder_without_a_brief_needs_review(self):
+    def test_pass_written_line_without_a_brief_goes_with_its_block(self):
+        # The 0.6.0 pass created this `## Relations` block for the line alone,
+        # and an entity is no target the email schema allows, so the repair
+        # removes the line, its heading and the blank line the pass added.
         self.context()
         self.place("about-entity-email-no-brief.txt")
         hit = self.one("about-entity-not-project")
-        self.assertEqual((hit["line"], hit["replacement"], hit["needs_review"]), (19, None, True))
+        self.assertEqual((hit["line"], hit["end_line"], hit["replacement"], hit["needs_review"]),
+                         (16, 19, [], False))
         self.assertIn("sources/clients/globex/support/README.md", hit["what"])
+        self.assertIn("replace lines 16-19 with 0 lines", hit["repair"])
 
     def test_brief_whose_type_is_not_project_brief_counts_as_none(self):
         self.context()
         self.place("about-entity-email-no-brief.txt")
         self.ws.write("sources/clients/globex/support/README.md", note("title: Support\n", "# Support\n"))
         hit = self.one("about-entity-not-project")
-        self.assertIsNone(hit["replacement"])
+        self.assertEqual((hit["replacement"], hit["needs_review"]), ([], False))
+        self.assertIn("does not declare `type: project-brief`", hit["what"])
+
+    def test_organization_line_in_an_internal_folder_without_a_brief(self):
+        # The case that left `check_consistency.py` with a dead link after the 0.6.1 prompt.
+        self.context(organization="Acme")
+        self.place("about-organization-meeting.txt")
+        rel = "sources/internal/ops/meetings/2026-07-04-meeting-rate-review.md"
+        self.ws.write(rel, self.read(PLACES["about-organization-meeting.txt"]))
+        (self.ws.root / PLACES["about-organization-meeting.txt"]).unlink()
+        hit = self.one("about-entity-not-project")
+        self.assertEqual((hit["path"], hit["line"], hit["end_line"], hit["replacement"], hit["needs_review"]),
+                         (rel, 11, 14, [], False))
+
+    def test_line_a_pass_did_not_write_needs_review(self):
+        # Followed by another item: no pass wrote it there, a human may have.
+        self.context()
+        rel = "sources/clients/globex/support/meetings/2026-07-01-meeting-call.md"
+        self.ws.write(rel, note("title: Call\ntype: meeting\n",
+                                "# Call\n\n## Relations\n\n- about [[Globex]]\n- with [[Jane Doe]]\n"))
+        hit = self.one("about-entity-not-project")
+        self.assertEqual((hit["line"], hit["end_line"], hit["replacement"], hit["needs_review"]),
+                         (10, 10, [], True))
+
+    def test_other_type_whose_block_holds_the_line_alone_loses_the_block(self):
+        self.context()
+        rel = "sources/clients/globex/website-redesign/2026-06-30-note-ux.md"
+        self.ws.write(rel, note("title: UX\ntype: note\n", "# UX\n\nText.\n\n## Relations\n\n- about [[Globex]]\n"))
+        hit = self.one("about-entity-not-project")
+        self.assertEqual((hit["line"], hit["end_line"], hit["replacement"], hit["needs_review"]),
+                         (9, 12, [], True))
 
     def test_other_types_need_review_with_the_line_removed(self):
         self.context()

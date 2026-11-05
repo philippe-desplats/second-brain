@@ -48,9 +48,11 @@ the line it starts on and the repair, and writes nothing.
                                   entity, or `[[Internal]]` and the `organization`
                                   in an internal one, where the email, meeting and
                                   session schemas want the project brief. Exact on
-                                  those 3 types when the brief exists, the brief's
-                                  title, or the line removed when the note already
-                                  links its project. Needs review otherwise
+                                  those 3 types: the brief's title, or the line
+                                  removed when the note already links its project
+                                  or has no brief, with a `## Relations` block the
+                                  pass created for it. Needs review on other types
+                                  and on a line no pass wrote
                                   (add_about_relations.py up to 0.6.0)
     table-cell-split-by-link      `[[X|y]]` or `[[X\\|y]]` in a table row, repaired
                                   to `[[X]]`: the bare `|` ends the cell, and Basic
@@ -647,6 +649,36 @@ def about_tables(notes, root: Path = WORKSPACE) -> AboutTables:
     return AboutTables(entities, internal, by_rel.get)
 
 
+def relation_removal(lines: list[str], i: int, body_start: int):
+    """(first, last, pass_shaped) to remove the relation on line `i`, 0-based.
+
+    Every add_about_relations.py wrote its line last in the `## Relations`
+    section, appended to one that existed or in one it created for the line
+    alone, a blank line before the heading and one after it. That is the
+    shape `pass_shaped` names. When the line is alone under its heading, the
+    removal takes the heading and the blank lines before it too, so no empty
+    section is left. A line followed by more items, or under no `## Relations`
+    heading, is not one a pass wrote, and only the line itself is proposed.
+    """
+    heading = None
+    for j in range(i - 1, body_start - 1, -1):
+        if HEADING_RE.match(lines[j]):
+            heading = j if RELATIONS_RE.match(lines[j]) else None
+            break
+    after = []
+    for j in range(i + 1, len(lines)):
+        if HEADING_RE.match(lines[j]):
+            break
+        after.append(lines[j])
+    pass_shaped = heading is not None and not any(line.strip() for line in after)
+    if not pass_shaped or any(lines[j].strip() for j in range(heading + 1, i)):
+        return i, i, pass_shaped
+    first = heading
+    while first - 1 >= body_start and not lines[first - 1].strip():
+        first -= 1
+    return first, i, True
+
+
 def check_about(lines: list[str], body_start: int, rel: str, fm: F.Frontmatter | None,
                 about: AboutTables) -> list[Hit]:
     """`- about [[Entity]]` in a note filed under that entity, or `[[Internal]]` in an internal one.
@@ -658,8 +690,13 @@ def check_about(lines: list[str], body_start: int, rel: str, fm: F.Frontmatter |
     the project brief, and `client:` or `partner:` already carries the entity.
     On those 3 types the repair is exact when the project has a brief: the
     link becomes the brief's title, or the line goes when the note already
-    links its project. On any other type the schema gives `about` another
-    target, or none, so the line is proposed for removal and needs review.
+    links its project. Without a brief there is nothing to link and an entity
+    is no target those schemas allow, so the line goes, with the block a pass
+    created for it alone. That removal is exact when the line has the shape a
+    pass wrote, last in its `## Relations` section, and needs review when it
+    does not, since a human may have put it there. On any other type the
+    schema gives `about` another target, or none, so the line is proposed for
+    removal and needs review.
     """
     if not rel.startswith("sources/"):
         return []
@@ -687,12 +724,17 @@ def check_about(lines: list[str], body_start: int, rel: str, fm: F.Frontmatter |
         what = "`%s` links %s, not the project" % (
             line.strip(), "the internal zone" if zone == "internal" else "the entity")
         if kind not in PROJECT_ABOUT_TYPES:
-            hits.append(Hit(rel, i + 1, "about-entity-not-project",
+            start, last, _ = relation_removal(lines, i, body_start)
+            hits.append(Hit(rel, start + 1, "about-entity-not-project",
                             "%s. The %s schema does not give `about` the project as its target, "
-                            "so the line is proposed for removal" % (what, kind or "unknown"), i + 1, [], True))
+                            "so the line is proposed for removal" % (what, kind or "unknown"), last + 1, [], True))
         elif brief is None:
-            hits.append(Hit(rel, i + 1, "about-entity-not-project",
-                            "%s, and %s, so there is no project title to link" % (what, why), None, None, True))
+            start, last, pass_shaped = relation_removal(lines, i, body_start)
+            hits.append(Hit(rel, start + 1, "about-entity-not-project",
+                            "%s, and %s, so there is no project title to link and the line goes%s"
+                            % (what, why, "" if pass_shaped else
+                               ", but it is not the last line of a `## Relations` block, so a pass did not write it"),
+                            last + 1, [], not pass_shaped))
         elif linked:
             hits.append(Hit(rel, i + 1, "about-entity-not-project",
                             "%s, and the note already links its project [[%s]]" % (what, brief.title),
