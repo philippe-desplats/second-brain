@@ -6,6 +6,145 @@ Structural changes to this workspace. Content changes (notes, projects) are trac
 
 ## Unreleased
 
+## 0.6.2
+
+An email or a meeting filed in a folder without a project brief kept the `about` link to the entity an older pass wrote, and the 0.6.1 prompts told the agent to leave it. When that entity was the `organization`, which no note carries, the upgrade ended with `check_consistency.py` reporting a dead link. A literal run of the 0.6.1 prompt for a customized workspace on zsh, the macOS default shell, also met 2 defects in the prompts. This release repairs the first in the damage check and corrects the 0.6.1 prompts in place.
+
+- `check_frontmatter_damage.py` repairs the `about` line of an email, a meeting or a session whose folder has no brief. The line points at the entity, the `organization` or `Internal`, a target the email, meeting and session schemas do not allow, and without a brief there is no project to put in its place, so the repair removes it. When the line sits alone under its `## Relations` heading, the removal takes the heading and the blank line before it too, the block the pass created for it. The repair is exact when the line has the shape every `add_about_relations.py` wrote, the last line of its `## Relations` section, and needs review when it does not, followed by other items or outside such a section, where a human may have put it on purpose. On the other types the hit carries the same span, still to review. It still prints in the diff of its shape and can be refused.
+- The 0.6.1 prompts are corrected in place. The copy step of the customized one built its file list with a command substitution. An agent stored that list in a variable, which zsh does not split into words, so `git checkout` read the whole list as one path and failed with `pathspec ... did not match`. It now lists every path on the command line. Both prompts also required the alias dry-run to report 0 to modify, while a link an older pass wrote, a bare table link from `auto_link_entities.py` for one, can cite a note that has no alias yet. They now say that this is expected: show the diff, apply it after approval, then rerun the dry-run, which must report 0. Every command quoted in the 0.6.1 and 0.6.2 prompts was run once under `zsh -c` and once under `bash -c`.
+- A workspace still on 0.6.0 runs the corrected 0.6.1 prompt first, then the 0.6.2 prompt below. The 0.6.1 run leaves the lines of folders without a brief to review, and the 0.6.2 run removes them.
+- Measured on 3 workspaces, each one following its prompt literally under zsh. A stock v0.6.1 copy of the demo, seeded with the notes the 0.6.1 measurements used plus an internal meeting in a folder without a brief, then run through the real 0.6.0 passes, carried 4 hits, and the stock prompt below repaired all 4, the email without a brief losing its line and the block the pass created. An initialized copy with `organization` set and a fork of 3 files, `check_frontmatter_damage.py` among them, carried 6 hits, 2 of them `about` links to the `organization` that `check_consistency.py` reported dead. The prompt for a customized workspace kept the fork's change, and left 0 hits and 0 dead links. A workspace initialized and forked on 0.6.0, the case that met the defects, ran the corrected 0.6.1 prompt for a customized workspace, whose copy step now passes under zsh, then the 0.6.2 one, and ended with 0 hits and `check_consistency.py` exiting 0. The 41 distinct commands the 0.6.1 and 0.6.2 prompts quote ran under both shells with no shell error. The `uvx` fallback and `bm reindex` were not run, since the first downloads a package and the second writes the machine's Basic Memory index.
+- Not changed, deliberately: every other script, the schemas, the note types, the templates, the hook and its wiring, and every script's name, arguments and defaults. Only `check_frontmatter_damage.py` and its test file changed. `add_about_relations.py` still writes nothing into a folder without a brief and lists it under `[NO BRIEF]`.
+
+### Upgrade prompt, 0.6.1 to 0.6.2
+
+The update recipe in the README brings the fixed damage check. It never touches your notes, so a line an old pass wrote stays until something repairs it. This prompt accepts a workspace on 0.6.1 only. A workspace on 0.6.0 runs the 0.6.1 prompt above first.
+
+It is only for a workspace that never ran `/sb-init`. `/sb-init` personalizes `basic-memory/schemas`, `.claude/rules` and `templates`, so on an initialized workspace phase 1 always finds drift and stops. An initialized workspace uses the prompt for a customized workspace below, which keeps those edits.
+
+Paste this into the agent that operates your workspace, from the workspace root.
+
+```
+You are upgrading this second-brain workspace to boilerplate version 0.6.2, from 0.6.1. Work through the phases in order and stop at every gate.
+
+Rules for the whole run:
+- Never delete a note, a folder, or a frontmatter field. This upgrade only adds and rewrites. A repair that reads `replace lines A-B with 0 lines` removes body lines an old pass wrote, and it goes through a diff like every other repair.
+- Never write into sources/, knowledge/, atlas/, archives/ or inbox/ without showing me the exact diff first and waiting for my approval.
+- If a step's precondition is not met, stop and tell me. Do not improvise around it.
+- Run every command as it is written here, every path on the command line. Never store a list of paths in a shell variable: zsh does not split it into words.
+- Report what you changed at the end, file by file.
+
+Phase 1, preconditions.
+Run `git status --porcelain`. If it prints anything, stop and ask me to commit or stash first: I need to be able to revert this whole upgrade with one command.
+Read `initialized` in `.sb-config.json`. If it is true, stop and tell me to use the upgrade prompt for a customized workspace: `/sb-init` edited my schemas, rules and templates, the drift check below would list them, and phase 2 would overwrite them.
+Read `boilerplate_version` in `.sb-config.json`. It must be 0.6.1. If it says anything else, stop and tell me which version it says: a workspace on 0.6.0 runs the 0.6.1 upgrade prompt first.
+Then fetch the tags, one check per tag:
+  git remote get-url upstream || git remote add upstream https://github.com/philippe-desplats/second-brain.git
+  git fetch upstream --tags
+  git rev-parse --verify --quiet 'v0.6.1^{commit}'
+  git rev-parse --verify --quiet 'v0.6.2^{commit}'
+If either prints nothing, stop and tell me which tag is missing. Then measure how far my infrastructure has drifted from 0.6.1:
+  git diff --stat v0.6.1..HEAD -- .claude basic-memory/schemas basic-memory/scripts templates
+If that lists no file, my infrastructure is stock and the rest of this prompt applies as written.
+If it lists any file, STOP. I have customized the workspace, phase 2 would overwrite that work, and this is the wrong prompt. Show me the list and tell me to use the upgrade prompt for a customized workspace instead.
+
+Phase 2, infrastructure.
+  git checkout v0.6.2 -- .claude basic-memory/schemas basic-memory/scripts templates
+Show me `git diff --cached --stat`. It must list `basic-memory/scripts/check_frontmatter_damage.py` and `basic-memory/scripts/test_check_frontmatter_damage.py` and nothing else. This release changes nothing in a data zone. Outside the recipe it changes only `CHANGELOG.md` and `.sb-config.json`: the first is upstream's own document and I do not need it, the second you edit in phase 5.
+From here on, the hook runs the alias pass after each of your writes, and may add an alias to a cited note on its own, without a diff. That is expected: those writes show in the final `git diff`, and phase 4 reruns the check before every shape, so they never leave a stale line number behind.
+
+Phase 3, find the damage. Run, from the workspace root:
+  python3 -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded
+Show me its full output. Each hit is one line, `path:line: shape: what -> repair`. If its output ends with the note that PyYAML is not importable, rerun it once with an interpreter that has PyYAML, any python3 where `python3 -c 'import yaml'` succeeds, or `uvx --with pyyaml python -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded` when `uv` is installed. If neither is available, go on without it and tell me that a frontmatter broken in a shape the check does not know was not looked for. If it exits 0, tell me no note is damaged and go to phase 5.
+
+Phase 4, repair, one shape at a time.
+A workspace that ran the 0.6.1 prompt usually reports only about-entity-not-project hits, on the emails and meetings whose folder has no project brief, and the hits I chose to leave then. If the check reports other shapes, take them in this order, skipping the ones it did not report: broken-opener, type-inside-folded-title, stray-alias-items, orphan-continuation, unescaped-backslash-alias, type-inside-list, concatenated-title, unquoted-title, truncated-wikilink, undecoded-quote-in-body, about-entity-not-project, table-cell-split-by-link, observation-block-indicator, observation-truncated, detached-list-items, swallowed-key-line, pass-write-in-excluded-folder, invalid-yaml.
+For each shape:
+1. Rerun the check first, since a repair shifts the line numbers of the lines below it, and work from that fresh output.
+2. For every hit whose repair reads `replace lines A-B with N lines: ...`, prepare the edit that replaces exactly those lines of the file with exactly those lines, each one JSON-decoded from its quoted form, `\"` back to `"` and `\\` back to `\`, and changes nothing else. `with 0 lines` means removing exactly those lines and nothing else. When one file has several hits of the shape, apply them from the bottom of the file up, so the line numbers of the others stay true.
+3. For every hit that says `needs review`, show me the lines around it, run `git log -p --follow -- <path>`, and quote the commit that changed that region. Hits that one commit wrote can share one quote of that commit. Then propose a repair or propose to leave it. When the hit also carries a replacement, that replacement is your proposal. An about-entity-not-project removal already covers the `## Relations` heading and the blank line before it when the line sits alone under that heading. One that needs review sits on a line no pass wrote, or on a type whose schema gives `about` another target: say which, from the commit you quoted. For detached-list-items, the commit usually shows the key that was dropped above the items, and the proposal puts the items back under that key, appended to its list when the block still holds the key higher up, so no key appears twice. For swallowed-key-line, the commit shows where the swallowed line belonged, and the proposal puts it back there. For pass-write-in-excluded-folder, if the history shows a pass wrote them, the proposal is to remove the `- about [[...]]` line, the `## Relations` heading when nothing else sits under it, and the blank lines the same commit added around them. For invalid-yaml, never propose a repair, show me the frontmatter and leave it.
+4. Before writing anything, show me one diff covering every file of that shape and wait for my approval, then apply it. Never carry an approval over to the next shape. A repair the check gives as exact is still only a proposal: it goes into the diff like every other, and I can refuse it hit by hit. If one would shorten a title or rewrite a line I may have written that way on purpose, point it out in the diff.
+When every shape is done, rerun the check. It must exit 0, or list only invalid-yaml hits and the hits I chose to leave.
+
+Phase 5, verification and close.
+Set `boilerplate_version` to "0.6.2" in `.sb-config.json`, changing nothing else in the file. Run:
+  python3 -I -m unittest discover -s basic-memory/scripts -p 'test_*.py'
+  python3 -I basic-memory/scripts/check_consistency.py
+  python3 -I basic-memory/scripts/check_orphans.py
+  python3 -I basic-memory/scripts/check_symmetric_relations.py --check
+  python3 -I basic-memory/scripts/check_double_frontmatter.py
+  python3 -I basic-memory/scripts/generate_indexes.py --output-dir "$(mktemp -d)"
+  python3 -I basic-memory/scripts/audit_field_usage.py
+  python3 -I basic-memory/scripts/add_title_aliases.py
+  python3 -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded
+Show me the last lines of each. The test suite must end with OK. `check_consistency.py` must exit 0: if it reports an `about` link as dead, show me the line and the damage check's hit for it. The alias dry-run may list notes that a link an older pass wrote now cites, a bare table link `auto_link_entities.py` wrote for one: that is expected, not a failure. Show me the diff it plans, run it with `--apply` only after my approval, then rerun the dry-run, which must report 0 to modify. The damage check must exit 0, or list only invalid-yaml hits and the hits I chose to leave.
+If `basic_memory_project` in `.sb-config.json` is not null, run `bm reindex` then `python3 -I basic-memory/scripts/check_unresolved_relations.py`, and show me the count.
+Then tell me what none of this verifies. The damage check knows only the shapes the old passes are known to leave, and it looks for the about-entity-not-project shape under `sources/` only, so a project moved to `archives/` keeps its old lines. When no interpreter with PyYAML was available in phase 3, a frontmatter broken in a shape it does not know was not looked for at all. A line it removed as pass-shaped may still have been written by hand in exactly that place, which only the git history tells.
+```
+
+### Upgrade prompt, 0.6.1 to 0.6.2, for a customized workspace
+
+Use this one if phase 1 of the prompt above told you to, meaning your workspace ran `/sb-init` or `git diff` against v0.6.1 reports changes under `.claude`, `basic-memory/schemas`, `basic-memory/scripts` or `templates`. An initialized workspace always lands here, since `/sb-init` edits its schemas, rules and templates. It carries the intent of each change rather than a diff, and it allows skipping an intent your fork already covers.
+
+```
+You are upgrading this second-brain workspace to boilerplate version 0.6.2, from 0.6.1. I have customized the infrastructure, so you must NOT check out upstream files over mine. For each change below, read my version of the file first, then decide between 3 outcomes: apply, adapt, or skip because my fork already covers the intent. Justify every skip in one line.
+
+Rules for the whole run:
+- Never overwrite one of my files wholesale. Every edit is surgical and preserves what I wrote. A file I never changed may be checked out from v0.6.2, since that overwrites nothing of mine.
+- Never delete a note, a folder, or a schema field. A damage repair that reads `replace lines A-B with 0 lines` removes body lines an old pass wrote, behind a diff like every other.
+- Group your writes by intent. For each intent, show me one diff covering every file it touches and wait for one approval. Never apply a change I have not seen in a diff, and never carry an approval over to the next intent.
+- If you cannot tell whether my fork already covers an intent, ask me instead of deciding.
+- Run every command as it is written here, every path on the command line. Never store a list of paths in a shell variable: zsh does not split it into words.
+- If `initialized` is true in `.sb-config.json`, `/sb-init` personalized my infrastructure, and phase 0 lists those files as changed. That drift is mine and expected. Preserve it, never undo it as if it were a fork change. 0.6.2 touches none of those files.
+- `boilerplate_version` in `.sb-config.json` must say 0.6.1. If it says anything else, stop and tell me: a workspace on 0.6.0 runs the 0.6.1 prompt for a customized workspace first.
+
+Phase 0, map my fork. Run:
+  git remote get-url upstream || git remote add upstream https://github.com/philippe-desplats/second-brain.git
+  git fetch upstream --tags
+  git rev-parse --verify --quiet 'v0.6.1^{commit}'
+  git rev-parse --verify --quiet 'v0.6.2^{commit}'
+If either prints nothing, stop and tell me which tag is missing. Then run:
+  git diff --stat v0.6.1..HEAD -- .claude basic-memory/schemas basic-memory/scripts templates
+  git diff --stat v0.6.1..v0.6.2 -- .claude basic-memory/schemas basic-memory/scripts templates
+Give me the list of files I changed, a sentence on what each change appears to do, and the files both lists share: those are the ones where upstream's change and mine meet. Upstream's list holds 2 files, `basic-memory/scripts/check_frontmatter_damage.py` and `basic-memory/scripts/test_check_frontmatter_damage.py`.
+
+Phase 1, the intents. For each, tell me apply, adapt or skip, and why.
+
+1. The damage check removes the `about` line of an email, a meeting or a session whose folder has no project brief. The 0.6.1 check reported it as needs review with nothing to apply, and the 0.6.1 prompt told you to leave it, so an `about` link to the `organization` or `Internal`, which no note carries, stayed a dead link. The line points at an entity, a target those schemas do not allow, and without a brief there is no project to put in its place. Upstream added `relation_removal` above `check_about` in `basic-memory/scripts/check_frontmatter_damage.py`: it returns the span to remove, the line alone, or with its `## Relations` heading and the blank line before it when the line sits alone under that heading, and whether the line has the shape a pass wrote, the last line of its `## Relations` section. In `check_about`, the no-brief branch now returns that span with 0 replacement lines, exact when pass-shaped and needs review otherwise, and the branch for the other types returns the same span, still to review. Its docstring and the shape list at the top of the file say the same.
+   If phase 0 does not list `check_frontmatter_damage.py` as changed by me, check it out with its test file:
+     git checkout v0.6.2 -- basic-memory/scripts/check_frontmatter_damage.py basic-memory/scripts/test_check_frontmatter_damage.py
+   If I forked it, port the function and the 2 branches into my version, keeping my own changes: `git diff v0.6.1..v0.6.2 -- basic-memory/scripts/check_frontmatter_damage.py` shows all of it. Then check out the test file alone, unless phase 0 lists it as mine too:
+     git checkout v0.6.2 -- basic-memory/scripts/test_check_frontmatter_damage.py
+   Then run `python3 -I -m unittest discover -s basic-memory/scripts -p 'test_check_frontmatter_damage.py'`, which must end with OK.
+
+2. Repair the lines. Run:
+     python3 -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded
+   If its output ends with the note that PyYAML is not importable, rerun it once with an interpreter that has PyYAML, any python3 where `python3 -c 'import yaml'` succeeds, or `uvx --with pyyaml python -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded` when `uv` is installed. If neither is available, go on without it and tell me that a frontmatter broken in a shape the check does not know was not looked for. Each hit is one line, `path:line: shape: what -> repair`. A workspace that ran the 0.6.1 prompt usually reports only about-entity-not-project hits and the hits I chose to leave then. Take the shapes in this order, skipping the ones it did not report: broken-opener, type-inside-folded-title, stray-alias-items, orphan-continuation, unescaped-backslash-alias, type-inside-list, concatenated-title, unquoted-title, truncated-wikilink, undecoded-quote-in-body, about-entity-not-project, table-cell-split-by-link, observation-block-indicator, observation-truncated, detached-list-items, swallowed-key-line, pass-write-in-excluded-folder, invalid-yaml. For each shape, rerun the check first since repairs shift line numbers. Apply every `replace lines A-B with N lines: ...` exactly, each line JSON-decoded from its quoted form, changing nothing else, `with 0 lines` meaning exactly those lines are removed, and from the bottom of a file up when it holds several hits of the shape. The hook may add an alias to a cited note between 2 of your writes, which is why the check reruns first. For every `needs review` hit, show me the lines around it, run `git log -p --follow -- <path>` and quote the commit that changed that region, hits one commit wrote sharing one quote, then propose the removal the hit carries or propose to leave it, and say whether the commit shows a pass or a hand wrote the line. If my fork's own skills or passes deliberately write `about [[<entity>]]`, the check reports those lines too: tell me, and treat them as hits I choose to leave unless I say otherwise. Show me one diff per shape and wait. A repair the check gives as exact is still only a proposal, and I can refuse it hit by hit. When every shape is done, the check must exit 0, or list only invalid-yaml hits and the hits I chose to leave.
+
+3. What upstream deliberately did NOT change, so you do not "fix" it.
+   Every other script, the schemas, the note types, the templates, the hook and its wiring: `git diff --stat v0.6.1..v0.6.2 -- .claude basic-memory/schemas templates` lists nothing.
+   `add_about_relations.py` still writes nothing into a folder without a brief and lists it under `[NO BRIEF]`.
+
+Phase 2, what falls outside every intent above.
+Run `git diff --name-only v0.6.1..v0.6.2` and list anything you have not already handled. For each, say in one line whether it matters for my fork.
+
+Phase 3, verification. Run these against MY workspace and show me the output:
+  python3 -I -m unittest discover -s basic-memory/scripts -p 'test_*.py'
+  python3 -I basic-memory/scripts/check_consistency.py
+  python3 -I basic-memory/scripts/check_orphans.py
+  python3 -I basic-memory/scripts/check_symmetric_relations.py --check
+  python3 -I basic-memory/scripts/check_double_frontmatter.py
+  python3 -I basic-memory/scripts/generate_indexes.py --output-dir "$(mktemp -d)"
+  python3 -I basic-memory/scripts/audit_field_usage.py
+  python3 -I basic-memory/scripts/add_title_aliases.py
+  python3 -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded
+The tests cover upstream's scripts: a failure in a script I forked is my fork's, sort it from what this upgrade broke. `check_consistency.py` must exit 0 once the lines of intent 2 are gone: if it still reports an `about` link as dead, show me the line and the damage check's hit for it. The alias dry-run may list notes that a link an older pass wrote now cites, a bare table link `auto_link_entities.py` wrote for one: that is expected, not a failure. Show me the diff it plans, run it with `--apply` only after my approval, then rerun the dry-run, which must report 0 to modify. The damage check must exit 0, or list only invalid-yaml hits and the hits I chose to leave.
+If `basic_memory_project` in `.sb-config.json` is not null, run `bm reindex` then `python3 -I basic-memory/scripts/check_unresolved_relations.py`.
+Expect findings on a customized workspace, and sort them into what comes from this upgrade and what comes from my fork.
+
+Phase 4, close. Set `boilerplate_version` to "0.6.2" in `.sb-config.json`. Write me a short record of what you skipped and why. Tell me what none of this verifies: the damage check knows only the shapes upstream's old passes left, not what a pass of my own may have written, it looks for the about-entity-not-project shape under `sources/` only, it did not look for an unknown shape if no interpreter with PyYAML was available, and a line it removed as pass-shaped may still have been written by hand in exactly that place, which only the git history tells.
+```
+
 ## 0.6.1
 
 The `about` relation of emails and meetings now names their project, and the auto-link pass stops breaking tables and headings. Until this release, `add_about_relations.py` linked the client, the partner or the organization, while `basic-memory/schemas/email.md` and `meeting.md` type `about` as the project brief and the demo notes link their project, `Globex Website Redesign`. Every note it wrote got the entity in a slot meant for the project, so that meeting never reached its project through the graph. `auto_link_entities.py` wrote links with display text inside table rows, where their bare `|` splits the cell, and linked inside headings. This release ships the fixed passes, 2 more shapes in the damage check, and asks you to repair the lines the old passes wrote behind a diff, since no checkout repairs data.
@@ -33,6 +172,7 @@ Rules for the whole run:
 - Never delete a note, a folder, or a frontmatter field. This upgrade only adds and rewrites. A repair that reads `replace line N with 0 lines` removes 1 body line the old passes wrote, and it goes through a diff like every other repair.
 - Never write into sources/, knowledge/, atlas/, archives/ or inbox/ without showing me the exact diff first and waiting for my approval.
 - If a step's precondition is not met, stop and tell me. Do not improvise around it.
+- Run every command as it is written here, every path on the command line. Never store a list of paths in a shell variable: zsh does not split it into words.
 - Report what you changed at the end, file by file.
 - Run no script with `--apply` before phase 4 is done. `add_about_relations.py --apply` would add the project link next to each entity link phase 4 is about to replace.
 
@@ -83,7 +223,7 @@ Then run:
   python3 -I basic-memory/scripts/audit_field_usage.py
   python3 -I basic-memory/scripts/add_title_aliases.py
   python3 -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded
-Show me the last lines of each. The test suite must end with OK. The alias dry-run must report 0 to modify: if it lists notes, show them to me and run it with `--apply` only after my approval, then rerun it. The damage check must exit 0, or list only invalid-yaml hits and the hits I chose to leave. The 0.6.0 prompt told me to replace `[[Internal]]` with `[[<organization>]]`: this release reverses that, an internal email or meeting links its project, and phase 4 already proposed it. If `check_consistency.py` still reports `[[Internal]]` as a dead link, show me each line and propose nothing.
+Show me the last lines of each. The test suite must end with OK. The alias dry-run may list notes that a link an older pass wrote now cites, a bare table link `auto_link_entities.py` wrote for one: that is expected, not a failure. Show me the diff it plans, run it with `--apply` only after my approval, then rerun the dry-run, which must report 0 to modify. The damage check must exit 0, or list only invalid-yaml hits and the hits I chose to leave. The 0.6.0 prompt told me to replace `[[Internal]]` with `[[<organization>]]`: this release reverses that, an internal email or meeting links its project, and phase 4 already proposed it. If `check_consistency.py` still reports `[[Internal]]` as a dead link, show me each line and propose nothing.
 If `basic_memory_project` in `.sb-config.json` is not null, run `bm reindex` then `python3 -I basic-memory/scripts/check_unresolved_relations.py`, and show me the count.
 Then tell me what none of this verifies. The damage check knows only the shapes the old passes are known to leave. When no interpreter with PyYAML was available in phase 3, a frontmatter broken in a shape it does not know was not looked for at all. A wiki-link `auto_link_entities.py` wrote looks exactly like one I wrote, and only the git history tells them apart. A truncated observation it repaired may have been shortened by hand on purpose. A table cell repaired to the bare title shows the title instead of the word it held, which is the price of a link both tools resolve. The about-entity-not-project shape looks under `sources/` only: a project moved to `archives/` keeps the entity links the 0.5.x pass wrote, and in `sources/personal/` the 0.5.x pass linked a project's folder name when its brief had no title, and the brief itself to its own title. Neither is reported.
 ```
@@ -100,6 +240,7 @@ Rules for the whole run:
 - Never delete a note, a folder, or a schema field. A damage repair that reads `replace line N with 0 lines` removes 1 body line an old pass wrote, behind a diff like every other.
 - Group your writes by intent. For each intent, show me one diff covering every file it touches and wait for one approval. A pass that rewrites my notes keeps its own gate, dry-run first. Never apply a change I have not seen in a diff, and never carry an approval over to the next intent.
 - If you cannot tell whether my fork already covers an intent, ask me instead of deciding.
+- Run every command as it is written here, every path on the command line. Never store a list of paths in a shell variable: zsh does not split it into words.
 - If `initialized` is true in `.sb-config.json`, `/sb-init` personalized my infrastructure, and phase 0 lists those files as changed. That drift is mine and expected. Preserve it, never undo it as if it were a fork change, and never bring back what it removed when you port an upstream change into one of those files. Of them, 0.6.1 changes only the Maintenance scripts section of `.claude/rules/frontmatter.md`.
 - `boilerplate_version` in `.sb-config.json` must say 0.6.0. If it says anything else, stop and tell me: a workspace on 0.5.3 or older runs the 0.6.0 prompt for a customized workspace first.
 
@@ -115,8 +256,8 @@ Give me the list of files I changed, a sentence on what each change appears to d
 
 Phase 1, the intents. For each, tell me apply, adapt or skip, and why. Start with the copy step below, then take the intents in their numbering, with 1 constraint: run no script with `--apply` before intent 4 is done, since `add_about_relations.py --apply` would add the project link next to each entity link intent 4 replaces.
 The copy step. The tests and their fixtures arrive together, so no test ever runs against a missing fixture. The 6 fixtures under `basic-memory/scripts/tests_fixtures/damage/` are new files, and every changed test file tests an upstream script:
-  git checkout v0.6.1 -- basic-memory/scripts/tests_fixtures/damage $(git diff --name-only v0.6.0..v0.6.1 -- basic-memory/scripts | grep '/test_')
-If phase 0 lists one of those test files as changed by me, leave it out of the command and tell me. A test file stays red while my copy of the script it tests is still the 0.6.0 one: run it by its own name, `python3 -I -m unittest discover -s basic-memory/scripts -p 'test_check_helpers.py'` for instance, once that script is at 0.6.1. The whole suite runs in phase 3.
+  git checkout v0.6.1 -- basic-memory/scripts/tests_fixtures/damage basic-memory/scripts/test_add_about_relations.py basic-memory/scripts/test_add_title_aliases.py basic-memory/scripts/test_auto_link_entities.py basic-memory/scripts/test_check_consistency.py basic-memory/scripts/test_check_frontmatter_damage.py basic-memory/scripts/test_check_helpers.py basic-memory/scripts/test_check_orphans.py basic-memory/scripts/test_check_symmetric_relations.py basic-memory/scripts/test_propose_pruning.py
+Run it as written, every path on the command line, so it works the same in bash and zsh. If phase 0 lists one of those test files as changed by me, leave it out of the command and tell me. A test file stays red while my copy of the script it tests is still the 0.6.0 one: run it by its own name, `python3 -I -m unittest discover -s basic-memory/scripts -p 'test_check_helpers.py'` for instance, once that script is at 0.6.1. The whole suite runs in phase 3.
 
 1. One wiki-link reader, which tolerates the escaped table form. Obsidian reads `[[X\|y]]` inside a table row, and a human or another tool may write it. Upstream's readers read its target as `X\`. Upstream now defines the pattern once, `WIKILINK_PATTERN` and `WIKILINK_RE` in `basic-memory/scripts/check_helpers.py`, where the target drops only the backslash right before `|` and keeps any other, and `add_title_aliases.py` and `check_symmetric_relations.py` import it instead of carrying their own. `check_consistency.py`, `check_orphans.py`, `propose_pruning.py` and `check_frontmatter_damage.py` already read links through `check_helpers.py`. If a script of mine reads wiki-links with its own pattern, tell me, and propose porting it onto `WIKILINK_RE`. `add_title_aliases.py` now imports `check_helpers.py`, so if I forked it, it needs that sibling present. The new tests sit in `test_check_helpers.py`, `test_check_consistency.py`, `test_check_orphans.py`, `test_propose_pruning.py`, `test_add_title_aliases.py` and `test_check_symmetric_relations.py`.
 
@@ -149,7 +290,7 @@ Phase 3, verification. First run `python3 -I basic-memory/scripts/add_about_rela
   python3 -I basic-memory/scripts/audit_field_usage.py
   python3 -I basic-memory/scripts/add_title_aliases.py
   python3 -I basic-memory/scripts/check_frontmatter_damage.py --include-excluded
-The tests cover upstream's scripts: a failure in a script I forked is my fork's, sort it from what this upgrade broke. The alias dry-run must report 0 to modify on every note you repaired. If it lists notes, show them to me and run it with `--apply` only after my approval. The damage check must exit 0, or list only invalid-yaml hits and the hits I chose to leave. The 0.6.0 prompt told me to replace `[[Internal]]` with `[[<organization>]]`, and this release reverses that: if `check_consistency.py` still reports `[[Internal]]` as dead, show me each line and propose nothing.
+The tests cover upstream's scripts: a failure in a script I forked is my fork's, sort it from what this upgrade broke. The alias dry-run may list notes that a link an older pass wrote now cites, a bare table link `auto_link_entities.py` wrote for one: that is expected, not a failure. Show me the diff it plans, run it with `--apply` only after my approval, then rerun the dry-run, which must report 0 to modify. The damage check must exit 0, or list only invalid-yaml hits and the hits I chose to leave. The 0.6.0 prompt told me to replace `[[Internal]]` with `[[<organization>]]`, and this release reverses that: if `check_consistency.py` still reports `[[Internal]]` as dead, show me each line and propose nothing.
 If `basic_memory_project` in `.sb-config.json` is not null, run `bm reindex` then `python3 -I basic-memory/scripts/check_unresolved_relations.py`.
 Expect findings on a customized workspace, and sort them into what comes from this upgrade and what comes from my fork.
 
