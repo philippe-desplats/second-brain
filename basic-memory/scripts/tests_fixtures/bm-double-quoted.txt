@@ -1,0 +1,17 @@
+---
+title: "Tab\there, a long double quoted value that Basic Memory folds past the eighty\
+  \ column width"
+aliases:
+- "bell\a item, long enough to fold over the line width of eighty columns as well\
+  \ \"q\" \\ end"
+- "café \L sep"
+type: note
+---
+
+# Heading
+
+Body text.
+
+---
+
+After a rule.

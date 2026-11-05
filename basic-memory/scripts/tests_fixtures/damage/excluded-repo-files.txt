@@ -1,0 +1,7 @@
+# Notice
+
+This repository is maintained for [[Globex]].
+
+## Relations
+
+- about [[Globex]]

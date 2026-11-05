@@ -12,67 +12,42 @@ Unusable patterns:
     title: nodes, plan, services, network, etc (generic slug)
 
 Rules:
+    - Entity context file (sources/clients/{X}/CLAUDE.md,
+      sources/partners/{X}/CLAUDE.md) → title is the identity field, `client:`
+      or `partner:`, never the H1, since Basic Memory resolves `[[Acme]]` on
+      `title:` only (see .claude/rules/frontmatter.md). No identity → skip, log
     - H1 absent → skip, log edge case
     - H1 too long (>100 chars) → skip, log edge case
-    - H1 contains YAML special chars (:, #, &, *, [, ]) → quote value with "..."
-    - H1 identical to slug → skip (already bad, no improvement)
+    - H1 identical to the current title → skip (no improvement)
+    - Title declared twice, holding a list or a block, opening a quote its
+      range never closes, or absorbing a list item or another field, or any
+      field of the note swallowing a column-0 `key:` line → skip, listed
+      under "Needs repair", since a range may hold another field
     - Otherwise → replace title with H1 content
+    - The new value is quoted through the shared policy of `frontmatter.py`
+      when YAML would misread it plain
+
+Only corpus notes are visited, through `corpus.iter_corpus_notes`, so the
+pass never writes into the folders `corpus.py` excludes.
 
 Usage:
     python3 basic-memory/scripts/regen_titles.py --dry-run
     python3 basic-memory/scripts/regen_titles.py --apply
 """
 
-import re
+import os
 import sys
-from pathlib import Path
 
-WORKSPACE = Path(__file__).resolve().parent.parent.parent
-EXCLUDED_DIRS = {".claude", "templates", "basic-memory", ".git", ".obsidian", "node_modules"}
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import frontmatter as F  # noqa: E402
+from corpus import WORKSPACE, iter_corpus_notes  # noqa: E402
+from note_types import REPAIR_HINT, classify, field_damage  # noqa: E402
 
 UNUSABLE_GENERIC_TITLES = {"README", "CLAUDE", "CONTEXT", "MIGRATION", "PLAN", "SUMMARY", "NOTES", "TODO"}
 
-
-def is_excluded(path: Path) -> bool:
-    for part in path.relative_to(WORKSPACE).parts:
-        if part in EXCLUDED_DIRS:
-            return True
-    if path.name == ".DS_Store":
-        return True
-    return False
-
-
-def parse_frontmatter(content: str):
-    """Return (fm_dict, fm_raw, body, fm_end_line) or None."""
-    lines = content.split("\n")
-    if not lines or lines[0] != "---":
-        return None
-    end = None
-    for i in range(1, len(lines)):
-        if lines[i] == "---":
-            end = i
-            break
-    if end is None:
-        return None
-    fm_lines = lines[1:end]
-    body = "\n".join(lines[end + 1:])
-
-    fm = {}
-    for ln in fm_lines:
-        if ln.startswith(" ") or ln.startswith("\t"):
-            continue
-        if ":" not in ln:
-            continue
-        key, _, val = ln.partition(":")
-        # Strip optional quotes
-        v = val.strip()
-        if v.startswith('"') and v.endswith('"'):
-            v = v[1:-1]
-        elif v.startswith("'") and v.endswith("'"):
-            v = v[1:-1]
-        fm[key.strip()] = v
-
-    return fm, "\n".join(fm_lines), body, end
+# Entity context type -> the identity field its title must equal.
+IDENTITY_FIELDS = {"client-context": "client", "partner-context": "partner"}
 
 
 def extract_h1(body: str) -> str | None:
@@ -101,41 +76,25 @@ def needs_regen(title: str, slug: str) -> bool:
     return False
 
 
-def yaml_safe(value: str) -> str:
-    """Return YAML-safe representation of a string value."""
-    # Remove trailing punctuation that looks bad
-    value = value.rstrip()
-    # Always quote if contains YAML special chars
-    special = [":", "#", "&", "*", "[", "]", "{", "}", "|", ">", "%", "@", "`", "!", "?", "'", '"']
-    if any(c in value for c in special):
-        # Escape internal double-quotes
-        escaped = value.replace('\\', '\\\\').replace('"', '\\"')
-        return f'"{escaped}"'
-    # If starts with special chars or is empty, quote
-    if not value or value[0] in "-?:,[]{}#&*!>|'\"":
-        return f'"{value}"'
-    return value
+def set_title(fm: F.Frontmatter, new_title: str) -> F.Frontmatter:
+    """Set `title:`, its whole line range when present, as the first field otherwise."""
+    if "title" in fm:
+        return F.set_field(fm, "title", new_title)
+    line = F.render_field("title", new_title)
+    return F.parse("".join(ln + "\n" for ln in line + fm.lines))
 
 
-def update_title_in_frontmatter(fm_raw: str, new_title: str) -> str:
-    """Replace the title: line in frontmatter raw block."""
-    lines = fm_raw.split("\n")
-    safe = yaml_safe(new_title)
-    for i, ln in enumerate(lines):
-        if ln.startswith("title:") or ln.startswith("title :"):
-            lines[i] = f"title: {safe}"
-            return "\n".join(lines)
-    # No title, insert at top
-    lines.insert(0, f"title: {safe}")
-    return "\n".join(lines)
+def as_text(value) -> str:
+    return value.strip() if isinstance(value, str) else ""
 
 
-def main():
-    if len(sys.argv) < 2 or sys.argv[1] not in {"--dry-run", "--apply"}:
+def main(argv=None, root=WORKSPACE):
+    argv = sys.argv[1:] if argv is None else argv
+    if not argv or argv[0] not in {"--dry-run", "--apply"}:
         print("Usage: python3 regen_titles.py --dry-run | --apply")
         sys.exit(1)
 
-    dry_run = sys.argv[1] == "--dry-run"
+    dry_run = argv[0] == "--dry-run"
 
     stats = {
         "scanned": 0,
@@ -148,59 +107,62 @@ def main():
     edge_cases_no_h1 = []
     edge_cases_long = []
     edge_cases_identical = []
+    edge_cases_no_identity = []
+    needs_repair = []
     updates = []
 
-    for path in WORKSPACE.rglob("*.md"):
-        if is_excluded(path):
-            continue
+    for path, rel in iter_corpus_notes(root):
         stats["scanned"] += 1
 
         try:
-            content = path.read_text(encoding="utf-8")
-        except Exception as e:
+            doc, fm = F.read_file(path)
+        except (OSError, UnicodeDecodeError) as e:
             print(f"SKIP {path}: {e}", file=sys.stderr)
             continue
-
-        parsed = parse_frontmatter(content)
-        if parsed is None:
+        if doc is None:
             continue
-        fm, fm_raw, body, _ = parsed
 
-        title = fm.get("title", "")
+        damage = field_damage(fm, "title")
+        if damage:
+            needs_repair.append((rel, damage))
+            continue
+
+        title = as_text(fm.get("title"))
         slug = path.stem
 
         if not needs_regen(title, slug):
             stats["already_good"] += 1
             continue
 
-        h1 = extract_h1(body)
-        if h1 is None:
-            stats["no_h1"] += 1
-            edge_cases_no_h1.append(str(path.relative_to(WORKSPACE)))
-            continue
+        identity_field = IDENTITY_FIELDS.get(classify(rel))
+        if identity_field:
+            new = as_text(fm.get(identity_field))
+            if not new:
+                edge_cases_no_identity.append(rel)
+                continue
+        else:
+            new = extract_h1(doc.body)
+            if new is None:
+                stats["no_h1"] += 1
+                edge_cases_no_h1.append(rel)
+                continue
 
-        if len(h1) > 100:
-            stats["h1_too_long"] += 1
-            edge_cases_long.append((str(path.relative_to(WORKSPACE)), h1))
-            continue
+            if len(new) > 100:
+                stats["h1_too_long"] += 1
+                edge_cases_long.append((rel, new))
+                continue
 
-        # Sometimes H1 is identical to current title (bad case), skip
-        if h1 == title:
-            edge_cases_identical.append(str(path.relative_to(WORKSPACE)))
+        # Sometimes the new value is identical to the current title (bad case), skip
+        if new == title:
+            edge_cases_identical.append(rel)
             continue
 
         stats["would_update"] += 1
-        updates.append({
-            "path": str(path.relative_to(WORKSPACE)),
-            "old": title,
-            "new": h1,
-        })
+        updates.append({"path": rel, "old": title, "new": new})
 
         if not dry_run:
-            new_fm = update_title_in_frontmatter(fm_raw, h1)
-            new_content = f"---\n{new_fm}\n---\n{body}"
-            path.write_text(new_content, encoding="utf-8")
-            stats["updated"] += 1
+            if F.write_file(path, doc, set_title(fm, new)):
+                stats["updated"] += 1
 
     # Report
     print(f"=== Regen titles report ({'DRY RUN' if dry_run else 'APPLIED'}) ===")
@@ -209,26 +171,38 @@ def main():
     print(f"No H1 (skip): {stats['no_h1']}")
     print(f"H1 too long (skip): {stats['h1_too_long']}")
     print(f"Same as title (skip): {len(edge_cases_identical)}")
+    print(f"No identity field (skip): {len(edge_cases_no_identity)}")
+    print(f"Needs repair (skip): {len(needs_repair)}")
     print(f"Would update: {stats['would_update']}" if dry_run else f"Updated: {stats['updated']}")
 
     if dry_run and updates:
-        print(f"\nSample updates (first 15):")
+        print("\nSample updates (first 15):")
         for u in updates[:15]:
             print(f"  {u['path']}")
             print(f"    {u['old']!r} -> {u['new']!r}")
 
     if edge_cases_no_h1:
-        print(f"\nEdge cases NO H1 (need manual review):")
+        print("\nEdge cases NO H1 (need manual review):")
         for p in edge_cases_no_h1[:10]:
             print(f"  {p}")
         if len(edge_cases_no_h1) > 10:
             print(f"  ... and {len(edge_cases_no_h1) - 10} more")
 
     if edge_cases_long:
-        print(f"\nEdge cases H1 too long (need manual review):")
+        print("\nEdge cases H1 too long (need manual review):")
         for p, h in edge_cases_long[:5]:
             print(f"  {p}")
             print(f"    ({len(h)} chars) {h[:80]}...")
+
+    if edge_cases_no_identity:
+        print("\nEdge cases entity context without its identity field (need manual review):")
+        for p in edge_cases_no_identity[:10]:
+            print(f"  {p}")
+
+    if needs_repair:
+        print(f"\n{REPAIR_HINT} ({len(needs_repair)}):")
+        for p, damage in needs_repair:
+            print(f"  {p}: {damage}, left untouched")
 
 
 if __name__ == "__main__":

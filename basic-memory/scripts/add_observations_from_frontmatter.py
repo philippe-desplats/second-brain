@@ -4,9 +4,21 @@ Add observations `- [field] value` to the ## Observations section of stable
 files (client-context, partner-context, person, service, topic, project-brief),
 based on frontmatter YAML values.
 
-The frontmatter is preserved as-is. Observations are added only for fields
-whose schema is known and whose value is present in the frontmatter. Existing
-observations for the same field are not duplicated.
+The frontmatter is preserved byte for byte, only the body is rewritten.
+Observations are added only for fields whose schema is known and whose value
+is present in the frontmatter. A list gives one observation per item. A value
+spread over several lines, a folded scalar or a `|` or `>` block, gives one
+observation with its lines joined by single spaces. Existing observations for
+the same field and value are not duplicated, and an observation counts as
+present once its wiki-links are read as plain text: auto_link_entities.py
+turns `- [related] Client Onboarding` into `- [related] [[Client Onboarding]]`
+or `[[Target|label]]`, and that link, which feeds Basic Memory relations, must
+not make the next run add the plain value again. The comparison ignores case,
+since a plain-text mention linked by its lowercase form becomes
+`[[Canonical]]` with the canonical capitals.
+
+Only corpus notes are visited, through `corpus.iter_corpus_notes`, so the
+pass never writes into a folder corpus.py excludes.
 
 Usage:
     python3 basic-memory/scripts/add_observations_from_frontmatter.py --dry-run
@@ -14,11 +26,16 @@ Usage:
     python3 basic-memory/scripts/add_observations_from_frontmatter.py --apply --type client-context
 """
 
+import os
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
-WORKSPACE = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from corpus import WORKSPACE, iter_corpus_notes  # noqa: E402
+from frontmatter import Doc, Frontmatter, read_file, write_file  # noqa: E402
 
 # Schema-defined fields per type (required + optional scalars/arrays likely to have values)
 TYPE_FIELDS = {
@@ -47,75 +64,38 @@ TYPE_FIELDS = {
     ],
 }
 
-# Fields that are arrays (one observation per item)
-ARRAY_FIELDS = {
-    "aliases", "related", "constraints", "active_tracks",
-    "client_facets", "vendor_facets",
-}
+
+@dataclass
+class Target:
+    """A note the pass may annotate, read once."""
+
+    path: Path
+    rel: str
+    note_type: str
+    doc: Doc
+    fm: Frontmatter
 
 
-def parse_frontmatter_yaml(fm_raw: str) -> dict:
-    """Parse frontmatter YAML. Returns dict with string values or list of strings for arrays.
-
-    Handles:
-    - key: value (scalar)
-    - key: [a, b, c] (inline array, split on commas outside quotes)
-    - key:\n  - item1\n  - item2 (block array)
-    """
-    result = {}
-    lines = fm_raw.split("\n")
-    i = 0
-    while i < len(lines):
-        ln = lines[i]
-        if not ln or ln.startswith("#"):
-            i += 1
-            continue
-        if ln.startswith((" ", "\t", "-")):
-            i += 1
-            continue
-        if ":" not in ln:
-            i += 1
-            continue
-        key, _, rest = ln.partition(":")
-        key = key.strip()
-        rest = rest.strip()
-        if rest.startswith("[") and rest.endswith("]"):
-            items_str = rest[1:-1].strip()
-            items = [it.strip().strip('"').strip("'") for it in items_str.split(",") if it.strip()]
-            result[key] = items
-        elif rest == "":
-            items = []
-            j = i + 1
-            while j < len(lines):
-                next_ln = lines[j]
-                if next_ln.startswith(("  - ", "\t- ")) or re.match(r"^\s+-\s+", next_ln):
-                    item = re.sub(r"^\s+-\s+", "", next_ln).strip().strip('"').strip("'")
-                    items.append(item)
-                    j += 1
-                elif next_ln.startswith((" ", "\t")):
-                    j += 1
-                else:
-                    break
-            if items:
-                result[key] = items
-            i = j
-            continue
-        else:
-            value = rest.strip('"').strip("'")
-            result[key] = value
-        i += 1
-    return result
+WIKILINK_RE = re.compile(r"\[\[([^\]|]*)(?:\|([^\]]*))?\]\]")
 
 
-def format_value(value) -> str:
-    """Format a scalar value for observation output."""
-    if isinstance(value, str):
-        return value
-    return str(value)
+def one_line(value: str) -> str:
+    """An observation is one line: collapse every run of whitespace to a space."""
+    return " ".join(value.split())
+
+
+def observation_key(field: str, value: str) -> tuple[str, str]:
+    """What makes 2 observations the same: field, then text without links, any case."""
+    return field.strip(), one_line(unlink(value)).casefold()
+
+
+def unlink(text: str) -> str:
+    """Read wiki-links as the text they show: `[[T]]` gives T, `[[T|label]]` gives label."""
+    return WIKILINK_RE.sub(lambda m: m.group(2) if m.group(2) is not None else m.group(1), text)
 
 
 def parse_existing_observations(body: str) -> set:
-    """Return set of (field, value) tuples already present in ## Observations section."""
+    """Return the observation_key of every observation in the ## Observations section."""
     existing = set()
     obs_match = re.search(r"##\s+Observations\s*\n", body)
     if not obs_match:
@@ -126,30 +106,22 @@ def parse_existing_observations(body: str) -> set:
     for ln in section.split("\n"):
         m = re.match(r"^\s*-\s+\[([^\]]+)\]\s+(.+)$", ln)
         if m:
-            existing.add((m.group(1).strip(), m.group(2).strip()))
+            existing.add(observation_key(m.group(1), m.group(2)))
     return existing
 
 
-def build_observations(fm: dict, note_type: str) -> list:
+def build_observations(fm: Frontmatter, note_type: str) -> list:
     """Return list of (field, value) observations to add for this type."""
-    fields = TYPE_FIELDS.get(note_type, [])
     obs = []
-    for field in fields:
-        if field not in fm:
-            continue
-        value = fm[field]
-        if value is None or value == "":
-            continue
-        if field in ARRAY_FIELDS and isinstance(value, list):
-            for item in value:
-                if item:
-                    obs.append((field, format_value(item)))
-        elif isinstance(value, list):
-            for item in value:
-                if item:
-                    obs.append((field, format_value(item)))
-        else:
-            obs.append((field, format_value(value)))
+    for field in TYPE_FIELDS.get(note_type, []):
+        value = fm.get(field)
+        items = value if isinstance(value, list) else [value]
+        for item in items:
+            if item is None:
+                continue
+            text = one_line(item)
+            if text:
+                obs.append((field, text))
     return obs
 
 
@@ -164,9 +136,12 @@ def insert_observations(body: str, new_obs: list) -> str:
         section_start = obs_match.end()
         next_section = re.search(r"\n##\s+\S", body[section_start:])
         if next_section:
+            # `insert_at` points at the newline that ends the section's last
+            # line, so the block ends on a single newline and one blank line
+            # remains before the next heading.
             insert_at = section_start + next_section.start()
             block = body[section_start:insert_at].rstrip()
-            new_block = block + "\n" + addition + "\n\n"
+            new_block = block + "\n" + addition + "\n"
             return body[:section_start] + "\n" + new_block.lstrip("\n") + body[insert_at:]
         tail = body[section_start:].rstrip()
         return body[:section_start] + "\n" + tail.lstrip("\n") + "\n" + addition + "\n"
@@ -180,63 +155,47 @@ def insert_observations(body: str, new_obs: list) -> str:
     return body.rstrip() + "\n\n## Observations\n\n" + addition + "\n"
 
 
-def parse_file(path: Path):
-    """Return (fm_raw, fm_parsed, body, note_type) or (None, None, None, None) if skip."""
-    content = path.read_text(encoding="utf-8")
-    if not content.startswith("---"):
-        return None, None, None, None
-    end = content.find("\n---", 4)
-    if end == -1:
-        return None, None, None, None
-    fm_raw = content[4:end]
-    body = content[end + 4:]
-    if body.startswith("\n"):
-        body = body[1:]
-    fm = parse_frontmatter_yaml(fm_raw)
-    note_type = fm.get("type", "")
-    return fm_raw, fm, body, note_type
+def load(path: Path, rel: str = ""):
+    """Return a Target for a note with frontmatter, or None."""
+    doc, fm = read_file(path)
+    if doc is None:
+        return None
+    note_type = fm.get("type")
+    return Target(path, rel, note_type if isinstance(note_type, str) else "", doc, fm)
 
 
-def find_targets(filter_type: str = None):
-    """Return list of Path for files matching one of the stable types."""
+def find_targets(root: Path = WORKSPACE, filter_type: str = None) -> list:
+    """Return a Target for every corpus note of one of the stable types."""
     targets = []
-    for md in WORKSPACE.rglob("*.md"):
-        parts = md.relative_to(WORKSPACE).parts
-        if any(p.startswith(".") for p in parts):
+    for path, rel in iter_corpus_notes(root):
+        target = load(path, rel)
+        if target is None or target.note_type not in TYPE_FIELDS:
             continue
-        if "node_modules" in parts or "basic-memory" in parts:
+        if filter_type and target.note_type != filter_type:
             continue
-        if "templates" in parts or "schemas" in parts:
-            continue
-        _, fm, _, note_type = parse_file(md)
-        if note_type not in TYPE_FIELDS:
-            continue
-        if filter_type and note_type != filter_type:
-            continue
-        targets.append(md)
-    return sorted(targets)
+        targets.append(target)
+    return sorted(targets, key=lambda t: t.rel)
 
 
-def process_file(path: Path, apply: bool):
-    fm_raw, fm, body, note_type = parse_file(path)
-    if not fm_raw:
+def process_file(path: Path, apply: bool, target: Target = None):
+    """Return (status, message, new_obs). Reads the note unless `target` is given."""
+    target = target or load(path)
+    if target is None:
         return ("skip", "no frontmatter", [])
-    planned_obs = build_observations(fm, note_type)
+    planned_obs = build_observations(target.fm, target.note_type)
     if not planned_obs:
         return ("skip", "no schema fields present in frontmatter", [])
+    body = target.doc.body
     existing = parse_existing_observations(body)
-    new_obs = [(f, v) for f, v in planned_obs if (f, v) not in existing]
+    new_obs = [(f, v) for f, v in planned_obs if observation_key(f, v) not in existing]
     if not new_obs:
         return ("skip", "all observations already present", [])
     new_body = insert_observations(body, new_obs)
     if new_body == body:
         return ("skip", "idempotent no-op", [])
     if apply:
-        content = path.read_text(encoding="utf-8")
-        end = content.find("\n---", 4)
-        head = content[:end + 4]
-        suffix = "\n" + new_body if not new_body.startswith("\n") else new_body
-        path.write_text(head + suffix, encoding="utf-8")
+        target.doc.body = new_body
+        write_file(target.path, target.doc)
     return ("ok", f"{len(new_obs)} observations", new_obs)
 
 
@@ -252,23 +211,21 @@ def main():
         if idx + 1 < len(args):
             filter_type = args[idx + 1]
 
-    targets = find_targets(filter_type)
+    targets = find_targets(WORKSPACE, filter_type)
     print(f"=== add_observations_from_frontmatter, mode={'APPLY' if apply else 'DRY-RUN'} ===")
     if filter_type:
         print(f"Filter: type={filter_type}")
     print(f"Target files found: {len(targets)}")
     print()
 
-    counts = {"ok": 0, "skip": 0, "error": 0}
+    counts = {"ok": 0, "skip": 0}
     type_counts = {}
-    for path in targets:
-        status, msg, new_obs = process_file(path, apply)
+    for target in targets:
+        status, msg, new_obs = process_file(target.path, apply, target)
         counts[status] += 1
-        rel = path.relative_to(WORKSPACE)
-        _, _, _, note_type = parse_file(path)
-        type_counts[note_type] = type_counts.get(note_type, 0) + 1
+        type_counts[target.note_type] = type_counts.get(target.note_type, 0) + 1
         if status == "ok":
-            print(f"  [OK] [{note_type}] {rel}  ({msg})")
+            print(f"  [OK] [{target.note_type}] {target.rel}  ({msg})")
             for f, v in new_obs:
                 print(f"         - [{f}] {v}")
     print()
@@ -276,7 +233,7 @@ def main():
     for t, c in sorted(type_counts.items()):
         print(f"  {t}: {c}")
     print()
-    print(f"Summary: {counts['ok']} modified, {counts['skip']} skipped, {counts['error']} errors")
+    print(f"Summary: {counts['ok']} modified, {counts['skip']} skipped")
 
 
 if __name__ == "__main__":

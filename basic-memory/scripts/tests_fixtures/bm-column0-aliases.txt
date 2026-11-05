@@ -1,0 +1,16 @@
+---
+title: Jane Doe
+aliases:
+- Jane Doe
+- J. Doe
+type: person
+name: Jane Doe
+---
+
+# Heading
+
+Body text.
+
+---
+
+After a rule.

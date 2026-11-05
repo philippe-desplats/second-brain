@@ -6,48 +6,77 @@ Required pairs:
     managed_by (client) ↔ manages (partner)
     owned_by (client) ↔ owns (partner)
     referred_by (client) ↔ brings_lead (partner)
-    co_delivered_with (auto-symmetric)
+    co_delivered_with (auto-symmetric, between any 2 clients or partners)
+
+Every declared relation is checked from the side that declares it, so a pair
+broken on either side is reported. A target is matched by its display-free
+name, `[[Proseware|our partner]]` reads as `Proseware`, against the entity's
+`client:` or `partner:` field and its `title:`, both read whole when folded.
+
+Exits 1 when any asymmetry is found, 0 otherwise. `--check` is the default.
 
 Usage:
+    python3 basic-memory/scripts/check_symmetric_relations.py
     python3 basic-memory/scripts/check_symmetric_relations.py --check
     python3 basic-memory/scripts/check_symmetric_relations.py --suggest
 """
 
+import os
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import frontmatter as F  # noqa: E402
+from check_helpers import scalar  # noqa: E402
 
 WORKSPACE = Path(__file__).resolve().parent.parent.parent
 CLIENTS = WORKSPACE / "sources" / "clients"
 PARTNERS = WORKSPACE / "sources" / "partners"
 
-PAIR_CLIENT_TO_PARTNER = {
-    "managed_by": "manages",
-    "owned_by": "owns",
-    "referred_by": "brings_lead",
-    "co_delivered_with": "co_delivered_with",
+# side -> {relation: (inverse relation, sides the target may live on)}
+PAIRS = {
+    "client": {
+        "managed_by": ("manages", ("partner",)),
+        "owned_by": ("owns", ("partner",)),
+        "referred_by": ("brings_lead", ("partner",)),
+        "co_delivered_with": ("co_delivered_with", ("client", "partner")),
+    },
+    "partner": {
+        "manages": ("managed_by", ("client",)),
+        "owns": ("owned_by", ("client",)),
+        "brings_lead": ("referred_by", ("client",)),
+        "co_delivered_with": ("co_delivered_with", ("client", "partner")),
+    },
 }
 
+RELATION_RE = re.compile(r"^-\s+(\w+)\s+\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]")
+USAGE = "Usage: python3 check_symmetric_relations.py [--check | --suggest]"
 
-def parse_fm_and_relations(path: Path):
-    """Return (frontmatter_dict, relations_list_from_body). relations_list is list of (type, target)."""
-    content = path.read_text(encoding="utf-8")
-    fm = {}
-    body = content
-    if content.startswith("---"):
-        end = content.find("\n---", 4)
-        if end != -1:
-            fm_raw = content[4:end]
-            body = content[end + 4:]
-            for ln in fm_raw.split("\n"):
-                if ln.startswith((" ", "\t")):
-                    continue
-                if ":" not in ln:
-                    continue
-                k, _, v = ln.partition(":")
-                v = v.strip().strip('"').strip("'")
-                fm[k.strip()] = v
-    # Parse ## Relations section in body
+
+class Entity:
+    """One client or partner context file: its names and declared relations."""
+
+    def __init__(self, side: str, path: Path):
+        self.side = side
+        self.path = path
+        doc, fm = F.read_file(path)
+        body = doc.body if doc is not None else path.read_text(encoding="utf-8")
+        self.name = scalar(fm, side) or scalar(fm, "title") or path.parent.name
+        self.names = {self.name, scalar(fm, "title")} - {""}
+        self.relations = parse_relations(body)
+
+    @property
+    def rel(self) -> str:
+        return self.path.relative_to(WORKSPACE).as_posix()
+
+    def declares(self, relation: str, names: set[str]) -> bool:
+        return any(rt == relation and t in names for rt, t in self.relations)
+
+
+def parse_relations(body: str) -> list[tuple[str, str]]:
+    """(relation, target) pairs listed under the body's `## Relations` heading."""
     relations = []
     in_rel = False
     for ln in body.split("\n"):
@@ -57,142 +86,69 @@ def parse_fm_and_relations(path: Path):
         if in_rel and ln.startswith("## "):
             break
         if in_rel:
-            m = re.match(r"^-\s+(\w+)\s+\[\[([^\]]+)\]\]", ln)
+            m = RELATION_RE.match(ln)
             if m:
-                relations.append((m.group(1), m.group(2)))
-    return fm, relations
+                relations.append((m.group(1), m.group(2).strip()))
+    return relations
 
 
-def load_all():
-    """Load all client and partner CLAUDE.md with their relations."""
-    clients = {}  # slug -> (path, fm, relations)
-    partners = {}
-    for p in sorted(CLIENTS.glob("*/CLAUDE.md")):
-        slug = p.parent.name
-        fm, rels = parse_fm_and_relations(p)
-        clients[slug] = (p, fm, rels)
-    for p in sorted(PARTNERS.glob("*/CLAUDE.md")):
-        slug = p.parent.name
-        fm, rels = parse_fm_and_relations(p)
-        partners[slug] = (p, fm, rels)
-    return clients, partners
+def load_all() -> list[Entity]:
+    """Every client and partner context file, clients first."""
+    entities = [Entity("client", p) for p in sorted(CLIENTS.glob("*/CLAUDE.md"))]
+    entities += [Entity("partner", p) for p in sorted(PARTNERS.glob("*/CLAUDE.md"))]
+    return entities
 
 
-def resolve_entity_name(fm: dict) -> str:
-    """Return the canonical entity name for wikilink resolution."""
-    return fm.get("client") or fm.get("partner") or fm.get("title", "")
-
-
-def build_name_to_slug_maps(clients: dict, partners: dict):
-    """Build name -> slug lookup for clients and partners."""
-    c_map = {resolve_entity_name(fm): slug for slug, (_, fm, _) in clients.items()}
-    p_map = {resolve_entity_name(fm): slug for slug, (_, fm, _) in partners.items()}
-    return c_map, p_map
-
-
-def main():
-    if len(sys.argv) < 2 or sys.argv[1] not in {"--check", "--suggest"}:
-        print("Usage: python3 check_symmetric_relations.py --check | --suggest")
-        sys.exit(1)
-
-    mode = sys.argv[1]
-
-    clients, partners = load_all()
-    c_name_map, p_name_map = build_name_to_slug_maps(clients, partners)
+def find_asymmetries(entities: list[Entity]) -> list[dict]:
+    by_name: dict[tuple[str, str], Entity] = {}
+    for e in entities:
+        for name in e.names:
+            by_name.setdefault((e.side, name), e)
 
     asymmetries = []
+    for source in entities:
+        for rel_type, target in source.relations:
+            if rel_type not in PAIRS[source.side]:
+                continue
+            inverse, target_sides = PAIRS[source.side][rel_type]
+            match = next((by_name[(side, target)] for side in target_sides
+                          if (side, target) in by_name), None)
+            if match is not None and match.declares(inverse, source.names):
+                continue
+            if match is None:
+                expected_on = "ORPHAN (no matching " + " or ".join(target_sides) + ")"
+            else:
+                expected_on = match.rel
+            asymmetries.append({
+                "side": source.side,
+                "source": source.rel,
+                "source_name": source.name,
+                "relation": rel_type,
+                "target": target,
+                "expected_on": expected_on,
+                "expected_line": f"- {inverse} [[{source.name}]]",
+            })
+    return asymmetries
 
-    # For each client-side relation, check the inverse exists on partner side
-    for c_slug, (c_path, c_fm, c_rels) in clients.items():
-        c_name = resolve_entity_name(c_fm)
-        for rel_type, target in c_rels:
-            if rel_type not in PAIR_CLIENT_TO_PARTNER:
-                continue
-            expected_inverse = PAIR_CLIENT_TO_PARTNER[rel_type]
-            # target should be a partner (or auto-symmetric a client for co_delivered_with)
-            if rel_type == "co_delivered_with":
-                # target can be partner or another client, check both maps
-                if target in p_name_map:
-                    p_slug = p_name_map[target]
-                    _, _, p_rels = partners[p_slug]
-                    if not any(rt == expected_inverse and t == c_name for rt, t in p_rels):
-                        asymmetries.append({
-                            "side": "client",
-                            "source": str(c_path.relative_to(WORKSPACE)),
-                            "source_name": c_name,
-                            "relation": rel_type,
-                            "target": target,
-                            "expected_on": str(partners[p_slug][0].relative_to(WORKSPACE)),
-                            "expected_line": f"- {expected_inverse} [[{c_name}]]",
-                        })
-                continue
-            # Otherwise target is expected partner
-            if target not in p_name_map:
-                asymmetries.append({
-                    "side": "client",
-                    "source": str(c_path.relative_to(WORKSPACE)),
-                    "source_name": c_name,
-                    "relation": rel_type,
-                    "target": target,
-                    "expected_on": "ORPHAN (no matching partner)",
-                    "expected_line": f"- {expected_inverse} [[{c_name}]]",
-                })
-                continue
-            p_slug = p_name_map[target]
-            _, _, p_rels = partners[p_slug]
-            if not any(rt == expected_inverse and t == c_name for rt, t in p_rels):
-                asymmetries.append({
-                    "side": "client",
-                    "source": str(c_path.relative_to(WORKSPACE)),
-                    "source_name": c_name,
-                    "relation": rel_type,
-                    "target": target,
-                    "expected_on": str(partners[p_slug][0].relative_to(WORKSPACE)),
-                    "expected_line": f"- {expected_inverse} [[{c_name}]]",
-                })
 
-    # For each partner-side relation, check the inverse exists on client side
-    PAIR_PARTNER_TO_CLIENT = {v: k for k, v in PAIR_CLIENT_TO_PARTNER.items() if k != v}
-    for p_slug, (p_path, p_fm, p_rels) in partners.items():
-        p_name = resolve_entity_name(p_fm)
-        for rel_type, target in p_rels:
-            if rel_type not in PAIR_PARTNER_TO_CLIENT:
-                continue
-            expected_inverse = PAIR_PARTNER_TO_CLIENT[rel_type]
-            if target not in c_name_map:
-                asymmetries.append({
-                    "side": "partner",
-                    "source": str(p_path.relative_to(WORKSPACE)),
-                    "source_name": p_name,
-                    "relation": rel_type,
-                    "target": target,
-                    "expected_on": "ORPHAN (no matching client)",
-                    "expected_line": f"- {expected_inverse} [[{p_name}]]",
-                })
-                continue
-            c_slug = c_name_map[target]
-            _, _, c_rels = clients[c_slug]
-            if not any(rt == expected_inverse and t == p_name for rt, t in c_rels):
-                asymmetries.append({
-                    "side": "partner",
-                    "source": str(p_path.relative_to(WORKSPACE)),
-                    "source_name": p_name,
-                    "relation": rel_type,
-                    "target": target,
-                    "expected_on": str(clients[c_slug][0].relative_to(WORKSPACE)),
-                    "expected_line": f"- {expected_inverse} [[{p_name}]]",
-                })
+def main(argv: list[str]) -> int:
+    if len(argv) > 1 or (argv and argv[0] not in {"--check", "--suggest"}):
+        print(USAGE)
+        return 1
+    mode = argv[0] if argv else "--check"
 
-    # Report
-    print(f"=== Symmetric relations check ===")
-    print(f"Clients scanned: {len(clients)}")
-    print(f"Partners scanned: {len(partners)}")
+    entities = load_all()
+    asymmetries = find_asymmetries(entities)
+
+    print("=== Symmetric relations check ===")
+    print(f"Clients scanned: {sum(e.side == 'client' for e in entities)}")
+    print(f"Partners scanned: {sum(e.side == 'partner' for e in entities)}")
     print(f"Asymmetries found: {len(asymmetries)}")
     print()
 
     if not asymmetries:
         print("✓ All symmetric relations are mirrored correctly.")
-        return
+        return 0
 
     print("Asymmetries:")
     for a in asymmetries:
@@ -202,7 +158,8 @@ def main():
         if mode == "--suggest":
             print(f"    add line:   {a['expected_line']}")
         print()
+    return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main(sys.argv[1:]))

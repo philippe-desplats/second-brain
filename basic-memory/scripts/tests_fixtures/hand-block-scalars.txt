@@ -1,0 +1,28 @@
+---
+title: Block scalars
+literal: |
+  First line
+    indented line
+
+  after blank
+strip: |-
+  no trailing newline
+keep: |+
+  kept trailing
+
+folded: >
+  folded one
+  folded two
+
+  new paragraph
+    more indented
+  back
+folded_strip: >-
+  a
+  b
+explicit: |2
+    two extra spaces
+type: note
+---
+
+Body.

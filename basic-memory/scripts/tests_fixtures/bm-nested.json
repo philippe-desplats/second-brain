@@ -1,0 +1,15 @@
+{
+  "title": "Nested mapping",
+  "meta": {
+    "owner": "Jane Doe",
+    "levels": [
+      "a",
+      "b"
+    ],
+    "deep": {
+      "x": "1"
+    }
+  },
+  "type": "note",
+  "status": "active"
+}

@@ -1,0 +1,17 @@
+---
+title: Kickoff addendum
+type: note
+schema_version: 1
+tags:
+- kickoff
+date: 2026-06-27
+- workshop
+- globex
+---
+# Kickoff addendum
+
+Notes taken after the kickoff with [[Globex]].
+
+## Relations
+
+- about [[Globex]]

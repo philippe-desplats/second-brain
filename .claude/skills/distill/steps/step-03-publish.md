@@ -84,7 +84,7 @@ command -v bm >/dev/null 2>&1 && bm reindex
 
 (Or ask the user to run it manually if `bm reindex` takes too long in practice.)
 
-Also run `python3 basic-memory/scripts/fix_double_frontmatter.py` after reindex.
+Also run `python3 basic-memory/scripts/check_double_frontmatter.py` after reindex. If it reports files, show them to the user, preview the merge with `python3 basic-memory/scripts/fix_double_frontmatter.py`, and repair with `python3 basic-memory/scripts/fix_double_frontmatter.py --apply` only once they approve.
 
 ### 6. Confirmation
 

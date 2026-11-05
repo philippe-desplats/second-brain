@@ -34,7 +34,7 @@ Run each check from the workspace root and collect results.
 python3 basic-memory/scripts/check_double_frontmatter.py
 ```
 
-Corrupted files break parsing and indexing. Fix: `python3 basic-memory/scripts/fix_double_frontmatter.py --apply`.
+Corrupted files break parsing and indexing. Fix: preview the merge with `python3 basic-memory/scripts/fix_double_frontmatter.py` (dry-run by default), then `python3 basic-memory/scripts/fix_double_frontmatter.py --apply`. A file flagged as outside the corpus is repaired by hand.
 
 ### 2. Orphan notes (🟡)
 
@@ -47,7 +47,7 @@ Notes with no incoming or outgoing wiki-link are invisible to graph navigation. 
 ### 3. Symmetric relations (🟡, only if `sources/partners/` exists)
 
 ```bash
-python3 basic-memory/scripts/check_symmetric_relations.py
+python3 basic-memory/scripts/check_symmetric_relations.py --check
 ```
 
 Broken pairs (managed_by without manages, etc.) corrupt the entity graph. Fix: apply the script's suggestions manually in the listed CLAUDE.md files.

@@ -1,0 +1,12 @@
+---
+title: Globex Website Redesign, discovery workshop outcomes and the content inventory
+  plan for Q3
+type: note
+schema_version: 1
+date: 2026-06-25
+aliases: ["Globex Website Redesign, discovery workshop outcomes and the content inventory plan for Q3", "[\"Globex Website Redesign, discovery workshop outcomes and the content inventory plan for Q3\", \"[\\"Globex Website Redesign, discovery workshop outcomes and the content inventory plan for Q3\\", \\"[\\\"Globex Website Redesign, discovery workshop outcomes and the content inventory plan for Q3\\\", \\\"Globex Website Redesign, discovery workshop outcomes and the content inventory plan\\\", workshop outcomes] for Q3\\"] for Q3\"] for Q3"]
+  for Q3
+- workshop outcomes
+---
+
+# Workshop outcomes

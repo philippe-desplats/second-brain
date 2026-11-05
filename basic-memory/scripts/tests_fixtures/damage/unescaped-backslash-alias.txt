@@ -1,0 +1,11 @@
+---
+title: 'Regex: \d+ cheatsheet'
+aliases: ["Regex: \d+ cheatsheet", "Regex: d+ cheatsheet"]
+type: note
+schema_version: 1
+subtype: guide
+status: active
+date: 2026-06-30
+---
+
+# Regex cheatsheet

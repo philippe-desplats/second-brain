@@ -2,13 +2,19 @@
 """
 Retro-link textual mentions of modeled entities to wiki-links.
 
-Walks the workspace, discovers entities from frontmatter (`type` of
+Walks the corpus notes, discovers entities from frontmatter (`type` of
 client-context, partner-context, person, service, topic, project-brief),
-then scans all markdown files for plain-text mentions of those entities
-and proposes turning them into [[Wiki Links]].
+then scans those notes for plain-text mentions of those entities and
+proposes turning them into [[Wiki Links]].
+
+Both walks go through `corpus.iter_corpus_notes`, so the pass never reads an
+entity from, nor writes into, a folder corpus.py excludes (`repo-files/`,
+`prompts/`, `captures/`, `tmp/`, ...) or anything outside the note zones
+(`docs/`, `templates/`, the repository's own README files).
 
 Conservative by design:
-- Default mode is --dry-run, prints a unified diff per file.
+- Default mode is a dry run, prints a unified diff per file. Only
+  --apply writes, --dry-run is accepted and changes nothing.
 - Only mentions whose canonical name is at least 4 chars and not in a
   stop-list of common words are considered.
 - Skips text inside code fences (``` blocks), inline backticks, existing
@@ -16,6 +22,10 @@ Conservative by design:
 - Skips frontmatter (only the body is rewritten).
 - Skips email bodies under any `emails/` directory by default (high
   false-positive risk in quoted text). Use --include-emails to override.
+
+Idempotent: every eligible mention is linked in one run, several per line
+included, so a second --apply finds nothing left to link. That is the state
+repeated runs of a one-link-per-line pass converged to, reached at once.
 
 Homonym handling:
 - If an entity name resolves to more than one canonical note (e.g. a
@@ -33,17 +43,19 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import os
 import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-WORKSPACE = Path(__file__).resolve().parent.parent.parent
-IGNORED_SEGMENTS = {".git", "node_modules", ".obsidian", ".claude"}
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from corpus import WORKSPACE, iter_corpus_notes  # noqa: E402
+from frontmatter import parse, split  # noqa: E402
+
+# Corpus notes this pass still leaves alone.
 IGNORED_PATH_PREFIXES = (
-    "templates/",
-    "basic-memory/scripts/",
-    "basic-memory/schemas/",
     "atlas/maps/",  # generated indexes, paths inside must stay literal
 )
 
@@ -86,134 +98,61 @@ class Mention:
     proposed_line: str
 
 
-def is_ignored(rel: Path) -> bool:
-    parts = rel.parts
-    if any(p in IGNORED_SEGMENTS for p in parts):
+def is_ignored(rel: str) -> bool:
+    """Is this corpus note, given relative to the workspace, out of the pass's scope?"""
+    if rel.startswith(IGNORED_PATH_PREFIXES):
         return True
-    rel_str = rel.as_posix()
-    if any(rel_str.startswith(p) for p in IGNORED_PATH_PREFIXES):
-        return True
-    if any(rel_str.endswith(s) for s in IGNORED_FILENAME_SUFFIXES):
-        return True
-    return False
-
-
-def parse_frontmatter_yaml(fm_text: str) -> dict:
-    """Parse the frontmatter subset this workspace uses, standard library only.
-
-    Handles top-level `key: value` scalars (quoted or not, colons allowed
-    inside the value), inline sequences `key: [a, b]`, block sequences with
-    `- item` on the following lines, blank lines and full-line comments.
-
-    Deliberate limits, this is not a general YAML parser: scalars are always
-    returned as strings (callers stringify every value they read), a nested
-    mapping is consumed without being parsed and its key maps to an empty
-    string, and block scalars (`|`, `>`), trailing `# comments`, anchors and
-    multi-document streams are not interpreted. It never raises: a line it
-    cannot read is skipped, so a malformed block yields a partial dict.
-
-    Deliberately duplicated in generate_indexes.py rather than extracted:
-    every script in this folder stays runnable on its own. The two copies must
-    remain identical, change one and change the other.
-    """
-
-    def scalar(raw: str) -> str:
-        """Strip one matching pair of surrounding quotes, and empty an explicit null."""
-        raw = raw.strip()
-        if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ('"', "'"):
-            return raw[1:-1]
-        if raw in ("null", "~"):
-            return ""
-        return raw
-
-    result: dict = {}
-    lines = fm_text.split("\n")
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        i += 1
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        if line.startswith((" ", "\t", "-")):
-            continue  # nested or orphan line, consumed with its parent key
-        if ":" not in line:
-            continue
-        key, _, rest = line.partition(":")
-        key = key.strip()
-        rest = rest.strip()
-        if not key:
-            continue
-        if rest.startswith("[") and rest.endswith("]"):
-            result[key] = [scalar(it) for it in rest[1:-1].split(",") if it.strip()]
-            continue
-        if rest:
-            result[key] = scalar(rest)
-            continue
-        # Bare key: either a block sequence or a nested mapping. Consume the
-        # whole indented block, only a sequence produces a value.
-        items: list = []
-        is_sequence = None
-        while i < len(lines):
-            nxt = lines[i]
-            nxt_stripped = nxt.strip()
-            if not nxt_stripped or nxt_stripped.startswith("#"):
-                i += 1
-                continue
-            if not nxt.startswith((" ", "\t", "-")):
-                break
-            if is_sequence is None:
-                is_sequence = nxt_stripped.startswith("- ")
-            if is_sequence and nxt_stripped.startswith("- "):
-                items.append(scalar(nxt_stripped[2:]))
-            i += 1
-        result[key] = items if is_sequence else ""
-    return result
+    return rel.endswith(IGNORED_FILENAME_SUFFIXES)
 
 
 def parse_frontmatter(text: str) -> tuple[dict, int]:
-    """Return (frontmatter dict, body_start_line_index)."""
-    if not text.startswith("---"):
+    """Return (frontmatter dict, body_start_line_index).
+
+    The index counts lines split on "\n", so the body starts right after the
+    closing delimiter whatever the block holds, folded values included.
+    """
+    doc = split(text)
+    if doc is None:
         return {}, 0
-    lines = text.split("\n")
-    end = None
-    for i in range(1, len(lines)):
-        if lines[i] == "---":
-            end = i
-            break
-    if end is None:
-        return {}, 0
-    fm_text = "\n".join(lines[1:end])
-    return parse_frontmatter_yaml(fm_text), end + 1
+    head = text[: len(text) - len(doc.body)]
+    return parse(doc.block).to_dict(), head.count("\n")
 
 
-def discover_entities(root: Path) -> dict[str, list[Entity]]:
-    """Return alias_lowercase -> list of Entities."""
-    raw: dict[str, list[Entity]] = {}
+def text_value(fm: dict, *keys: str) -> str:
+    """The first of `keys` holding a non-empty string, stripped, else ""."""
+    for key in keys:
+        value = fm.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
 
-    for path in root.rglob("*.md"):
-        rel = path.relative_to(root)
+
+def iter_scoped_notes(root: Path):
+    """Yield (path, rel, text) for every corpus note in the pass's scope."""
+    for path, rel in iter_corpus_notes(root):
         if is_ignored(rel):
             continue
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
+        yield path, rel, text
+
+
+def discover_entities(root: Path) -> dict[str, list[Entity]]:
+    """Return alias_lowercase -> list of Entities."""
+    raw: dict[str, list[Entity]] = {}
+
+    for path, _rel, text in iter_scoped_notes(root):
         fm, _ = parse_frontmatter(text)
-        t = str(fm.get("type", ""))
+        t = text_value(fm, "type")
         if t not in ENTITY_TYPES:
             continue
 
         # Canonical name: prefer client/partner over title.
-        canonical = (
-            fm.get("client")
-            or fm.get("partner")
-            or fm.get("name")
-            or fm.get("title")
-        )
+        canonical = text_value(fm, "client", "partner", "name", "title")
         if not canonical:
             continue
-        canonical = str(canonical).strip()
         if len(canonical) < 4 or canonical.lower() in STOP_NAMES:
             continue
 
@@ -222,7 +161,7 @@ def discover_entities(root: Path) -> dict[str, list[Entity]]:
         # Optional alias fields.
         for alias_field in ("aliases", "also_known_as", "short_name"):
             v = fm.get(alias_field)
-            if isinstance(v, str) and len(v) >= 4:
+            if isinstance(v, str) and len(v.strip()) >= 4:
                 entity.aliases.add(v.strip())
             elif isinstance(v, list):
                 for x in v:
@@ -282,17 +221,16 @@ def scan_file(
     by_alias: dict[str, list[Entity]],
     search_re: re.Pattern,
     include_emails: bool,
+    root: Path = WORKSPACE,
 ) -> tuple[list[Mention], list[Mention]]:
     """Return (linked, ambiguous)."""
-    rel = path.relative_to(WORKSPACE)
+    rel = path.relative_to(root)
     if not include_emails:
         if any(seg in {"emails", "mails", "mailings"} for seg in rel.parts):
             return [], []
 
     fm, body_start_idx = parse_frontmatter(text)
-    self_canonical = str(
-        fm.get("client") or fm.get("partner") or fm.get("name") or fm.get("title") or ""
-    ).strip()
+    self_canonical = text_value(fm, "client", "partner", "name", "title")
 
     lines = text.split("\n")
     linked: list[Mention] = []
@@ -306,8 +244,8 @@ def scan_file(
             continue
 
         scan_line = strip_protected_regions(line)
-        new_line = line
-        line_dirty = False
+        # (start, end, replacement, matched, canonical) for every link on the line.
+        edits: list[tuple[int, int, str, str, str]] = []
 
         for match in search_re.finditer(scan_line):
             alias_key = match.group(0).lower()
@@ -338,31 +276,61 @@ def scan_file(
             if original_text.lower() != canonical.lower():
                 replacement = f"[[{canonical}|{original_text}]]"
 
-            proposed = new_line[: match.start()] + replacement + new_line[match.end() :]
+            edits.append((match.start(), match.end(), replacement, original_text, canonical))
+
+        if not edits:
+            continue
+        # Matches never overlap and the blanked line keeps every offset, so
+        # replacing from the right leaves the earlier offsets valid.
+        proposed = line
+        for start, end, replacement, _matched, _canonical in reversed(edits):
+            proposed = proposed[:start] + replacement + proposed[end:]
+        for _start, _end, _replacement, matched, canonical in edits:
             linked.append(
                 Mention(
                     line_no=i + 1,
                     raw_line=line.rstrip(),
-                    matched=original_text,
+                    matched=matched,
                     canonical=canonical,
                     proposed_line=proposed.rstrip(),
                 )
             )
-            new_line = proposed
-            line_dirty = True
-            # Only one auto-link per line in this version (avoid offset chaos).
-            break
-
-        if line_dirty:
-            lines[i] = new_line
 
     return linked, ambiguous
 
 
-def main(argv: list[str]) -> int:
+def collect(root: Path = WORKSPACE, include_emails: bool = False, by_alias=None):
+    """Plan every link. Return (linked, ambiguous, new_texts), each keyed by path."""
+    if by_alias is None:
+        by_alias = discover_entities(root)
+    all_linked: dict[Path, list[Mention]] = {}
+    all_ambiguous: dict[Path, list[Mention]] = {}
+    new_texts: dict[Path, str] = {}
+    if not by_alias:
+        return all_linked, all_ambiguous, new_texts
+    search_re = build_search_regex(list(by_alias))
+    for path, _rel, text in iter_scoped_notes(root):
+        linked, ambiguous = scan_file(path, text, by_alias, search_re, include_emails, root)
+        if linked:
+            all_linked[path] = linked
+            # Reconstruct the new file content by applying all linked mentions.
+            new_lines = text.split("\n")
+            for m in linked:
+                new_lines[m.line_no - 1] = m.proposed_line
+            new_texts[path] = "\n".join(new_lines)
+        if ambiguous:
+            all_ambiguous[path] = ambiguous
+    return all_linked, all_ambiguous, new_texts
+
+
+def main(argv: list[str], root: Path = WORKSPACE) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dry-run", action="store_true", default=True)
-    parser.add_argument("--apply", action="store_true")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the planned changes and write nothing. This is the default.",
+    )
+    parser.add_argument("--apply", action="store_true", help="Write the planned changes.")
     parser.add_argument(
         "--include-emails",
         action="store_true",
@@ -375,49 +343,25 @@ def main(argv: list[str]) -> int:
         help="Max files shown in dry-run output (default: 30).",
     )
     args = parser.parse_args(argv)
-
-    if args.apply:
-        args.dry_run = False
+    dry_run = not args.apply
 
     print("Discovering entities...", file=sys.stderr)
-    by_alias = discover_entities(WORKSPACE)
+    by_alias = discover_entities(root)
     aliases = list(by_alias.keys())
     print(f"  {len(aliases)} alias(es) across {sum(len(v) for v in by_alias.values())} entity record(s).", file=sys.stderr)
     if not aliases:
         print("No entities discovered, nothing to do.")
         return 0
-    search_re = build_search_regex(aliases)
-
-    all_linked: dict[Path, list[Mention]] = {}
-    all_ambiguous: dict[Path, list[Mention]] = {}
-    new_texts: dict[Path, str] = {}
 
     print("Scanning files...", file=sys.stderr)
-    for path in WORKSPACE.rglob("*.md"):
-        rel = path.relative_to(WORKSPACE)
-        if is_ignored(rel):
-            continue
-        try:
-            text = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            continue
-        linked, ambiguous = scan_file(path, text, by_alias, search_re, args.include_emails)
-        if linked:
-            all_linked[path] = linked
-            # Reconstruct the new file content by applying all linked mentions.
-            new_lines = text.split("\n")
-            for m in linked:
-                new_lines[m.line_no - 1] = m.proposed_line
-            new_texts[path] = "\n".join(new_lines)
-        if ambiguous:
-            all_ambiguous[path] = ambiguous
+    all_linked, all_ambiguous, new_texts = collect(root, args.include_emails, by_alias)
 
     total_links = sum(len(v) for v in all_linked.values())
     total_ambig = sum(len(v) for v in all_ambiguous.values())
     print(f"Would add {total_links} wiki-link(s) across {len(all_linked)} file(s).")
     print(f"Detected {total_ambig} ambiguous mention(s) (homonyms, manual review).")
 
-    if args.dry_run:
+    if dry_run:
         printed = 0
         for path, mentions in all_linked.items():
             if printed >= args.max_files:
@@ -426,7 +370,7 @@ def main(argv: list[str]) -> int:
                     f"Re-run with --max-files {len(all_linked)} or --apply."
                 )
                 break
-            rel = path.relative_to(WORKSPACE).as_posix()
+            rel = path.relative_to(root).as_posix()
             diff = "".join(
                 difflib.unified_diff(
                     path.read_text(encoding="utf-8").splitlines(keepends=True),
@@ -442,7 +386,7 @@ def main(argv: list[str]) -> int:
         if all_ambiguous:
             print("\n# Ambiguities (manual review required)")
             for path, mentions in all_ambiguous.items():
-                rel = path.relative_to(WORKSPACE).as_posix()
+                rel = path.relative_to(root).as_posix()
                 print(f"\n## {rel}")
                 for m in mentions:
                     print(f"  L{m.line_no}: '{m.matched}' -> candidates: {m.canonical}")

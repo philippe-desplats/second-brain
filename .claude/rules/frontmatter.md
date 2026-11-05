@@ -172,14 +172,19 @@ Check via `python3 basic-memory/scripts/check_symmetric_relations.py --check`.
 
 ## Maintenance scripts
 
-In `basic-memory/scripts/` (19 scripts):
+In `basic-memory/scripts/` (23 files, 19 scripts and the 4 modules they share):
 
+- `frontmatter.py`, not a pass: the one frontmatter reader and writer, imported by every script that reads or rewrites a frontmatter, so the grammar Basic Memory writes (column-0 lists, values folded at 80 columns) is implemented once
+- `corpus.py`, not a pass: the shared definition of what counts as a note, and `iter_corpus_notes`, the one walk every pass uses
+- `note_types.py`, not a pass: which note type a path implies, the one table both retyping passes read
+- `check_helpers.py`, not a pass: the schema loader and the wiki-link resolution table shared by the read-only checks
 - `check_double_frontmatter.py`, detects files with double frontmatter (Basic Memory bug to work around)
-- `fix_double_frontmatter.py`, automatically fixes doubles by merging them
+- `fix_double_frontmatter.py`, merges the blocks of a double frontmatter, dry-run by default, `--apply` to write
+- `check_frontmatter_damage.py`, read-only, finds the frontmatter damage the 0.5.1 to 0.5.3 passes could leave, one line per hit with its repair, `--include-excluded` to also scan the folders `corpus.py` excludes
 - `retype_files.py`, reclassifies the `type:` based on the path and naming prefix
 - `retype_fallback_notes.py`, retypes `note` fallback to a more specific type based on path
 - `regen_titles.py`, regenerates the `title:` from the H1 when unusable
-- `add_about_relations.py`, injects `about [[Entity]]` into emails/meetings/projects from the path
+- `add_about_relations.py`, injects `about [[Entity]]` into emails and meetings from their path, corpus notes only
 - `add_observations_from_frontmatter.py`, generates the markdown observations from frontmatter fields
 - `auto_link_entities.py`, converts plain-text mentions of modeled entities into `[[wikilinks]]` in note bodies
 - `check_symmetric_relations.py`, audits symmetric pairs
@@ -188,13 +193,18 @@ In `basic-memory/scripts/` (19 scripts):
 - `align_entity_titles.py`, sets the `title:` of entity notes to their identity field, dry-run by default
 - `add_title_aliases.py`, copies a cited note's `title:` into its `aliases:`, also run by the `.claude/hooks/title_aliases.py` hook
 - `check_unresolved_relations.py`, reports the wiki-links that resolve to nothing in the Basic Memory index
-- `corpus.py`, not a pass: the shared definition of what counts as a note, imported by `add_title_aliases.py`
 - `check_consistency.py`, validates skill frontmatter templates against the schemas, flags properties a Bases view reads but no schema declares, and reports dead wiki-links
 - `audit_field_usage.py`, measures the real fill rate of every declared schema field and surfaces fields used in notes but declared nowhere
-- `propose_pruning.py`, proposes notes untouched and unlinked for a period, for human validation; never deletes
-- `curation_reminder.py`, drops a reminder note in `inbox/` and fires a best effort OS notification; scheduled via launchd, cron, or Task Scheduler, idempotent at one reminder per day, and never runs the assistant itself
+- `propose_pruning.py`, proposes notes untouched and unlinked for a period, for human validation, never deletes
+- `curation_reminder.py`, drops a reminder note in `inbox/` and fires a best effort OS notification, scheduled via launchd, cron, or Task Scheduler, idempotent at one reminder per day, and never runs the assistant itself
 
-Double frontmatter was a legacy Basic Memory sync bug; the `disable_permalinks: true` setting applied by `/sb-init` prevents it. No routine run is needed: `/sb-doctor` includes the detection check, and `fix_double_frontmatter.py --apply` repairs the rare occurrence.
+The scripts are tested, standard library only, against inputs shaped the way Basic Memory writes them. Run the suite from the workspace root:
+
+```sh
+python3 -I -m unittest discover -s basic-memory/scripts -p 'test_*.py'
+```
+
+Double frontmatter was a legacy Basic Memory sync bug, and the `disable_permalinks: true` setting applied by `/sb-init` prevents it. No routine run is needed: `/sb-doctor` includes the detection check, and `fix_double_frontmatter.py --apply` repairs the rare occurrence after its dry-run has been read.
 
 ## Observations and tags, convention
 

@@ -1,0 +1,6 @@
+{
+  "title": "Block notes",
+  "notes": "First line of notes\nsecond line: with colon\n\nafter a blank line\n",
+  "summary": "no trailing newline\nsecond",
+  "type": "note"
+}

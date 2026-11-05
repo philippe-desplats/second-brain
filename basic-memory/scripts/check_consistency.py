@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check that the workspace agrees with itself.
 
-Three defect classes kept recurring across manual reviews of this repository,
-and all three are mechanically detectable. This script exists so they are
+Four defect classes kept recurring across manual reviews of this repository,
+and all four are mechanically detectable. This script exists so they are
 caught by a command rather than by whoever happens to look closely.
 
     1. A skill emits frontmatter that would not validate.
@@ -29,7 +29,7 @@ caught by a command rather than by whoever happens to look closely.
        three of the four slugs on the demo briefs were invented. Reported as a
        warning, since writing a brief before its topic note is legitimate.
 
-Read-only. It reports and exits non-zero on findings; it changes nothing.
+Read-only. It reports and exits non-zero on findings, it changes nothing.
 
 Usage:
     python3 basic-memory/scripts/check_consistency.py
@@ -41,50 +41,41 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import frontmatter as F  # noqa: E402
+from check_helpers import (as_list, link_targets, load_schemas as load_schema_table,  # noqa: E402
+                           note_names, raw_head, read_frontmatter, scalar)
 
 WORKSPACE = Path(__file__).resolve().parent.parent.parent
 SCHEMA_DIR = WORKSPACE / "basic-memory" / "schemas"
 SKILL_DIR = WORKSPACE / ".claude" / "skills"
 
+# This check reads wider than the corpus on purpose: skill templates under
+# `.claude/`, the `.base` views and the documentation are exactly what it
+# audits, so it walks the whole tree rather than `corpus.iter_corpus_notes`.
+# It never writes.
 IGNORED_SEGMENTS = {".git", "node_modules", ".obsidian", "__pycache__", "tmp"}
 
 # Meta fields every note carries, declared in no schema's frontmatter block.
 META_FIELDS = {"type", "schema_version"}
-# Properties Bases resolves itself; they are never frontmatter.
+# Properties Bases resolves itself, they are never frontmatter.
 FILE_PROPERTIES_PREFIX = ("file.", "formula.", "note.file.")
 
 FENCE_RE = re.compile(r"```(markdown|yaml)?\n(.*?)```", re.S)
 BASE_FENCE_RE = re.compile(r"```base\n(.*?)```", re.S)
-WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)(?:\|[^\]]+)?(?:#[^\]]+)?\]\]")
 # note.x, or a bare identifier used as a column or sort key
 PROP_RE = re.compile(r"note\.([a-z_][a-z0-9_]*)")
-
-# Frontmatter fields naming the note itself, each reachable by a wiki-link.
-TARGET_FIELD_RE = re.compile(r"^(title|client|partner|name|subject)\s*:(.*)$")
-ALIAS_INLINE_RE = re.compile(r"^aliases\s*:\s*\[(.*)\]\s*$")
-ALIAS_BLOCK_RE = re.compile(r"^aliases\s*:\s*$")
-LIST_ITEM_RE = re.compile(r"^\s*-\s+(.*)$")
 
 
 def load_schemas() -> dict[str, set[str]]:
     """Return {type_name: declared field names} from settings.frontmatter."""
-    out: dict[str, set[str]] = {}
-    for path in sorted(SCHEMA_DIR.glob("*.md")):
-        if path.stem == "README":
-            continue
-        block = re.search(r"^  frontmatter:\n((?:    .*\n|\n)*)",
-                          path.read_text(encoding="utf-8"), re.MULTILINE)
-        fields = set()
-        if block:
-            for line in block.group(1).splitlines():
-                m = re.match(r"^    ([A-Za-z_][A-Za-z0-9_]*)\??(?:\(.*\))?\s*:", line)
-                if m:
-                    fields.add(m.group(1))
-        out[path.stem] = fields
-    return out
+    return {name: set(fields) for name, fields in load_schema_table(SCHEMA_DIR).items()}
 
 
 def iter_files(root: Path, pattern: str):
@@ -95,21 +86,17 @@ def iter_files(root: Path, pattern: str):
 
 
 def parse_frontmatter_keys(text: str) -> tuple[str | None, set[str]] | None:
-    """Return (type value, keys) for a frontmatter block, or None if not one."""
-    if not text.lstrip().startswith("---"):
+    """Return (type value, keys) for a frontmatter block, or None if not one.
+
+    A `type:` the reader keeps as nested, a `{note|meeting}` placeholder, is
+    returned as written so the caller can recognise the placeholder.
+    """
+    doc = F.split(text.lstrip())
+    if doc is None:
         return None
-    body = text.lstrip()[3:]
-    end = body.find("\n---")
-    if end == -1:
-        return None
-    keys, ntype = set(), None
-    for line in body[:end].splitlines():
-        m = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:(.*)$", line)
-        if m:
-            keys.add(m.group(1))
-            if m.group(1) == "type":
-                ntype = m.group(2).strip().strip("\"'")
-    return ntype, keys
+    fm = F.parse(doc.block)
+    ntype = scalar(fm, "type") or raw_head(fm, "type").strip("\"'") or None
+    return ntype, set(fm.keys())
 
 
 def check_skill_templates(schemas: dict[str, set[str]]) -> list[dict]:
@@ -178,7 +165,7 @@ def check_view_properties(schemas: dict[str, set[str]]) -> list[dict]:
 def strip_fences(text: str) -> str:
     """Blank out fenced blocks, keeping line count so line numbers stay true.
 
-    A wiki-link inside a code fence illustrates a shape; it does not promise
+    A wiki-link inside a code fence illustrates a shape, it does not promise
     the target exists. Counting those as dead links buries the real ones.
 
     Scanned line by line rather than with a regex: a nested example is fenced
@@ -203,55 +190,15 @@ def strip_fences(text: str) -> str:
     return "\n".join(out)
 
 
-def unquote(value: str) -> str:
-    return value.strip().strip("\"'").strip()
-
-
-def frontmatter_targets(front: str) -> set[str]:
-    """Every name a wiki-link may use to reach the note carrying this frontmatter.
-
-    Basic Memory resolves on `title:` alone, but Obsidian also resolves
-    `aliases:`, and the `topic` schema declares the field precisely so a note
-    can be reached by its short name: a topic titled `Client Onboarding` is
-    linked as `[[onboarding]]` from the notes that mention it. A resolver
-    reading only `title:` calls every one of those links dead, which inflates
-    the count past the point where anyone can act on the number.
-
-    Both YAML spellings of a list are read, the inline `[a, b]` the demo
-    topics use and the block form, so a note reformatted later does not
-    silently drop out of the resolution table.
-    """
-    out: set[str] = set()
-    lines = front.splitlines()
-    for i, line in enumerate(lines):
-        m = TARGET_FIELD_RE.match(line)
-        if m:
-            out.add(unquote(m.group(2)))
-            continue
-        m = ALIAS_INLINE_RE.match(line)
-        if m:
-            out |= {unquote(v) for v in m.group(1).split(",")}
-            continue
-        if ALIAS_BLOCK_RE.match(line):
-            for follow in lines[i + 1:]:
-                item = LIST_ITEM_RE.match(follow)
-                if item:
-                    out.add(unquote(item.group(1)))
-                elif follow.strip():
-                    break  # the next top-level key ends the list
-    out.discard("")
-    return out
-
-
 def check_wikilinks() -> list[dict]:
     """A link to a file nothing creates is a promise the workspace breaks."""
     targets: set[str] = set()
     for path in iter_files(WORKSPACE, "*.md"):
         rel = path.relative_to(WORKSPACE).as_posix()
-        targets |= {path.stem, rel, rel[:-3]}
-        text = path.read_text(encoding="utf-8")
-        if text.startswith("---"):
-            targets |= frontmatter_targets(text[3:text.find("\n---", 3)])
+        # Title, aliases and the identity keys, the documented permissive
+        # table in check_helpers.IDENTITY_KEYS: this check under-reports on
+        # purpose, check_unresolved_relations.py gives the strict count.
+        targets |= note_names(read_frontmatter(path), rel)
     for path in iter_files(WORKSPACE, "*.base"):
         rel = path.relative_to(WORKSPACE).as_posix()
         targets |= {path.name, path.stem, rel}
@@ -262,12 +209,11 @@ def check_wikilinks() -> list[dict]:
         if rel.startswith((".claude/", "docs/", "templates/", "basic-memory/schemas/")):
             continue  # documentation and templates link to illustrative names
         text = strip_fences(path.read_text(encoding="utf-8"))
-        for m in WIKILINK_RE.finditer(text):
-            target = m.group(1).strip()
+        for target, offset in link_targets(text):
             if "{" in target or target in targets:
                 continue
             findings.append({"check": "links", "file": rel,
-                             "line": text[:m.start()].count("\n") + 1,
+                             "line": text[:offset].count("\n") + 1,
                              "issue": f"wiki-link `[[{target}]]` resolves to nothing"})
     return findings
 
@@ -287,17 +233,9 @@ def check_topic_slugs() -> list[dict]:
         rel = path.relative_to(WORKSPACE).as_posix()
         if rel.startswith((".claude/", "docs/", "templates/", "basic-memory/", "archives/")):
             continue
-        text = path.read_text(encoding="utf-8")
-        if not text.startswith("---"):
-            continue
-        end = text.find("\n---", 3)
-        if end == -1:
-            continue
-        m = re.search(r"^topics:\s*\[([^\]]*)\]", text[3:end], re.M)
-        if not m:
-            continue
-        for slug in (s.strip().strip("\"'") for s in m.group(1).split(",")):
-            if slug and "{" not in slug and slug not in topics:
+        # Inline `[a, b]` and the block list Basic Memory writes read alike.
+        for slug in as_list(read_frontmatter(path), "topics"):
+            if "{" not in slug and slug not in topics:
                 findings.append({"check": "topics", "file": rel, "severity": "warning",
                                  "issue": f"`topics` names `{slug}`, no entry in atlas/topics/, "
                                           "so a MOC view filtering on it stays empty"})

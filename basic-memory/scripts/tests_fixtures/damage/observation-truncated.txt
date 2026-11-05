@@ -1,0 +1,20 @@
+---
+title: Discovery workshop, the half-day session that turns a signed scope into a shared
+  map
+name: Discovery workshop, the half-day session that turns a signed scope into a shared
+  map
+type: topic
+schema_version: 1
+domain: ops
+aliases:
+- Discovery workshop
+- workshop
+status: active
+---
+# Discovery workshop
+
+## Observations
+
+- [name] Discovery workshop, the half-day session that turns a signed scope into a shared
+- [domain] ops
+- [status] active

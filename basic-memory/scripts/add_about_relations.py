@@ -1,18 +1,34 @@
 #!/usr/bin/env python3
 """
-Add `- about [[Entity]]` relation to emails/meetings based on their path.
+Add an `- about [[Entity]]` relation to emails and meetings based on their path.
 
-Scans files under (layered structure):
-  - sources/clients/{slug}/{project}/emails/*.md
-  - sources/clients/{slug}/{project}/meetings/*.md
-  - sources/partners/{slug}/{project}/emails/*.md
-  - sources/partners/{slug}/{project}/meetings/*.md
+Scope: the two note types whose path names the entity they concern, an email
+filed in a project's `emails/` folder and a meeting filed in its `meetings/`
+folder, in every source zone:
 
-Resolves {slug} to canonical name by reading `client:` or `partner:` frontmatter
-field in sources/clients/{slug}/CLAUDE.md or sources/partners/{slug}/CLAUDE.md.
+  - sources/clients/{slug}/{project}/emails/*.md and .../meetings/*.md
+  - sources/partners/{slug}/{project}/emails/*.md and .../meetings/*.md
+  - sources/internal/{project}/emails/*.md and .../meetings/*.md
+  - sources/personal/{project}/emails/*.md and .../meetings/*.md
+
+Other notes are left alone: a project brief declares its entity in `client:`
+or `partner:`, and the other types state their own subject. Only corpus notes
+are visited, through `corpus.iter_corpus_notes`, so the pass never writes into
+a folder corpus.py excludes, a `repo-files/` or `prompts/` folder among them.
+
+The entity each path resolves to:
+
+  - clients and partners, the `client:` or `partner:` field of
+    sources/{zone}/{slug}/CLAUDE.md, `title:` as a fallback
+  - internal, the `organization` of .sb-config.json. While it is null, as in a
+    workspace /sb-init has not configured, internal notes are skipped rather
+    than given a link to nothing
+  - personal, the `title:` of the project's README.md, its folder name as a
+    fallback
 
 Inserts `- about [[Canonical Name]]` inside a `## Relations` section
-(created just before `## Observations` or appended at end of body).
+(created just before `## Observations` or appended at end of body). The
+frontmatter is kept byte for byte, only the body is rewritten.
 
 Idempotent: skips files that already contain an `about [[...]]` line.
 
@@ -21,93 +37,75 @@ Usage:
     python3 basic-memory/scripts/add_about_relations.py --apply
 """
 
+import json
+import os
 import re
 import sys
 from pathlib import Path
 
-# Canonical name of the internal/owner entity. Set by /sb-init.
-INTERNAL_ENTITY = "Internal"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-WORKSPACE = Path(__file__).resolve().parent.parent.parent
-CLIENTS_DIR = WORKSPACE / "sources" / "clients"
-PERSONAL_DIR = WORKSPACE / "sources" / "personal"
-PARTNERS_DIR = WORKSPACE / "sources" / "partners"
-INTERNAL_PROJECTS_DIR = WORKSPACE / "sources" / "internal"
+from corpus import WORKSPACE, iter_corpus_notes  # noqa: E402
+from frontmatter import read_file, split, write_file  # noqa: E402
 
+# The project subfolders this pass annotates, see the module docstring.
+TARGET_FOLDERS = ("emails", "meetings")
+# Path depth of a target, counted in segments: `sources/{zone}/{slug}/{project}/{folder}/{file}`
+# for an entity zone, one segment less where the zone has no entity level.
+ENTITY_ZONES = {"clients": 6, "partners": 6}
+PROJECT_ZONES = {"internal": 5, "personal": 5}
 
-def parse_frontmatter(path: Path):
-    """Return (fm_dict, body_str). fm_dict only has top-level scalar keys."""
-    content = path.read_text(encoding="utf-8")
-    if not content.startswith("---"):
-        return {}, content
-    end = content.find("\n---", 4)
-    if end == -1:
-        return {}, content
-    fm_raw = content[4:end]
-    body = content[end + 4:]
-    if body.startswith("\n"):
-        body = body[1:]
-    fm = {}
-    for ln in fm_raw.split("\n"):
-        if ln.startswith((" ", "\t", "-")):
-            continue
-        if ":" not in ln:
-            continue
-        k, _, v = ln.partition(":")
-        v = v.strip().strip('"').strip("'")
-        fm[k.strip()] = v
-    return fm, body
+INTERNAL = "__INTERNAL__"
+PERSONAL = "__PERSONAL__"
 
 
-def build_entity_map():
-    """Return {slug -> canonical_name} by scanning clients and partners CLAUDE.md."""
+def scalar(fm, key: str):
+    """The value of `key` when it is a non-empty string, else None."""
+    value = fm.get(key) if fm is not None else None
+    return value.strip() or None if isinstance(value, str) else None
+
+
+def internal_entity(root: Path = WORKSPACE):
+    """The internal entity name, the `organization` of .sb-config.json, or None."""
+    try:
+        config = json.loads((root / ".sb-config.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    name = config.get("organization") if isinstance(config, dict) else None
+    return name.strip() or None if isinstance(name, str) else None
+
+
+def build_entity_map(root: Path = WORKSPACE):
+    """Return {(zone, slug) -> canonical_name} from the clients' and partners' CLAUDE.md."""
     mapping = {}
-    for p in sorted(CLIENTS_DIR.glob("*/CLAUDE.md")):
-        fm, _ = parse_frontmatter(p)
-        canonical = fm.get("client") or fm.get("title")
-        if canonical:
-            mapping[p.parent.name] = canonical
-    for p in sorted(PARTNERS_DIR.glob("*/CLAUDE.md")):
-        fm, _ = parse_frontmatter(p)
-        canonical = fm.get("partner") or fm.get("title")
-        if canonical:
-            mapping[p.parent.name] = canonical
+    for zone, field in (("clients", "client"), ("partners", "partner")):
+        for p in sorted((root / "sources" / zone).glob("*/CLAUDE.md")):
+            _doc, fm = read_file(p)
+            canonical = scalar(fm, field) or scalar(fm, "title")
+            if canonical:
+                mapping[(zone, p.parent.name)] = canonical
     return mapping
 
 
-def find_target_files():
-    """Return list of (path, canonical) for all .md files to annotate.
+def find_target_files(root: Path = WORKSPACE):
+    """Return a list of (path, rel, slug) for every email and meeting to annotate.
 
-    Entities are resolved per source location:
-    - sources/clients/{X}/** and sources/partners/{X}/** resolve to the entity's canonical name
-    - sources/internal/** resolve to the literal INTERNAL_ENTITY name
-
-    Excludes each entity's own CLAUDE.md and CONTEXT.md at the entity root.
+    `slug` is `(zone, entity)` for a client or a partner, INTERNAL for an
+    internal project, and PERSONAL followed by the folder name for a personal
+    project.
     """
     targets = []
-    for base_dir in (CLIENTS_DIR, PARTNERS_DIR):
-        for entity_dir in sorted(base_dir.glob("*/")):
-            if not entity_dir.is_dir():
-                continue
-            slug = entity_dir.name
-            for md in entity_dir.rglob("*.md"):
-                rel = md.relative_to(entity_dir)
-                if rel.name in {"CLAUDE.md", "CONTEXT.md"} and len(rel.parts) == 1:
-                    continue
-                targets.append((md, slug))
-    if INTERNAL_PROJECTS_DIR.is_dir():
-        for md in INTERNAL_PROJECTS_DIR.rglob("*.md"):
-            targets.append((md, "__INTERNAL__"))
-    if PERSONAL_DIR.is_dir():
-        for project_dir in sorted(PERSONAL_DIR.glob("*/")):
-            if not project_dir.is_dir():
-                continue
-            slug = "__PERSONAL__" + project_dir.name
-            for md in project_dir.rglob("*.md"):
-                rel = md.relative_to(project_dir)
-                if rel.name == "README.md" and len(rel.parts) == 1:
-                    continue
-                targets.append((md, slug))
+    for path, rel in iter_corpus_notes(root, zones=("sources",)):
+        parts = rel.split("/")
+        if len(parts) < 2 or parts[-2] not in TARGET_FOLDERS:
+            continue
+        zone = parts[1]
+        if ENTITY_ZONES.get(zone) == len(parts):
+            targets.append((path, rel, (zone, parts[2])))
+        elif zone == "internal" and PROJECT_ZONES[zone] == len(parts):
+            targets.append((path, rel, INTERNAL))
+        elif zone == "personal" and PROJECT_ZONES[zone] == len(parts):
+            targets.append((path, rel, PERSONAL + parts[2]))
     return targets
 
 
@@ -123,6 +121,8 @@ def inject_about_line(body: str, canonical: str) -> str:
     - If `## Relations` exists, append the line at the end of that section
     - Else create `## Relations` section just before `## Observations` if present
     - Else append at end of body
+
+    The caller has already ruled out a body holding an `about` line.
     """
     about_line = f"- about [[{canonical}]]"
 
@@ -135,15 +135,9 @@ def inject_about_line(body: str, canonical: str) -> str:
         if next_section:
             insert_at = section_start + next_section.start()
             existing_block = body[section_start:insert_at]
-            if about_line in existing_block:
-                return body
-            new_block = existing_block.rstrip() + f"\n{about_line}\n\n"
+            new_block = existing_block.rstrip() + f"\n{about_line}\n"
             return body[:section_start] + "\n" + new_block.lstrip("\n") + body[insert_at:]
         existing_tail = body[section_start:]
-        if about_line in existing_tail:
-            return body
-        if not existing_tail.endswith("\n"):
-            existing_tail = existing_tail + "\n"
         return body[:section_start] + "\n" + existing_tail.lstrip("\n").rstrip() + f"\n{about_line}\n"
 
     # Case 2, Observations section exists, insert Relations just before it
@@ -155,48 +149,57 @@ def inject_about_line(body: str, canonical: str) -> str:
         return prefix + f"## Relations\n\n{about_line}\n\n" + body[insert_at:]
 
     # Case 3, no Relations nor Observations, append at end
-    tail = body.rstrip() + "\n\n## Relations\n\n" + about_line + "\n"
-    return tail
+    return body.rstrip() + "\n\n## Relations\n\n" + about_line + "\n"
 
 
-def process_file(path: Path, slug: str, entity_map: dict, apply: bool):
+def resolve(slug, entity_map: dict, root: Path, internal):
+    """The canonical name a target's slug stands for, or None."""
+    if slug == INTERNAL:
+        return internal
+    if isinstance(slug, str) and slug.startswith(PERSONAL):
+        project_slug = slug[len(PERSONAL):]
+        readme = root / "sources" / "personal" / project_slug / "README.md"
+        _doc, fm = read_file(readme) if readme.is_file() else (None, None)
+        return scalar(fm, "title") or project_slug
+    return entity_map.get(slug)
+
+
+def process_file(path: Path, canonical, apply: bool, internal_skip: bool = False):
     """Return (status, message) for a single file."""
-    fm, body = parse_frontmatter(path)
+    with open(path, encoding="utf-8", newline="") as fh:
+        text = fh.read()
+    doc = split(text)
+    body = doc.body if doc is not None else text
     if has_about_relation(body):
         return ("skip", "already has about [[...]]")
-    if slug == "__INTERNAL__":
-        canonical = INTERNAL_ENTITY
-    elif slug.startswith("__PERSONAL__"):
-        project_slug = slug[len("__PERSONAL__"):]
-        readme = PERSONAL_DIR / project_slug / "README.md"
-        if readme.exists():
-            fm_readme, _ = parse_frontmatter(readme)
-            canonical = fm_readme.get("title") or project_slug
-        else:
-            canonical = project_slug
-    else:
-        canonical = entity_map.get(slug)
+    if internal_skip:
+        return ("skip", "internal entity not configured, `organization` is null in .sb-config.json")
     if not canonical:
-        return ("error", f"slug '{slug}' not resolved in entity map")
+        return ("error", "entity not resolved in entity map")
     new_body = inject_about_line(body, canonical)
     if new_body == body:
         return ("skip", "idempotent no-op")
     if apply:
-        content = path.read_text(encoding="utf-8")
-        # Rebuild: preserve exact frontmatter bytes, swap body only
-        if content.startswith("---"):
-            end = content.find("\n---", 4)
-            if end != -1:
-                head = content[:end + 4]
-                # Preserve a single newline after the closing --- then the new body
-                if new_body.startswith("\n"):
-                    new_content = head + new_body
-                else:
-                    new_content = head + "\n" + new_body
-                path.write_text(new_content, encoding="utf-8")
+        if doc is not None:
+            doc.body = new_body
+            write_file(path, doc)
         else:
-            path.write_text(new_body, encoding="utf-8")
+            with open(path, "w", encoding="utf-8", newline="") as fh:
+                fh.write(new_body)
     return ("ok", f"→ about [[{canonical}]]")
+
+
+def run(root: Path = WORKSPACE, apply: bool = False):
+    """Annotate every target under `root`. Return (entity_map, [(rel, status, message)])."""
+    entity_map = build_entity_map(root)
+    internal = internal_entity(root)
+    results = []
+    for path, rel, slug in find_target_files(root):
+        canonical = resolve(slug, entity_map, root, internal)
+        status, msg = process_file(path, canonical, apply,
+                                   internal_skip=slug == INTERNAL and internal is None)
+        results.append((rel, status, msg))
+    return entity_map, results
 
 
 def main():
@@ -205,25 +208,27 @@ def main():
         sys.exit(1)
     apply = sys.argv[1] == "--apply"
 
-    entity_map = build_entity_map()
-    targets = find_target_files()
+    entity_map, results = run(WORKSPACE, apply)
 
     print(f"=== add_about_relations, mode={'APPLY' if apply else 'DRY-RUN'} ===")
     print(f"Entities resolved: {len(entity_map)}")
-    print(f"Target files scanned: {len(targets)}")
+    print(f"Target files scanned: {len(results)}")
     print()
 
     counts = {"ok": 0, "skip": 0, "error": 0}
-    for path, slug in targets:
-        status, msg = process_file(path, slug, entity_map, apply)
+    internal_skipped = 0
+    for rel, status, msg in results:
         counts[status] += 1
-        rel = path.relative_to(WORKSPACE)
         if status == "ok":
             print(f"  [OK]    {rel}  {msg}")
         elif status == "error":
             print(f"  [ERR]   {rel}  {msg}")
-        # skip is silent unless verbose
+        elif msg.startswith("internal entity not configured"):
+            internal_skipped += 1
+        # other skips are silent
 
+    if internal_skipped:
+        print(f"  {internal_skipped} internal note(s) skipped: set `organization` in .sb-config.json (run /sb-init)")
     print()
     print(f"Summary: {counts['ok']} modified, {counts['skip']} skipped, {counts['error']} errors")
 

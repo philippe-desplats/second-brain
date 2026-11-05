@@ -1,0 +1,19 @@
+---
+title: Globex, Context
+tags:
+- alpha
+- Globex, Context
+- 'kick: off'
+- '#hash'
+- 'yes'
+- '2026'
+type: client-context
+---
+
+# Heading
+
+Body text.
+
+---
+
+After a rule.

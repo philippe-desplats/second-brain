@@ -59,7 +59,7 @@ Out of scope: archiving `.claude/`, `basic-memory/`, `atlas/`, `knowledge/` (non
 | 00 | `steps/step-00-init.md` | Parse args, resolve `{source_path}`, `{target_path}`, `{type}` |
 | 01 | `steps/step-01-confirm.md` | Audit last activity, incoming references, user confirmation |
 | 02 | `steps/step-02-move.md` | git mv, update the parent CLAUDE.md, update references |
-| 03 | `steps/step-03-reindex.md` | generate_indexes.py + bm reindex + fix_double_frontmatter |
+| 03 | `steps/step-03-reindex.md` | generate_indexes.py + bm reindex + check_double_frontmatter |
 
 </step_files>
 

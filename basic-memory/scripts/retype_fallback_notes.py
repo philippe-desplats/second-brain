@@ -3,120 +3,61 @@
 Retype files currently with `type: note` fallback to a more specific type
 based on path and filename patterns.
 
-Rules applied in order, first match wins:
-    1. proposals/ or deliverables/           → deliverable
-    2. *-transcript-*, *-recorder-*, transcripts/  → transcript
-    3. *-research-*, *-audit-*, *-benchmark-* → research
-    4. *-strategy-*, *-roadmap-*, *-plan-*    → strategy
-    5. *-brainstorm-*                          → brainstorm
-    6. *-writing-*                             → writing
-    7. *-meeting-*, meetings/                  → meeting
-    8. archive/                                → keep as note
-    9. (no match)                              → keep as note
+The pattern table lives in `note_types.py`, shared with `retype_files.py`, so
+both passes give a file the same type. In short, first match wins: a context
+file by its place, a container folder above the file (`meetings/`,
+`deliverables/`, `proposals/`, `transcripts/`, `clippings/`, `sessions/`,
+`emails/`), the word right after the date in `YYYY-MM-DD-{type}-slug.md`, then
+a keyword in the name (`-audit-`, `-plan-`, `-roadmap-` and the like). No match
+keeps the note a `note`.
+
+A note under `knowledge/` that declares a `subtype` is never retyped, its
+genre is the subtype (see `.claude/rules/knowledge.md`).
+
+Only corpus notes are visited, through `corpus.iter_corpus_notes`, so the
+pass never writes into the folders `corpus.py` excludes.
+
+A `type: note` declared twice or spread over several lines is never
+rewritten, its line range may hold lines of another field. Such a file is
+listed under "Needs repair".
 
 Usage:
     python3 basic-memory/scripts/retype_fallback_notes.py --dry-run
     python3 basic-memory/scripts/retype_fallback_notes.py --apply
 """
 
-import re
+import os
 import sys
-from pathlib import Path
 
-WORKSPACE = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-
-def parse_frontmatter(path: Path):
-    """Return (raw_fm_str, body, has_fm)."""
-    content = path.read_text(encoding="utf-8")
-    if not content.startswith("---"):
-        return "", content, False
-    end = content.find("\n---", 4)
-    if end == -1:
-        return "", content, False
-    return content[4:end], content[end + 4:], True
+import frontmatter as F  # noqa: E402
+from corpus import WORKSPACE, iter_corpus_notes  # noqa: E402
+from note_types import REPAIR_HINT, classify, type_damage  # noqa: E402
 
 
-def get_type(fm_raw: str) -> str:
-    """Extract top-level `type:` scalar."""
-    for ln in fm_raw.split("\n"):
-        if ln.startswith("type:"):
-            return ln.partition(":")[2].strip().strip('"').strip("'")
-    return ""
+def determine_target_type(rel: str, fm: F.Frontmatter) -> str:
+    """The type a `type: note` file should carry, `note` when no rule applies."""
+    subtype = fm.get("subtype")
+    return classify(rel, subtype if isinstance(subtype, str) else None) or "note"
 
 
-def determine_target_type(path: Path) -> str:
-    """Return target type based on path and filename, or 'note' if no specific match."""
-    rel = str(path.relative_to(WORKSPACE))
-    parts = rel.split("/")
-    name = path.stem.lower()
-
-    if "proposals" in parts or "deliverables" in parts:
-        return "deliverable"
-    if "transcripts" in parts or "-transcript-" in name or "-recorder-" in name:
-        return "transcript"
-    if "clippings" in parts or "-clipping-" in name:
-        return "clipping"
-    if "sessions" in parts or "-session-" in name:
-        return "session"
-    if "-research-" in name or "-audit-" in name or "-benchmark-" in name:
-        return "research"
-    if "-strategy-" in name or "-roadmap-" in name or "-plan-" in name:
-        return "strategy"
-    if "-brainstorm-" in name:
-        return "brainstorm"
-    if "-writing-" in name:
-        return "writing"
-    if "meetings" in parts or "-meeting-" in name:
-        return "meeting"
-    if "archive" in parts:
-        return "note"
-    return "note"
+def find_fallback_notes(root=WORKSPACE):
+    """Yield (path, rel, doc, fm) for every corpus note typed `note`."""
+    for path, rel in iter_corpus_notes(root):
+        doc, fm = F.read_file(path)
+        if doc is not None and fm.get("type") == "note":
+            yield path, rel, doc, fm
 
 
-def find_fallback_notes():
-    """Return list of Path for files with type: note."""
-    results = []
-    for md in WORKSPACE.rglob("*.md"):
-        if any(p.startswith(".") for p in md.relative_to(WORKSPACE).parts):
-            continue
-        if "node_modules" in md.parts or "basic-memory" in md.parts:
-            continue
-        if "templates" in md.parts:
-            continue
-        fm_raw, _, has_fm = parse_frontmatter(md)
-        if not has_fm:
-            continue
-        if get_type(fm_raw) == "note":
-            results.append(md)
-    return sorted(results)
-
-
-def rewrite_type(path: Path, new_type: str, apply: bool):
-    """Replace `type: note` with `type: {new_type}` in the frontmatter."""
-    content = path.read_text(encoding="utf-8")
-    end = content.find("\n---", 4)
-    fm_raw = content[4:end]
-    body = content[end + 4:]
-    new_fm_raw = re.sub(
-        r"^type:\s*note\s*$",
-        f"type: {new_type}",
-        fm_raw,
-        count=1,
-        flags=re.MULTILINE,
-    )
-    new_content = "---" + new_fm_raw + "\n---" + body
-    if apply:
-        path.write_text(new_content, encoding="utf-8")
-
-
-def main():
-    if len(sys.argv) < 2 or sys.argv[1] not in {"--dry-run", "--apply"}:
+def main(argv=None, root=WORKSPACE):
+    argv = sys.argv[1:] if argv is None else argv
+    if not argv or argv[0] not in {"--dry-run", "--apply"}:
         print("Usage: python3 retype_fallback_notes.py --dry-run | --apply")
         sys.exit(1)
-    apply = sys.argv[1] == "--apply"
+    apply = argv[0] == "--apply"
 
-    files = find_fallback_notes()
+    files = list(find_fallback_notes(root))
     print(f"=== retype_fallback_notes, mode={'APPLY' if apply else 'DRY-RUN'} ===")
     print(f"Files with type: note found: {len(files)}")
     print()
@@ -124,26 +65,35 @@ def main():
     counts = {}
     changes = []
     kept = []
-    for path in files:
-        target = determine_target_type(path)
+    repairs = []
+    for path, rel, doc, fm in files:
+        target = determine_target_type(rel, fm)
+        damage = type_damage(fm)
         if target == "note":
-            kept.append(path)
+            kept.append(rel)
+        elif damage:
+            repairs.append((rel, damage))
+            continue
         else:
-            changes.append((path, target))
+            changes.append((path, rel, doc, fm, target))
         counts[target] = counts.get(target, 0) + 1
 
     print("Planned changes:")
-    for path, target in changes:
-        rel = path.relative_to(WORKSPACE)
+    for path, rel, doc, fm, target in changes:
         print(f"  [{target:>11}] {rel}")
         if apply:
-            rewrite_type(path, target, True)
+            F.write_file(path, doc, F.set_field(fm, "type", target))
 
     print()
     print(f"Kept as note ({len(kept)}):")
-    for path in kept:
-        rel = path.relative_to(WORKSPACE)
+    for rel in kept:
         print(f"  [       note] {rel}")
+
+    if repairs:
+        print()
+        print(f"{REPAIR_HINT} ({len(repairs)}):")
+        for rel, damage in repairs:
+            print(f"  {rel}: {damage}, left untouched")
 
     print()
     print("Summary by target type:")

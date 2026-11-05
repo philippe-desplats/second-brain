@@ -1,0 +1,29 @@
+---
+# leading comment
+title: Mixed shapes # trailing comment
+aliases:
+    - four space item
+    - "double \"quoted\" item"
+    - 'single ''quoted'' item'
+tags: [l'onboarding, kickoff, "b, c", 'd''e', plain item]
+topics:
+  - alpha
+  # interior comment
+  - beta
+    folded over two lines
+empty:
+nothing: null
+tilde: ~
+status: active   # T3
+folded_plain: first part
+  second part
+
+  after blank
+quoted_folded: 'single quoted
+  over two lines'
+next_line_value:
+  a value on the next line
+url: https://example.com/a#b
+flow_map: {a: 1, b: 2}
+...
+Body after a dots closer.

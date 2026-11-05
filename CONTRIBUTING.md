@@ -21,7 +21,7 @@ This repository is a workspace template, not application code. The quality bar i
 
 - **Skills** follow the existing structure: a `SKILL.md` entry point, `steps/*.md` chained by `next_step`, explicit execution rules, human validation before any write. Register new skills in `.claude/skill-registry.md`.
 - **Schemas** in `basic-memory/schemas/` are the single source of truth for frontmatter. A schema change must update the decision matrix in `.claude/rules/frontmatter.md` and any template that uses it. `check_consistency.py` catches the templates you forgot: it validates every frontmatter example inside a skill against the schemas, which is how three of them were found writing notes that belonged to no type.
-- **Scripts** in `basic-memory/scripts/` are Python 3 standard library only, no dependencies, and must degrade gracefully on pruned zones (missing `sources/partners/` must never crash them). Each one stays runnable on its own, so a helper two scripts need is duplicated rather than extracted: `parse_frontmatter_yaml` exists in both `generate_indexes.py` and `auto_link_entities.py` and the two copies must stay identical. `corpus.py` is the one exception: what counts as a note is a definition rather than a helper, and it must not drift, so `add_title_aliases.py` imports it as a sibling.
+- **Scripts** in `basic-memory/scripts/` are Python 3 standard library only, no dependencies, and must degrade gracefully on pruned zones (missing `sources/partners/` must never crash them). The one sanctioned exception is an optional `import yaml`, used only by the tests and by the read-only `check_frontmatter_damage.py` to add its `invalid-yaml` diagnostic. It is never required, and its absence is reported rather than raised. Each script stays runnable on its own by importing its 4 shared sibling modules from the same directory, which also works under `python3 -I`: `frontmatter.py` (the frontmatter grammar), `corpus.py` (what counts as a note, and the walks), `note_types.py` (which type a path implies, and the guard before a field is rewritten) and `check_helpers.py` (wiki-links, note names and schema fields for the checks). The frontmatter grammar and the definition of a note are never duplicated: a script reads and writes frontmatter through `frontmatter.py` and walks the notes through `corpus.py`.
 - **Placeholders**: demo and example content uses fictional names only (Acme for the owner organization, Globex and Initech for clients, Jane Doe for people, `example.com` domains). Never use real people, companies, or paths.
 - **Language**: structural files (skills, rules, schemas, templates, docs) are written in English. No em dashes in prose.
 - **Commits** follow [Conventional Commits](https://www.conventionalcommits.org/): `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `revert`.
@@ -40,9 +40,10 @@ python3 basic-memory/scripts/check_symmetric_relations.py --check
 python3 basic-memory/scripts/check_double_frontmatter.py
 python3 basic-memory/scripts/generate_indexes.py --output-dir /tmp/idx-test
 python3 basic-memory/scripts/audit_field_usage.py
+python3 -I -m unittest discover -s basic-memory/scripts -p 'test_*.py'
 ```
 
-Those six run on a bare clone and validate this repository. They are the ones that matter.
+Those seven run on a bare clone and validate this repository. They are the ones that matter.
 
 **`bm schema validate` does not validate this repository unless you make it.** It runs against whichever Basic Memory project is configured on your machine, which is your own vault, not the clone. Running it without registering the clone first returns a green result about something else entirely. To actually validate the clone:
 

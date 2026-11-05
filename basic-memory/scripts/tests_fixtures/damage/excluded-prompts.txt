@@ -1,0 +1,7 @@
+# Content inventory prompt
+
+List every page of the [[Globex]] catalog.
+
+## Relations
+
+- about [[Globex]]

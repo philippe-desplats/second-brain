@@ -107,11 +107,17 @@ The MOC does not change the usual static indexes. `generate_indexes.py` has no c
 command -v bm >/dev/null 2>&1 && bm reindex
 ```
 
-Then:
+Then detect a double frontmatter (known Basic Memory bug):
 
 ```bash
-python3 basic-memory/scripts/fix_double_frontmatter.py
 python3 basic-memory/scripts/check_double_frontmatter.py
+```
+
+If it reports files, show them to the user and preview the merge, then repair only once they approve:
+
+```bash
+python3 basic-memory/scripts/fix_double_frontmatter.py           # dry-run, prints the merge
+python3 basic-memory/scripts/fix_double_frontmatter.py --apply   # after approval
 ```
 
 ### 7. Final validation in Obsidian (suggested)

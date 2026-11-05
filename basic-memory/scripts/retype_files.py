@@ -6,180 +6,114 @@ Usage:
     python3 basic-memory/scripts/retype_files.py --dry-run
     python3 basic-memory/scripts/retype_files.py --apply
 
-Pattern mapping (most specific first), post layered migration:
-    {entity}/emails/YYYY-MM-DD-{seq}-{direction}-*.md → email
-    {entity}/emails/YYYY-MM-DD-writing-*.md           → email (legacy)
-    {entity}/emails/YYYY-MM-DD-reply-*.md             → email (variant)
-    {entity}/emails/*.md                              → email (catchall)
-    {entity}/meetings/*.md                            → meeting
-    {entity}/deliverables/*.md                        → deliverable
-    {entity}/transcripts/*.md                         → transcript
-    YYYY-MM-DD-meeting-*.md   (anywhere)              → meeting
-    YYYY-MM-DD-research-*.md  (anywhere)              → research
-    YYYY-MM-DD-brainstorm-*.md (anywhere)             → brainstorm
-    YYYY-MM-DD-strategy-*.md  (anywhere)              → strategy
-    YYYY-MM-DD-writing-*.md   (outside emails/)       → writing
-    YYYY-MM-DD-note-*.md      (anywhere)              → note
-    sources/clients/{X}/CLAUDE.md                     → client-context
-    sources/partners/{X}/CLAUDE.md                    → partner-context
-    sources/{any}/{project}/README.md                 → project-brief
+The pattern table lives in `note_types.py`, shared with
+`retype_fallback_notes.py`. In short, first match wins:
+    sources/clients/{X}/CLAUDE.md                     -> client-context
+    sources/partners/{X}/CLAUDE.md                    -> partner-context
+    sources/{any}/{project}/README.md or CLAUDE.md    -> project-brief
+    emails/ mails/ meetings/ deliverables/ proposals/
+    transcripts/ clippings/ sessions/ above the file  -> that folder's type
+    YYYY-MM-DD-{type}-*.md                            -> {type}
+    YYYY-MM-DD-{seq}-{direction}-*.md                 -> email
+    a `-audit-`, `-plan-`, ... keyword in the name    -> its type
 
-Exclusions: .claude/, templates/, basic-memory/, .git/, CONTEXT.md (legacy)
-Excluded from retyping if already has correct non-note type (idempotent).
+Only corpus notes are visited, through `corpus.iter_corpus_notes`, so the
+pass never writes into the folders `corpus.py` excludes. A file whose `type:`
+is already correct is left untouched (idempotent). A file with a specific
+type that the table contradicts is reported and skipped, except under a
+container folder, which forces its type.
+
+An existing `type:` is rewritten only when it reads as one of the 17 types on
+a single line. A damaged one, a duplicated one, or a value the pass cannot
+vouch for is listed under "Needs repair" and never written, since its line
+range may hold lines of another field. So is any note where a quoted scalar
+or a flow collection swallowed a column-0 `key:` line. The exit code does not
+change.
 """
 
-import re
+import os
 import sys
-from pathlib import Path
 
-WORKSPACE = Path(__file__).resolve().parent.parent.parent
-EXCLUDED_DIRS = {".claude", "templates", "basic-memory", ".git", ".obsidian", "node_modules"}
-DATED_PREFIX = re.compile(r"^\d{4}-\d{2}-\d{2}-")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-
-def is_excluded(path: Path) -> bool:
-    for part in path.relative_to(WORKSPACE).parts:
-        if part in EXCLUDED_DIRS:
-            return True
-    if path.name == "CONTEXT.md":
-        return True
-    if path.name == ".DS_Store":
-        return True
-    return False
+import frontmatter as F  # noqa: E402
+from corpus import WORKSPACE, iter_corpus_notes  # noqa: E402
+from note_types import (REPAIR_HINT, classify, field_damage, is_forced,  # noqa: E402
+                        swallowed_key_line, type_damage, unknown_type)
 
 
-def detect_target_type(path: Path) -> str | None:
-    """Return target type or None if no pattern matches."""
-    rel = path.relative_to(WORKSPACE)
-    parts = rel.parts
-    name = path.name
-    stem = path.stem
-
-    # Special: CLAUDE.md
-    if name == "CLAUDE.md":
-        # Layered structure: sources/{clients|partners}/{slug}/CLAUDE.md
-        if (
-            len(parts) == 4
-            and parts[0] == "sources"
-            and parts[1] == "clients"
-        ):
-            return "client-context"
-        if (
-            len(parts) == 4
-            and parts[0] == "sources"
-            and parts[1] == "partners"
-        ):
-            return "partner-context"
-        # Project CLAUDE.md inside any sources/{type}/{project}/ scope (4+ parts)
-        if len(parts) >= 4 and parts[0] == "sources":
-            return "project-brief"
-        # Root CLAUDE.md or other → leave as note
-        return None
-
-    # Special: README.md inside a project folder under sources/
-    if name == "README.md":
-        # Projects live in sources/{clients|partners|internal|personal}/{...}/README.md
-        if (
-            len(parts) >= 3
-            and parts[0] == "sources"
-            and parts[1] in {"clients", "partners", "internal", "personal"}
-        ):
-            return "project-brief"
-        return None
-
-    # Ancestor-directory based (handles emails/subfolder/file.md cases)
-    ancestors = set(parts[:-1])
-    if "emails" in ancestors or "mails" in ancestors:
-        return "email"
-    if "meetings" in ancestors:
-        return "meeting"
-    if "deliverables" in ancestors:
-        return "deliverable"
-    if "transcripts" in ancestors:
-        return "transcript"
-    if "clippings" in ancestors:
-        return "clipping"
-    if "sessions" in ancestors:
-        return "session"
-
-    # Dated prefix patterns
-    if DATED_PREFIX.match(stem):
-        after = stem[11:]  # drop "YYYY-MM-DD-"
-        # Email patterns in `/emails/` or `/mails/` already handled above
-        if after.startswith("meeting-") or after == "meeting":
-            return "meeting"
-        if after.startswith("research-") or after == "research":
-            return "research"
-        if after.startswith("brainstorm-") or after == "brainstorm":
-            return "brainstorm"
-        if after.startswith("strategy-") or after == "strategy":
-            return "strategy"
-        if after.startswith("writing-") or after == "writing":
-            return "writing"
-        if after.startswith("note-") or after == "note":
-            return "note"
-        if after.startswith("clipping-") or after == "clipping":
-            return "clipping"
-        if after.startswith("session-") or after == "session":
-            return "session"
-        # Email legacy patterns outside emails/ folder still get caught above
-        # Sequential email pattern `01-out-*` etc.
-        m = re.match(r"^\d{2}-(out|in|reply)-", after)
-        if m:
-            return "email"
-
-    return None
+def current_type(fm: F.Frontmatter) -> str:
+    """The declared `type:` as a string, empty when absent or not a scalar."""
+    value = fm.get("type")
+    return value if isinstance(value, str) else ""
 
 
-def parse_frontmatter(content: str) -> tuple[dict, str, str] | None:
-    """Return (frontmatter_dict, frontmatter_raw, body) or None if no frontmatter."""
-    lines = content.split("\n")
-    if not lines or lines[0] != "---":
-        return None
-    end = None
-    for i in range(1, len(lines)):
-        if lines[i] == "---":
-            end = i
-            break
-    if end is None:
-        return None
-    fm_lines = lines[1:end]
-    body = "\n".join(lines[end + 1:])
+def set_type(fm: F.Frontmatter, new_type: str) -> F.Frontmatter:
+    """Set `type:` to `new_type`.
 
-    # Naive YAML parsing, only top-level scalar keys needed for our use
-    fm = {}
-    for ln in fm_lines:
-        if ln.startswith(" ") or ln.startswith("\t"):
-            continue  # skip nested lines
-        if ":" not in ln:
+    An existing `type:` has its line range replaced. A missing one is inserted
+    right after the full range of `title:`, or after the last field when there
+    is no title, never inside a list or a folded value.
+    """
+    return F.set_field(fm, "type", new_type, after="title")
+
+
+def plan(root=WORKSPACE):
+    """Yield (path, rel, doc, fm, current, target, action) for every typed note.
+
+    `action` is UPDATE, OK, SKIP_CONFLICT, NO_PATTERN or NEEDS_REPAIR, the
+    last one with the reason in place of `current`.
+    """
+    for path, rel in iter_corpus_notes(root):
+        doc, fm = F.read_file(path)
+        if doc is None:
+            yield path, rel, None, None, "", None, "NO_FRONTMATTER"
             continue
-        key, _, val = ln.partition(":")
-        fm[key.strip()] = val.strip().strip('"').strip("'")
+        subtype = fm.get("subtype")
+        target = classify(rel, subtype if isinstance(subtype, str) else None)
+        current = current_type(fm)
+        if target is None:
+            action = "NO_PATTERN"
+        elif current == target:
+            action = "OK"
+        elif current and current != "note" and not is_forced(rel):
+            action = "SKIP_CONFLICT"
+        else:
+            action = "UPDATE"
+        swallowed = swallowed_key_line(fm)
+        if swallowed:
+            action, current = "NEEDS_REPAIR", swallowed
+        elif action in ("UPDATE", "SKIP_CONFLICT"):
+            damage = repair_reason(fm, action)
+            if damage:
+                action, current = "NEEDS_REPAIR", damage
+        yield path, rel, doc, fm, current, target, action
 
-    return fm, "\n".join(fm_lines), body
+
+def repair_reason(fm: F.Frontmatter, action: str) -> str | None:
+    """Why `set_type` must not touch this block, None when it may.
+
+    A damaged `type:` is never rewritten, since its range may cover lines of
+    another field. Nor is a single-line value outside the 17 types, which the
+    pass did not write and cannot vouch for. A missing `type:` goes after
+    `title:`, so a damaged title blocks the insertion too.
+    """
+    if "type" not in fm:
+        damage = field_damage(fm, "title")
+        return f"{damage}, `type:` would land inside it" if damage else None
+    damage = type_damage(fm)
+    if damage or action == "SKIP_CONFLICT":
+        return damage
+    return unknown_type(fm)
 
 
-def update_type_in_frontmatter(fm_raw: str, new_type: str) -> str:
-    """Update or insert `type:` line in frontmatter raw string."""
-    lines = fm_raw.split("\n")
-    updated = False
-    for i, ln in enumerate(lines):
-        if ln.startswith("type:") or ln.startswith("type :"):
-            lines[i] = f"type: {new_type}"
-            updated = True
-            break
-    if not updated:
-        # Insert after first line (usually title: or the first key)
-        lines.insert(1 if lines else 0, f"type: {new_type}")
-    return "\n".join(lines)
-
-
-def main():
-    if len(sys.argv) < 2 or sys.argv[1] not in {"--dry-run", "--apply"}:
+def main(argv=None, root=WORKSPACE):
+    argv = sys.argv[1:] if argv is None else argv
+    if not argv or argv[0] not in {"--dry-run", "--apply"}:
         print("Usage: python3 retype_files.py --dry-run | --apply")
         sys.exit(1)
 
-    dry_run = sys.argv[1] == "--dry-run"
+    dry_run = argv[0] == "--dry-run"
 
     stats = {
         "total_scanned": 0,
@@ -192,62 +126,30 @@ def main():
     }
     changes = []
 
-    for path in WORKSPACE.rglob("*.md"):
-        if is_excluded(path):
-            continue
+    for path, rel, doc, fm, current, target, action in plan(root):
         stats["total_scanned"] += 1
-
-        try:
-            content = path.read_text(encoding="utf-8")
-        except Exception as e:
-            print(f"SKIP {path}: {e}", file=sys.stderr)
-            continue
-
-        parsed = parse_frontmatter(content)
-        if parsed is None:
+        if action == "NO_FRONTMATTER":
             stats["no_frontmatter"] += 1
             continue
-        fm, fm_raw, body = parsed
-
-        target = detect_target_type(path)
-        if target is None:
+        if action == "NO_PATTERN":
             stats["no_pattern"] += 1
             continue
-
-        current = fm.get("type", "")
-
-        if current == target:
+        if action == "OK":
             stats["already_correct"] += 1
             continue
-
-        # Folder-based override: if any ancestor folder is explicit container, always use that type
-        rel_parts = set(path.relative_to(WORKSPACE).parts[:-1])
-        folder_override = bool(rel_parts & {"emails", "mails", "meetings", "deliverables", "transcripts"})
-
-        # Skip only if current has specific type AND we are not in a folder-override case
-        if current and current not in {"note", ""} and not folder_override:
-            changes.append({
-                "path": str(path.relative_to(WORKSPACE)),
-                "current": current,
-                "target": target,
-                "action": "SKIP_CONFLICT",
-            })
+        if action in ("SKIP_CONFLICT", "NEEDS_REPAIR"):
+            changes.append({"path": rel, "current": current, "target": target,
+                            "action": action})
             continue
 
         stats["would_update"] += 1
         stats["by_target"][target] = stats["by_target"].get(target, 0) + 1
-        changes.append({
-            "path": str(path.relative_to(WORKSPACE)),
-            "current": current or "(none)",
-            "target": target,
-            "action": "UPDATE",
-        })
+        changes.append({"path": rel, "current": current or "(none)", "target": target,
+                        "action": "UPDATE"})
 
         if not dry_run:
-            new_fm = update_type_in_frontmatter(fm_raw, target)
-            new_content = f"---\n{new_fm}\n---\n{body}"
-            path.write_text(new_content, encoding="utf-8")
-            stats["updated"] += 1
+            if F.write_file(path, doc, set_type(fm, target)):
+                stats["updated"] += 1
 
     # Report
     print(f"=== Retype report ({'DRY RUN' if dry_run else 'APPLIED'}) ===")
@@ -266,6 +168,11 @@ def main():
         print(f"Skipped {len(conflicts)} conflicts (non-note → other):")
         for c in conflicts[:10]:
             print(f"  {c['path']}: {c['current']} -> {c['target']}")
+    repairs = [c for c in changes if c["action"] == "NEEDS_REPAIR"]
+    if repairs:
+        print(f"{REPAIR_HINT} ({len(repairs)}):")
+        for c in repairs:
+            print(f"  {c['path']}: {c['current']}, left untouched")
     if dry_run and stats["would_update"] > 0:
         print(f"\nSample updates (first 10):")
         for c in [c for c in changes if c["action"] == "UPDATE"][:10]:

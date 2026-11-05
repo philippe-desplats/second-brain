@@ -33,6 +33,7 @@ rule that every curation action is validated.
 
 Protected by design and never proposed:
     - anything under archives/, templates/, docs/, basic-memory/, inbox/, .claude/
+    - anything corpus.py does not count as a note: prompts, repo files, captures
     - journal entries, which are a dated log and are meant to lie still
     - generated static indexes and .base views, rebuilt rather than curated
     - structural files (README, CHANGELOG, CLAUDE.md), and atlas/home.md, the hub
@@ -51,21 +52,26 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
-import re
+import os
 import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-WORKSPACE = Path(__file__).resolve().parent.parent.parent
-IGNORED_SEGMENTS = {".git", "node_modules", ".obsidian", ".claude", "tmp", "__pycache__"}
-IGNORED_PATH_PREFIXES = (
-    "archives/",
-    "templates/",
-    "basic-memory/",
-    "docs/",
-    "inbox/",
-)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import frontmatter as F  # noqa: E402
+from check_helpers import link_targets, note_names, resolution_table, scalar  # noqa: E402
+from corpus import IGNORED_SEGMENTS, WORKSPACE, iter_corpus_notes  # noqa: E402
+
+# Read-only, it never writes a note. Only corpus notes are ever proposed, and
+# of those only the ones in these zones, less the protected list of the module
+# docstring: `archives/` and `inbox/` are corpus zones a human curates by hand.
+PRUNABLE_ZONES = ("sources", "knowledge", "atlas")
+# Inbound links are counted over the whole tree, corpus or not, so a link from
+# anywhere keeps a note alive. `.claude/` is left out of that count: its skills
+# and rules hold example wiki-links, which would keep any note of that name.
+INBOUND_IGNORED_SEGMENTS = IGNORED_SEGMENTS | {".claude"}
 STRUCTURAL = {"README.md", "CHANGELOG.md", "GETTING-STARTED.md", "AGENTS.md",
               "CLAUDE.md", "CONTRIBUTING.md", "LICENSE.md"}
 # Navigation surfaces. Losing one costs more than any note it points at.
@@ -77,8 +83,6 @@ PROTECTED_SUBTYPES = {"moc", "index"}
 PROTECTED_TYPES = {"client-context", "partner-context", "person", "service",
                    "topic", "project-brief"}
 
-WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)(?:\|[^\]]+)?(?:#[^\]]+)?\]\]")
-
 
 @dataclass
 class Note:
@@ -88,35 +92,21 @@ class Note:
     title: str = ""
     ntype: str = ""
     outgoing: set[str] = field(default_factory=set)
+    names: set[str] = field(default_factory=set)
     mtime: dt.date = dt.date.min
     inbound: int = 0
 
 
-def is_ignored(rel_path: Path) -> bool:
-    if any(p in IGNORED_SEGMENTS for p in rel_path.parts):
-        return True
-    rel = rel_path.as_posix()
-    if any(rel.startswith(p) for p in IGNORED_PATH_PREFIXES):
-        return True
-    if rel.endswith("-static.md") or rel_path.name.endswith(".base"):
-        return True
-    if rel_path.name in STRUCTURAL or rel in STRUCTURAL_PATHS:
-        return True
-    return False
+def is_protected(rel: str) -> bool:
+    """A corpus note this pass never proposes, by its path alone."""
+    name = rel.rsplit("/", 1)[-1]
+    return rel.endswith("-static.md") or name in STRUCTURAL or rel in STRUCTURAL_PATHS
 
 
-def frontmatter(text: str) -> dict[str, str]:
-    if not text.startswith("---\n"):
-        return {}
-    end = text.find("\n---", 4)
-    if end == -1:
-        return {}
-    out = {}
-    for line in text[4:end].splitlines():
-        m = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:(.*)$", line)
-        if m:
-            out[m.group(1)] = m.group(2).strip().strip("\"'")
-    return out
+def frontmatter(text: str) -> F.Frontmatter | None:
+    """The parsed frontmatter, a folded title read whole, or None."""
+    doc = F.split(text)
+    return F.parse(doc.block) if doc is not None else None
 
 
 def git_dates(root: Path) -> dict[str, dt.date]:
@@ -128,24 +118,31 @@ def git_dates(root: Path) -> dict[str, dt.date]:
     Returns an empty mapping when git is unavailable or this is not a repo,
     and the caller falls back to mtime.
     """
+    # `-z` keeps an accented path verbatim, where the default output quotes it
+    # and escapes its bytes, so it never matched the path the walk produces.
+    # Records are NUL-separated: a commit header opens with \x01, then each
+    # path follows, the first one after a newline.
     try:
         out = subprocess.run(
-            ["git", "-C", str(root), "log", "--name-only", "--format=%x00%cI", "--no-renames"],
-            capture_output=True, text=True, timeout=60, check=True,
-        ).stdout
+            ["git", "-C", str(root), "log", "-z", "--name-only", "--format=%x01%cI",
+             "--no-renames"],
+            capture_output=True, timeout=60, check=True,
+        ).stdout.decode("utf-8", errors="surrogateescape")
     except (OSError, subprocess.SubprocessError):
         return {}
     dates: dict[str, dt.date] = {}
     current: dt.date | None = None
-    for line in out.splitlines():
-        if line.startswith("\x00"):
+    for token in out.split("\0"):
+        if token.startswith("\x01"):
             try:
-                current = dt.date.fromisoformat(line[1:11])
+                current = dt.date.fromisoformat(token[1:11])
             except ValueError:
                 current = None
-        elif line.strip() and current and line not in dates:
+            continue
+        name = token[1:] if token.startswith("\n") else token
+        if name and current and name not in dates:
             # log walks newest first, so the first sighting is the latest touch
-            dates[line] = current
+            dates[name] = current
     return dates
 
 
@@ -163,44 +160,47 @@ def git_dirty(root: Path) -> set[str]:
     except (OSError, subprocess.SubprocessError):
         return set()
     dirty = set()
-    for entry in out.split("\0"):
+    entries = iter(out.split("\0"))
+    for entry in entries:
         if len(entry) > 3:
             dirty.add(entry[3:])
+            # A rename or a copy is followed by its source path, not an entry.
+            if "R" in entry[:2] or "C" in entry[:2]:
+                next(entries, None)
     return dirty
 
 
-def is_journal(fm: dict[str, str], rel: str) -> bool:
-    """A dated log is meant to lie still; never propose one for pruning."""
-    if fm.get("note_type") == "journal":
+def is_journal(fm: F.Frontmatter | None, rel: str) -> bool:
+    """A dated log is meant to lie still, never propose one for pruning."""
+    if scalar(fm, "note_type") == "journal":
         return True
     return "/journal/" in rel or rel.endswith("-note-journal.md")
 
 
 def load_notes(root: Path, git: dict[str, dt.date], dirty: set[str]) -> list[Note]:
     notes = []
-    for path in sorted(root.rglob("*.md")):
-        rel_path = path.relative_to(root)
-        if is_ignored(rel_path):
+    for path, rel in iter_corpus_notes(root, zones=PRUNABLE_ZONES):
+        if is_protected(rel):
             continue
         try:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
         fm = frontmatter(text)
-        rel = rel_path.as_posix()
         if is_journal(fm, rel):
             continue
-        if fm.get("type") in PROTECTED_TYPES:
+        if scalar(fm, "type") in PROTECTED_TYPES:
             continue
-        if fm.get("subtype") in PROTECTED_SUBTYPES:
+        if scalar(fm, "subtype") in PROTECTED_SUBTYPES:
             continue
         notes.append(Note(
             path=path,
             rel=rel,
             text=text,
-            title=fm.get("title") or path.stem,
-            ntype=fm.get("type", ""),
-            outgoing={m.group(1).strip() for m in WIKILINK_RE.finditer(text)},
+            title=scalar(fm, "title") or path.stem,
+            ntype=scalar(fm, "type"),
+            outgoing={target for target, _ in link_targets(text)},
+            names=note_names(fm, rel),
             # Commit date for a clean tracked file, mtime when it is dirty or
             # untracked. See the module docstring for why neither signal alone,
             # nor the later of the two, gets this right.
@@ -216,20 +216,19 @@ def load_notes(root: Path, git: dict[str, dt.date], dirty: set[str]) -> list[Not
 def count_inbound(notes: list[Note], root: Path) -> None:
     """Inbound links are counted across the WHOLE workspace, not only the
     prunable subset: a note linked from a protected context file is alive."""
-    targets = {}
-    for n in notes:
-        for key in {n.title, n.path.stem, n.rel, n.rel[:-3]}:
-            targets.setdefault(key, []).append(n)
+    # Every name check_helpers.note_names gives a note: path, title, aliases
+    # and identity keys, so a note reachable by any of them stays.
+    targets = resolution_table((n, n.names) for n in notes)
     for path in root.rglob("*.md"):
         rel_path = path.relative_to(root)
-        if any(p in IGNORED_SEGMENTS for p in rel_path.parts):
+        if any(p in INBOUND_IGNORED_SEGMENTS for p in rel_path.parts):
             continue
         try:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
-        for m in WIKILINK_RE.finditer(text):
-            for n in targets.get(m.group(1).strip(), []):
+        for target, _ in link_targets(text):
+            for n in targets.get(target, []):
                 if n.path != path:
                     n.inbound += 1
 
@@ -287,7 +286,7 @@ def main(argv: list[str]) -> int:
         lines += [
             "",
             "Before accepting a line, ask what the note was for. An unlinked note is not",
-            "automatically worthless; it may simply never have been wired in. Linking it is",
+            "automatically worthless, it may simply never have been wired in. Linking it is",
             "as valid an outcome as deleting it, and often the better one.",
             "",
         ]

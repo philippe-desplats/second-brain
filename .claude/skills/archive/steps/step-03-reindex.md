@@ -11,7 +11,7 @@ next_step: null
 
 - ✅ ALWAYS regenerate the static indexes (they filter out the archives automatically)
 - ✅ ALWAYS run `bm reindex` so Basic Memory forgets the old path and indexes the new one (if Basic Memory is installed)
-- ✅ ALWAYS run `fix_double_frontmatter.py` after reindex (known Basic Memory bug)
+- ✅ ALWAYS run `check_double_frontmatter.py` after reindex (known Basic Memory bug), and repair with `fix_double_frontmatter.py --apply` only when it reports files, after showing them to the user
 
 ## EXECUTION SEQUENCE:
 
@@ -35,11 +35,17 @@ command -v bm >/dev/null 2>&1 && bm reindex
 
 (Or use `bm reset --reindex` if `bm reindex` fails because of moved files, as observed during migration.)
 
-### 3. Fix double frontmatter (post-reindex)
+### 3. Check for a double frontmatter (post-reindex)
 
 ```bash
-python3 basic-memory/scripts/fix_double_frontmatter.py
 python3 basic-memory/scripts/check_double_frontmatter.py
+```
+
+If it reports files, show them to the user and preview the merge, then repair only once they approve:
+
+```bash
+python3 basic-memory/scripts/fix_double_frontmatter.py           # dry-run, prints the merge
+python3 basic-memory/scripts/fix_double_frontmatter.py --apply   # after approval
 ```
 
 ### 4. Check that no incoming ref is broken

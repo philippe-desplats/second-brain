@@ -98,9 +98,10 @@ Each delegated skill already runs it at its own end, but a final consolidated pa
 
 ```bash
 command -v bm >/dev/null 2>&1 && bm reindex
-python3 basic-memory/scripts/fix_double_frontmatter.py
 python3 basic-memory/scripts/check_double_frontmatter.py
 ```
+
+If the check reports files, show them to the user, preview the merge with `python3 basic-memory/scripts/fix_double_frontmatter.py`, and repair with `python3 basic-memory/scripts/fix_double_frontmatter.py --apply` only once they approve.
 
 (Same as step 4, the skills each do it already, but a final pass ensures global coherence.)
 

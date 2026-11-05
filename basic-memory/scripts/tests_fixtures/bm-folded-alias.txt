@@ -1,0 +1,16 @@
+---
+title: Globex Website Redesign, discovery workshop outcomes and the content inventory
+  plan for Q3
+aliases:
+- Globex Website Redesign, discovery workshop outcomes and the content inventory plan
+  for Q3
+type: note
+---
+
+# Heading
+
+Body text.
+
+---
+
+After a rule.

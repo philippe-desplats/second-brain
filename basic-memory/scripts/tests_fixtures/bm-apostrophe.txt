@@ -1,0 +1,15 @@
+---
+title: L'onboarding de Globex
+aliases:
+- L'onboarding de Globex
+- it's done
+type: note
+---
+
+# Heading
+
+Body text.
+
+---
+
+After a rule.

@@ -32,95 +32,76 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
+import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import frontmatter as F  # noqa: E402
+from check_helpers import load_schemas  # noqa: E402
+from corpus import iter_corpus_notes  # noqa: E402
 
 WORKSPACE = Path(__file__).resolve().parent.parent.parent
 SCHEMA_DIR = WORKSPACE / "basic-memory" / "schemas"
 
-# Directories that hold no workspace notes.
-SKIP_DIRS = {".git", ".obsidian", "node_modules", "__pycache__", "tmp"}
-# Paths whose notes are documentation about the workspace, not notes in it.
-SKIP_PREFIXES = ("basic-memory/schemas", ".claude", "docs", "templates")
+def parse_frontmatter(text: str) -> F.Frontmatter | None:
+    """Return a note's parsed frontmatter, or None if absent.
 
-
-def load_schema_fields(path: Path) -> tuple[dict[str, bool], str]:
-    """Return {field_name: required} from a schema's settings.frontmatter block."""
-    text = path.read_text(encoding="utf-8")
-    fields: dict[str, bool] = {}
-
-    match = re.search(r"^  frontmatter:\n((?:    .*\n|\n)*)", text, re.MULTILINE)
-    if not match:
-        return fields, path.stem
-
-    for line in match.group(1).splitlines():
-        # Field declarations sit at exactly four spaces; enum values are list items.
-        decl = re.match(r"^    ([A-Za-z_][A-Za-z0-9_]*)(\??)(?:\(.*\))?\s*:", line)
-        if decl:
-            fields[decl.group(1)] = decl.group(2) != "?"
-    return fields, path.stem
-
-
-def parse_frontmatter(text: str) -> dict[str, str] | None:
-    """Return {key: raw_value} for a note's frontmatter, or None if absent.
-
-    CRLF is normalised first: a note saved by a Windows editor would otherwise
-    be silently skipped, and a skipped note is worse than a miscounted one
-    because it disappears from the denominator too.
+    Read with `frontmatter.py`, so CRLF, a title folded over 2 lines and a
+    list indented at any width all read the way YAML reads them. A note saved
+    by a Windows editor is never skipped, and a skipped note is worse than a
+    miscounted one because it disappears from the denominator too.
     """
-    text = text.replace("\r\n", "\n")
-    if not text.startswith("---\n"):
-        return None
-    end = text.find("\n---", 4)
-    if end == -1:
-        return None
-
-    out: dict[str, str] = {}
-    current: str | None = None
-    for line in text[4:end].splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        # A list item continues the previous key.
-        if line.startswith(("  - ", "- ")):
-            if current:
-                out[current] = (out.get(current, "") + " x").strip()
-            continue
-        kv = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:(.*)$", line)
-        if kv:
-            current = kv.group(1)
-            out[current] = kv.group(2).strip()
-    return out
+    doc = F.split(text)
+    return F.parse(doc.block) if doc is not None else None
 
 
 def iter_notes(root: Path):
-    for path in sorted(root.rglob("*.md")):
-        rel_path = path.relative_to(root)
-        rel = rel_path.as_posix()
-        # Test the RELATIVE parts: an absolute path containing a segment named
-        # tmp or .git would otherwise silence the whole audit.
-        if any(part in SKIP_DIRS for part in rel_path.parts):
-            continue
-        if rel.startswith(SKIP_PREFIXES):
-            continue
+    """Yield (rel, frontmatter) for every corpus note that carries one.
+
+    The walk is `corpus.iter_corpus_notes`, like every other pass: the five
+    note zones, minus what a machine reads rather than a human (prompts,
+    captures, repo files, skills and their state files, git-ignored dumps).
+    A file there claims no schema, so listing it as a note without `type`
+    would be noise.
+    """
+    for path, rel in iter_corpus_notes(root):
         try:
-            text = path.read_text(encoding="utf-8")
+            with open(path, encoding="utf-8", newline="") as fh:
+                text = fh.read()
         except (OSError, UnicodeDecodeError):
             continue
         fm = parse_frontmatter(text)
-        if fm:
+        if fm is not None and fm.fields:
             # A note with frontmatter but no `type` is itself a finding: it
             # belongs to no schema, so it is reported rather than dropped.
             yield rel, fm
 
 
-def is_filled(value: str) -> bool:
-    """A key present with an empty or placeholder value is not filled."""
-    v = value.strip().strip("\"'")
-    if not v or v in {"[]", "{}", "null", "~", "-"}:
+def is_placeholder(value: str) -> bool:
+    """An unsubstituted template placeholder, `{client}`, is not a real value."""
+    v = value.strip()
+    return v in {"", "-", "{}"} or (v.startswith("{") and v.endswith("}"))
+
+
+def is_filled(fm: F.Frontmatter, key: str) -> bool:
+    """A key present with an empty, null or placeholder value is not filled.
+
+    A list is filled when one of its items is. A nested mapping is filled
+    unless it is the one-line `{...}` placeholder a template leaves behind.
+    """
+    f = fm.field(key)
+    if f is None:
         return False
-    # Unsubstituted template placeholders do not count as real values.
-    return not (v.startswith("{") and v.endswith("}"))
+    if isinstance(f.value, list):
+        return any(not is_placeholder(v) for v in f.value)
+    if isinstance(f.value, str):
+        return not is_placeholder(f.value)
+    if f.style == "nested":
+        head = fm.lines[f.start].partition(":")[2].strip()
+        return not is_placeholder(head) if head else True
+    return False
 
 
 def main(argv: list[str]) -> int:
@@ -131,17 +112,13 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--json", action="store_true", help="emit machine-readable output")
     args = ap.parse_args(argv)
 
-    schemas = {}
-    for p in sorted(SCHEMA_DIR.glob("*.md")):
-        if p.stem == "README":
-            continue
-        fields, name = load_schema_fields(p)
-        schemas[name] = fields
+    schemas = load_schemas(SCHEMA_DIR)
 
-    notes_by_type: dict[str, list[tuple[str, dict]]] = {}
+    notes_by_type: dict[str, list[tuple[str, F.Frontmatter]]] = {}
     untyped: list[str] = []
     for rel, fm in iter_notes(WORKSPACE):
-        ntype = (fm.get("type") or "").strip()
+        ntype = fm.get("type")
+        ntype = ntype.strip() if isinstance(ntype, str) else ""
         if not ntype:
             untyped.append(rel)
             continue
@@ -155,7 +132,7 @@ def main(argv: list[str]) -> int:
         notes = notes_by_type.get(tname, [])
         entry = {"note_count": len(notes), "fields": {}}
         for fname, required in sorted(fields.items()):
-            filled = sum(1 for _, fm in notes if fname in fm and is_filled(fm[fname]))
+            filled = sum(1 for _, fm in notes if is_filled(fm, fname))
             rate = (filled / len(notes)) if notes else None
             entry["fields"][fname] = {"required": required, "filled": filled, "rate": rate}
             if required and rate is not None and rate < args.threshold:
@@ -163,7 +140,7 @@ def main(argv: list[str]) -> int:
         # Keys present in notes but declared nowhere in the schema.
         seen: dict[str, int] = {}
         for _, fm in notes:
-            for k in fm:
+            for k in fm.keys():
                 if k not in fields and k not in ("type", "schema_version"):
                     seen[k] = seen.get(k, 0) + 1
         for k, c in sorted(seen.items(), key=lambda kv: -kv[1]):

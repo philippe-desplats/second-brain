@@ -1,0 +1,21 @@
+---
+title: 'Regex: \d+ cheatsheet'
+aliases: ["Regex: \d+ cheatsheet", "Regex: d+ cheatsheet", "Regex: d+ cheatsheet"]
+name: 'Regex: \d+ cheatsheet'
+type: topic
+schema_version: 1
+synonyms:
+- expressions régulières
+- l'expression
+status: active
+---
+# Regex
+
+Linked from [[Regex: \d+ cheatsheet]] and [[Globex]].
+
+## Observations
+
+- [name] Regex: \d+ cheatsheet
+- [aliases] Regex: \d+ cheatsheet
+- [aliases] Regex: d+ cheatsheet
+- [status] active

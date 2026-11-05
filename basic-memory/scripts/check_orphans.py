@@ -4,7 +4,8 @@ Detect orphaned notes: no incoming nor outgoing wiki-link.
 
 A note is orphan iff:
 - It has no [[Link]] in its body or frontmatter relations.
-- No other note in the workspace links to it (by title, slug, or basename).
+- No other note in the workspace links to it, by any name `check_helpers.note_names`
+  gives it: basename, path, title, aliases, or an identity key.
 
 Walks the whole workspace (excluding .git, .obsidian, .claude, node_modules,
 archives/*, templates/, basic-memory/scripts/, atlas/maps/*-static.md).
@@ -22,12 +23,20 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import re
+import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import frontmatter as F  # noqa: E402
+from check_helpers import link_targets, note_names, resolution_table, scalar  # noqa: E402
+
 WORKSPACE = Path(__file__).resolve().parent.parent.parent
+# Read-only, and wider than the corpus on purpose: a link from a root file or
+# from a folder corpus.py excludes still makes its target reachable, so the walk
+# is the tree less the zones listed here.
 IGNORED_SEGMENTS = {".git", "node_modules", ".obsidian", ".claude", "tmp", "__pycache__"}
 IGNORED_PATH_PREFIXES = (
     "archives/",
@@ -37,15 +46,13 @@ IGNORED_PATH_PREFIXES = (
     "docs/",
 )
 
-WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)(?:\|[^\]]+)?(?:#[^\]]+)?\]\]")
-
-
 @dataclass
 class Note:
     path: Path
     text: str
     title: str = ""
     outgoing: set[str] = field(default_factory=set)
+    names: set[str] = field(default_factory=set)
 
 
 def is_ignored(rel_path: Path) -> bool:
@@ -64,37 +71,23 @@ def is_ignored(rel_path: Path) -> bool:
     return False
 
 
-def extract_title(text: str, fallback: str) -> str:
-    if text.startswith("---"):
-        lines = text.split("\n")
-        for i in range(1, len(lines)):
-            if lines[i] == "---":
-                break
-            m = re.match(r"^title:\s*(.+?)\s*$", lines[i])
-            if m:
-                return m.group(1).strip('"\'')
-    return fallback
+def frontmatter_of(text: str) -> F.Frontmatter | None:
+    doc = F.split(text)
+    return F.parse(doc.block) if doc is not None else None
 
 
 def extract_links(text: str) -> set[str]:
-    return {m.group(1).strip() for m in WIKILINK_RE.finditer(text)}
+    return {target for target, _ in link_targets(text)}
 
 
-def is_journal(text: str) -> bool:
+def is_journal(fm: F.Frontmatter | None) -> bool:
     """True when the note declares note_type: journal in its frontmatter.
 
     A daily journal entry legitimately links to nothing. Flagging it would fill
     the report with noise on any workspace that actually journals, so the whole
     type is out of scope rather than each entry having to earn an exemption.
     """
-    if not text.startswith("---"):
-        return False
-    for line in text.split("\n")[1:]:
-        if line == "---":
-            break
-        if line.startswith("note_type:"):
-            return line.partition(":")[2].strip().strip('"').strip("'") == "journal"
-    return False
+    return scalar(fm, "note_type") == "journal"
 
 
 def load_notes(root: Path) -> list[Note]:
@@ -107,23 +100,17 @@ def load_notes(root: Path) -> list[Note]:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        if is_journal(text):
+        fm = frontmatter_of(text)
+        if is_journal(fm):
             continue
-        title = extract_title(text, path.stem)
-        outgoing = extract_links(text)
-        notes.append(Note(path=path, text=text, title=title, outgoing=outgoing))
+        notes.append(Note(path=path, text=text, title=scalar(fm, "title") or path.stem,
+                          outgoing=extract_links(text), names=note_names(fm, rel.as_posix())))
     return notes
 
 
 def build_index(notes: list[Note]) -> dict[str, list[Note]]:
-    """Map a queryable name (title, basename) to notes that match."""
-    index: dict[str, list[Note]] = {}
-    for n in notes:
-        for key in {n.title, n.path.stem}:
-            if not key:
-                continue
-            index.setdefault(key, []).append(n)
-    return index
+    """Map every name a link may use (see check_helpers.note_names) to its notes."""
+    return resolution_table((n, n.names) for n in notes)
 
 
 def find_orphans(notes: list[Note]) -> list[Note]:

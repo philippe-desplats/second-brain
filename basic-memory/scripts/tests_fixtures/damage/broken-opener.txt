@@ -1,0 +1,10 @@
+---title: Q3 capacity plan
+type: strategy
+schema_version: 1
+date: 2026-06-26
+---
+# Q3 capacity plan
+
+## Relations
+
+- about [[Internal]]

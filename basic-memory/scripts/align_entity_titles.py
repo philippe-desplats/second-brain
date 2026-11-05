@@ -18,12 +18,20 @@ Scope and identity field per zone:
 
 Conservative by design:
 - Dry-run is the default, --apply is required to write.
-- Only the `title:` line of the frontmatter is touched. The body, the H1 and
-  every other field are left untouched, so no information is ever lost.
+- Only the `title:` field of the frontmatter is touched, its whole line range
+  when Basic Memory folded it over several lines. The body, the H1 and every
+  other field are left untouched, so no information is ever lost.
+- The new value is quoted through the shared policy of `frontmatter.py`, so
+  `Acme: Studio` or `Foo #2` reads back as written.
+- Only corpus notes are written, `corpus.is_corpus_note` filters the globs.
 - A file whose H1 no longer matches its new title is reported separately, for a
   cosmetic pass decided by a human.
 - A file with no identity field, no frontmatter, or an empty identity value is
   skipped and reported.
+- A `title:` declared twice, holding a list or a block, opening a quote its
+  range never closes, or absorbing a list item or another field is never
+  rewritten, since its range may hold lines of another field. It is listed
+  under "Needs repair".
 
 Usage:
     python3 basic-memory/scripts/align_entity_titles.py
@@ -34,12 +42,17 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-WORKSPACE = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import frontmatter as F  # noqa: E402
+from corpus import WORKSPACE, is_corpus_note, rel_posix  # noqa: E402
+from note_types import REPAIR_HINT, field_damage  # noqa: E402
 
 # zone name -> (glob pattern relative to workspace, identity frontmatter field)
 ZONES: dict[str, tuple[str, str]] = {
@@ -50,31 +63,20 @@ ZONES: dict[str, tuple[str, str]] = {
     "partners": ("sources/partners/*/CLAUDE.md", "partner"),
 }
 
-FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
 H1_RE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
 
 
-def field_re(field: str) -> re.Pattern[str]:
-    """Match a top-level `field: value` line inside the frontmatter block."""
-    return re.compile(rf"^{re.escape(field)}:[ \t]*(.*?)[ \t]*$", re.MULTILINE)
+def as_text(value) -> str:
+    """A decoded scalar stripped, empty for a list, a mapping or a null."""
+    return value.strip() if isinstance(value, str) else ""
 
 
-def unquote(value: str) -> str:
-    value = value.strip()
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
-        return value[1:-1]
-    return value
-
-
-def needs_quoting(value: str) -> bool:
-    """A YAML scalar needs quoting when it starts with a reserved indicator."""
-    return bool(value) and value[0] in "&*!|>%@`{}[],#?-:"
-
-
-def yaml_scalar(value: str) -> str:
-    if needs_quoting(value) or value != value.strip():
-        return '"' + value.replace('"', r"\"") + '"'
-    return value
+def set_title(fm: F.Frontmatter, title: str) -> F.Frontmatter:
+    """Set `title:`, its whole line range when present, as the first field otherwise."""
+    if "title" in fm:
+        return F.set_field(fm, "title", title)
+    line = F.render_field("title", title)
+    return F.parse("".join(ln + "\n" for ln in line + fm.lines))
 
 
 @dataclass
@@ -83,56 +85,47 @@ class Result:
     zone: str
     identity: str
     old_title: str | None
-    action: str  # "insert", "replace", "ok", "skip"
+    action: str  # "insert", "replace", "ok", "skip", "repair"
     reason: str = ""
     h1_diverges: bool = False
 
 
-def process(path: Path, zone: str, identity_field: str, apply: bool) -> Result:
-    text = path.read_text(encoding="utf-8")
-    rel = path.relative_to(WORKSPACE)
+def process(path: Path, zone: str, identity_field: str, apply: bool,
+            root: Path = WORKSPACE) -> Result:
+    rel = Path(rel_posix(path, root))
 
-    fm_match = FRONTMATTER_RE.match(text)
-    if not fm_match:
+    doc, fm = F.read_file(path)
+    if doc is None:
         return Result(rel, zone, "", None, "skip", "no frontmatter")
 
-    block = fm_match.group(1)
-    id_match = field_re(identity_field).search(block)
-    if not id_match:
+    if identity_field not in fm:
         return Result(rel, zone, "", None, "skip", f"field `{identity_field}` missing")
 
-    identity = unquote(id_match.group(1))
+    identity = as_text(fm.get(identity_field))
     if not identity:
         return Result(rel, zone, "", None, "skip", f"field `{identity_field}` empty")
 
-    title_match = field_re("title").search(block)
-    old_title = unquote(title_match.group(1)) if title_match else None
+    old_title = as_text(fm.get("title")) if "title" in fm else None
 
-    h1_match = H1_RE.search(text[fm_match.end():])
+    damage = field_damage(fm, "title")
+    if damage:
+        return Result(rel, zone, identity, old_title, "repair", damage)
+
+    h1_match = H1_RE.search(doc.body)
     h1 = h1_match.group(1).strip() if h1_match else ""
     h1_diverges = bool(h1) and h1 != identity
 
-    if old_title == identity:
+    if old_title == identity and len([f for f in fm.fields if f.key == "title"]) == 1:
         return Result(rel, zone, identity, old_title, "ok", "", h1_diverges)
 
-    new_line = f"title: {yaml_scalar(identity)}"
-    if title_match:
-        new_block = (
-            block[: title_match.start()] + new_line + block[title_match.end():]
-        )
-        action = "replace"
-    else:
-        new_block = new_line + "\n" + block
-        action = "insert"
-
+    action = "insert" if old_title is None else "replace"
     if apply:
-        new_text = text[: fm_match.start(1)] + new_block + text[fm_match.end(1):]
-        path.write_text(new_text, encoding="utf-8")
+        F.write_file(path, doc, set_title(fm, identity))
 
     return Result(rel, zone, identity, old_title, action, "", h1_diverges)
 
 
-def main() -> int:
+def main(argv=None, root: Path = WORKSPACE) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--apply", action="store_true", help="write the changes (default: dry-run)"
@@ -143,18 +136,21 @@ def main() -> int:
         action="append",
         help="restrict to one or more zones (default: all)",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     zones = args.zone or sorted(ZONES)
     results: list[Result] = []
 
     for zone in zones:
         pattern, identity_field = ZONES[zone]
-        for path in sorted(WORKSPACE.glob(pattern)):
-            results.append(process(path, zone, identity_field, args.apply))
+        for path in sorted(root.glob(pattern)):
+            if not is_corpus_note(rel_posix(path, root), root):
+                continue
+            results.append(process(path, zone, identity_field, args.apply, root))
 
     changed = [r for r in results if r.action in ("insert", "replace")]
     skipped = [r for r in results if r.action == "skip"]
+    repairs = [r for r in results if r.action == "repair"]
     ok = [r for r in results if r.action == "ok"]
 
     mode = "APPLIED" if args.apply else "DRY-RUN, nothing written"
@@ -174,6 +170,12 @@ def main() -> int:
             print(f"  [{r.zone}] {r.path}  ({r.reason})")
         print()
 
+    if repairs:
+        print(f"{REPAIR_HINT} ({len(repairs)}):\n")
+        for r in repairs:
+            print(f"  [{r.zone}] {r.path}  ({r.reason}, left untouched)")
+        print()
+
     diverging = [r for r in results if r.h1_diverges and r.action != "skip"]
     if diverging:
         print(
@@ -186,7 +188,7 @@ def main() -> int:
 
     print(
         f"Total {len(results)} file(s): {len(ok)} already compliant, "
-        f"{len(changed)} to fix, {len(skipped)} skipped."
+        f"{len(changed)} to fix, {len(skipped)} skipped, {len(repairs)} need repair."
     )
     if not args.apply and changed:
         print("\nRerun with --apply to write, then `bm reindex`.")

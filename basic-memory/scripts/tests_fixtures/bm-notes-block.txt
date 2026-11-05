@@ -1,0 +1,23 @@
+---
+title: Block notes
+notes: 'First line of notes
+
+  second line: with colon
+
+
+  after a blank line
+
+  '
+summary: 'no trailing newline
+
+  second'
+type: note
+---
+
+# Heading
+
+Body text.
+
+---
+
+After a rule.

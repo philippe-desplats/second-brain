@@ -1,0 +1,14 @@
+---
+tags:
+type: meeting
+- review
+- globex
+title: Content inventory review
+schema_version: 1
+date: 2026-06-29
+---
+# Content inventory review
+
+## Relations
+
+- about [[Globex]]

@@ -13,7 +13,8 @@ Bound to Edit as well as Write: an Edit that adds a wikilink creates exactly the
 need this pass answers, on the target note rather than on the edited one.
 
 The pass itself decides what it may write, through `corpus.is_corpus_note`.
-This hook only decides when to run it: a markdown file under a note zone.
+This hook only decides when to run it: a markdown file under a note zone, asked
+of `corpus.in_note_zone` so the list of zones is defined once.
 
 On a Write, the written note itself is excluded from the pass, so a hook of your
 own running in parallel on the same event cannot race it on that file. The note
@@ -35,9 +36,15 @@ import sys
 from pathlib import Path
 
 WORKSPACE = Path(__file__).resolve().parents[2]
-PASS = WORKSPACE / "basic-memory" / "scripts" / "add_title_aliases.py"
-NOTE_ZONES = ("sources", "knowledge", "atlas", "archives", "inbox")
+SCRIPTS = WORKSPACE / "basic-memory" / "scripts"
+PASS = SCRIPTS / "add_title_aliases.py"
 TIMEOUT = 30
+
+sys.path.insert(0, str(SCRIPTS))
+try:
+    from corpus import in_note_zone
+except Exception:  # no corpus.py means no pass to run either, fail open
+    in_note_zone = None
 
 
 def note_zone_markdown(raw: str) -> str | None:
@@ -49,7 +56,7 @@ def note_zone_markdown(raw: str) -> str | None:
         rel = path.resolve().relative_to(WORKSPACE.resolve())
     except (OSError, ValueError):
         return None
-    if path.suffix != ".md" or not rel.parts or rel.parts[0] not in NOTE_ZONES:
+    if in_note_zone is None or path.suffix != ".md" or not in_note_zone(rel.as_posix()):
         return None
     return rel.as_posix()
 
