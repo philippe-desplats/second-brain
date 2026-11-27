@@ -6,6 +6,117 @@ Structural changes to this workspace. Content changes (notes, projects) are trac
 
 ## Unreleased
 
+## 0.7.0
+
+Basic Memory 1.0, released on 2026-10-29, is now the floor. It renames every MCP tool with no alias, so the instructions this workspace gave to its agents named tools that no longer exist, and a fresh `uv tool install basic-memory` already installs 1.0. This release moves the instructions, the agent, the setup step and the docs to the 1.0 surface. No script behaviour, schema contract, note type, template or hook changes.
+
+- The MCP tools are `bm_search`, `bm_context`, `bm_read`, `bm_project` and the other `bm_*` tools. `search_notes` became `bm_search`, `build_context` became `bm_context`, `recent_activity` became `bm_project(command="recent")`. Parameters moved too: `search_type` is `mode`, `after_date` and `timeframe` are `since`, and a frontmatter field such as `status` or `tags` goes through `filters`. Every project-scoped call now requires `project`, even when the server runs with `--project`. The root `CLAUDE.md`, the `librarian` agent (its `tools:` allowlist included), the `session` and `topic` schemas, the schema design notes and 2 script docstrings use the new names.
+- `/sb-init` step 5 is reordered and corrected. `bm project add` indexes the folder at once, so the configuration now comes before it, through `bm config set`. `disable_permalinks` is gone, since 1.0 retires it, and `sync_changes` is called `index_changes`, its name since 0.23. The step tells the owner what the first index writes anyway: a `permalink:` line in every note that has frontmatter, long values folded and inline lists rewritten as block lists. `bm tool search-notes` became `bm tool search`.
+- The `.bmignore` warning is rewritten. On 1.0 a leading slash anchors a pattern to the project root, as in gitignore, so `/CLAUDE.md` drops only the root file and keeps every entity context. On 0.21.1 and 0.22.1 the same pattern deleted the entity graph. The recommended list does not change.
+- `/sb-doctor` keeps its per-type schema validation loop, and its note now says why: on 1.0 an untyped `bm schema validate` validates everything with the same total, while older releases answered `No notes found of type 'unknown'`.
+- The schema design note D10 is re-checked on 1.0.0. One change: `settings.validation` is a closed vocabulary, `warn`, `strict` or `error` as an alias of `strict`, and any other value makes the schema fail to parse. Every schema here uses `warn` or `strict`.
+- Measured on a clone of the demo content, against Basic Memory 1.0.0 installed with `uvx` under its own `BASIC_MEMORY_CONFIG_DIR`, so no real index was touched. With the step 5 settings applied first, the first index rewrote 43 of the 147 indexed files, and a second `bm reindex` rewrote none. The test suite passed, 344 tests, and `check_consistency.py`, `check_double_frontmatter.py`, `check_frontmatter_damage.py` (with PyYAML), the alias dry-run and the alias hook all came back clean on the rewritten files. `check_unresolved_relations.py` read the 1.0 database unchanged. `bm status`, `bm orphans --json`, `bm schema validate`, `bm tool search`, `bm tool context` and `bm doctor` answered as the skills expect.
+- Not changed, deliberately: every script's logic, name, arguments and defaults, the schemas' fields, the hook and its wiring, `.mcp.json.example`, whose `mcp --project` arguments are still valid. The workspace still runs without Basic Memory, and the scripts still need Python 3.10 only. Basic Memory 1.0 needs Python 3.12 for itself, which `uv` provides.
+
+### Upgrade prompt, 0.6.3 to 0.7.0
+
+The update recipe in the README brings the new infrastructure. It does not touch the root `CLAUDE.md`, and it cannot upgrade Basic Memory on your machine, so this prompt covers both. The Basic Memory phase changes your notes and every other Basic Memory project on the machine, and it asks before each step.
+
+Paste this into the agent that operates your workspace, from the workspace root.
+
+```
+You are upgrading this second-brain workspace from boilerplate version 0.6.3 to 0.7.0. Work through the phases in order and stop at every gate.
+
+Rules for the whole run:
+- Never delete a note, a folder, or a frontmatter field.
+- If a step's precondition is not met, stop and tell me. Do not improvise around it.
+- Never keep a list of paths in a shell variable: write every path on the command line, so each command runs the same in bash and zsh.
+- Never install, upgrade or reconfigure anything outside this workspace without my explicit approval for that exact command.
+- Report what you changed at the end, file by file.
+
+Phase 1, preconditions.
+Run `git status --porcelain`. If it prints anything, stop and ask me to commit or stash first.
+Read `.sb-config.json`. If `boilerplate_version` is not 0.6.3, stop and tell me which version it says. If `initialized` is true, stop: /sb-init personalized some infrastructure files, and the prompt for a customized workspace is the one to use.
+Then run:
+  git remote get-url upstream || git remote add upstream https://github.com/philippe-desplats/second-brain.git
+  git fetch upstream --tags
+  git rev-parse --verify --quiet "v0.6.3^{commit}"
+  git rev-parse --verify --quiet "v0.7.0^{commit}"
+If either tag is missing, stop and tell me. Then run:
+  git diff --stat v0.6.3..HEAD -- .claude basic-memory/schemas basic-memory/scripts templates CLAUDE.md
+If it lists any file, stop: my infrastructure is customized, show me the list and tell me to use the prompt for a customized workspace.
+
+Phase 2, infrastructure.
+  git checkout v0.7.0 -- .claude basic-memory/schemas basic-memory/scripts templates CLAUDE.md
+Show me `git diff --cached --stat`. It must list `CLAUDE.md`, `.claude/agents/librarian.md`, `.claude/rules/frontmatter.md`, `.claude/skills/sb-doctor/SKILL.md`, `.claude/skills/sb-init/steps/step-05-memory.md`, 3 files under `basic-memory/schemas/` and 2 under `basic-memory/scripts/`, and nothing in my notes.
+Then run `grep -n "mcp__basic-memory__" .claude/settings.json .claude/settings.local.json`, ignoring a missing file. If an allow or deny rule names a pre-1.0 tool (`search_notes`, `build_context`, `recent_activity`, `write_note`, `read_note`, `edit_note`), show me the rule and its 1.0 name, and change it only after my approval.
+
+Phase 3, Basic Memory on this machine. Skip this phase and say so if `command -v bm` prints nothing.
+Run `bm --version`. If it reports 1.0.0 or later, go to step 3 below.
+1. Before anything else, tell me what the upgrade does, in these words or close to them: it renames the MCP tools for every Basic Memory project on this machine, not only this one, so any other instruction file, allowlist or script that names `search_notes` or `build_context` stops working. It writes a `permalink:` line into the frontmatter of the notes of every project at their next index, since the `disable_permalinks` setting is retired. Run `bm project list` and name the other projects it would affect.
+2. Ask me whether to upgrade now. If I say no, stop this phase and tell me the workspace still works with the files from phase 2, while its instructions now name tools my installed version does not have. If I say yes, run `uv tool upgrade basic-memory`, then `bm --version`.
+3. Run `bm config get ensure_frontmatter_on_sync` and `bm config get index_changes`. If either is not false, show me the value, and set it with `bm config set` only after my approval.
+4. Ask me to commit phase 2 now, because the next command rewrites notes. Then run `bm reindex --project {basic_memory_project from .sb-config.json}` and show me `git diff --stat | tail -3` and the diff of 1 rewritten note. Expect `permalink:` lines, folded values and inline lists turned into block lists. If a note lost content or gained a second frontmatter block, stop and show me.
+5. Tell me to restart the Claude Code session, so the MCP client loads the new tool names.
+
+Phase 4, verification and close.
+Set `boilerplate_version` to "0.7.0" in `.sb-config.json`, changing nothing else in the file. Run:
+  python3 -I -m unittest discover -s basic-memory/scripts -p 'test_*.py'
+  python3 -I basic-memory/scripts/check_consistency.py
+  python3 -I basic-memory/scripts/check_double_frontmatter.py
+  python3 -I basic-memory/scripts/add_title_aliases.py
+Show me the last lines of each. The test suite must end with OK, `check_consistency.py` must exit 0, the double frontmatter check must report 0 files, and the alias dry-run must report 0 to modify. Tell me what none of this verifies: the other Basic Memory projects on this machine and whatever reads their tools.
+```
+
+### Upgrade prompt, 0.6.3 to 0.7.0, for a customized workspace
+
+Use this one if `/sb-init` initialized your workspace or if phase 1 of the prompt above told you to. `/sb-init` personalizes the root `CLAUDE.md`, so it is never checked out here.
+
+```
+You are upgrading this second-brain workspace from boilerplate version 0.6.3 to 0.7.0. I have customized the infrastructure, so you must NOT check out upstream files over mine. For each intent below, read my version of the file first, then decide between three outcomes: apply, adapt, or skip because my fork already covers the intent. Justify every skip in one line.
+
+Rules for the whole run:
+- Never overwrite one of my files wholesale. Every edit is surgical and preserves what I wrote.
+- Never delete a note, a folder, or a schema field.
+- For each intent, show me one diff covering every file it touches and wait for my approval.
+- Never keep a list of paths in a shell variable: write every path on the command line, so each command runs the same in bash and zsh.
+- Never install, upgrade or reconfigure anything outside this workspace without my explicit approval for that exact command.
+
+Phase 0, preconditions. Run `git status --porcelain`, and stop if it prints anything. Read `boilerplate_version` in `.sb-config.json`, and stop if it is not 0.6.3. Then run:
+  git remote get-url upstream || git remote add upstream https://github.com/philippe-desplats/second-brain.git
+  git fetch upstream --tags
+  git rev-parse --verify --quiet "v0.6.3^{commit}"
+  git rev-parse --verify --quiet "v0.7.0^{commit}"
+If either tag is missing, stop and tell me. Then run:
+  git grep -nP "\b(search_notes|build_context|recent_activity|write_note|read_note|edit_note)\b|bm tool (search-notes|build-context)|disable_permalinks|sync_changes" -- ':!CHANGELOG.md'
+and keep its output: it is the list of places the intents below may touch, my own files included.
+
+Phase 1, the intents.
+
+1. Instructions must name the Basic Memory 1.0 MCP tools.
+   1.0 deleted the old tools with no alias. `search_notes` is `bm_search`, `build_context` is `bm_context`, `recent_activity` is `bm_project(command="recent")`, `read_note` is `bm_read`, `write_note` is `bm_write`, `edit_note` is `bm_edit`. Parameters: `search_type` is `mode`, `after_date` and `timeframe` are `since`, other frontmatter fields such as `status` or `tags` go through `filters` (`{"status": "active"}`), and every project-scoped call needs `project`. Upstream changed the "Context lookup" section of the root `CLAUDE.md`, the `tools:` line and the body of `.claude/agents/librarian.md`, `basic-memory/schemas/session.md`, `topic.md` and `README.md`, and the docstrings of `align_entity_titles.py` and `check_unresolved_relations.py`. `git diff v0.6.3 v0.7.0 -- CLAUDE.md .claude/agents/librarian.md basic-memory/schemas basic-memory/scripts` shows each change. Port them into my wording, and treat every other hit of the phase 0 grep, in my own files, the same way. Also check `.claude/settings.json` and `.claude/settings.local.json` for a rule naming `mcp__basic-memory__` with an old tool name.
+
+2. /sb-init must configure Basic Memory 1.0 before creating the project.
+   `bm project add` indexes at once, so upstream moved the configuration before it and applies it with `bm config set`. It removed `disable_permalinks`, which 1.0 retires, renamed `sync_changes` to `index_changes`, told the owner about the `permalink:` lines the first index writes, replaced `bm tool search-notes` with `bm tool search`, and rewrote the `.bmignore` warning: on 1.0 a leading slash anchors a pattern to the project root. `git diff v0.6.3 v0.7.0 -- .claude/skills/sb-init/steps/step-05-memory.md` shows it. If my step 5 is upstream's, check it out from v0.7.0. Otherwise port the intent. My workspace is already initialized, so this changes only what a future run of /sb-init does.
+
+3. Docs that describe Basic Memory's behaviour must match 1.0.
+   `.claude/rules/frontmatter.md` no longer credits `disable_permalinks` with preventing double frontmatter. `.claude/skills/sb-doctor/SKILL.md` explains its per-type validation loop by what 1.0 and 0.2x each do. D10 in `basic-memory/schemas/README.md` records that `settings.validation` is a closed vocabulary in 1.0. Port each into my version. If one of my schemas uses a `validation:` value other than `warn`, `strict` or `error`, tell me: 1.0 refuses to parse it.
+
+4. What upstream deliberately did NOT change, so you do not "fix" it.
+   No script logic, argument or default, no schema field, no note type, no template, no hook. `.mcp.json.example` keeps `mcp --project`, still valid on 1.0. The per-type loop in /sb-doctor stays.
+
+Phase 2, Basic Memory on this machine. Skip it and say so if `command -v bm` prints nothing.
+Run `bm --version` and `bm project list`. If the version is below 1.0, tell me that the upgrade renames the MCP tools for every project listed, and writes a `permalink:` into the notes of each at its next index since `disable_permalinks` is retired. Ask me whether to run `uv tool upgrade basic-memory`, and run nothing until I answer. Then check `bm config get ensure_frontmatter_on_sync` and `bm config get index_changes`, and propose `bm config set` for any that is not false. Before `bm reindex --project {basic_memory_project from .sb-config.json}`, ask me to commit, since it rewrites notes. Show me `git diff --stat | tail -3` and the diff of 1 rewritten note, and stop if a note lost content or gained a second frontmatter block. Then tell me to restart the Claude Code session.
+
+Phase 3, verification and close.
+Set `boilerplate_version` to "0.7.0" in `.sb-config.json`, changing nothing else in the file. Run:
+  python3 -I -m unittest discover -s basic-memory/scripts -p 'test_*.py'
+  python3 -I basic-memory/scripts/check_consistency.py
+  python3 -I basic-memory/scripts/check_double_frontmatter.py
+  python3 -I basic-memory/scripts/add_title_aliases.py
+Show me the last lines of each. Write me a short record of what you skipped and why. Tell me what none of this verifies: the other Basic Memory projects on this machine, and whatever reads their tools outside this workspace.
+```
+
 ## 0.6.3
 
 Upgrading no longer means copy-pasting prompts. `/sb-update` is a new skill that walks every release between your `boilerplate_version` and the latest tag, picks the stock or the customized prompt for each, and runs them one at a time with every approval gate kept. The upgrade prompts in this file stay the single source of truth: the skill reads and runs them, it never re-implements them. No script, schema, rule, hook or template changes.
