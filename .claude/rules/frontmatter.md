@@ -204,7 +204,7 @@ The scripts are tested, standard library only, against inputs shaped the way Bas
 python3 -I -m unittest discover -s basic-memory/scripts -p 'test_*.py'
 ```
 
-Double frontmatter was a legacy Basic Memory sync bug, and the `disable_permalinks: true` setting applied by `/sb-init` prevents it. No routine run is needed: `/sb-doctor` includes the detection check, and `fix_double_frontmatter.py --apply` repairs the rare occurrence after its dry-run has been read.
+Double frontmatter was a legacy Basic Memory sync bug. Before 1.0, the `disable_permalinks: true` setting applied by `/sb-init` prevented it. That setting is retired in 1.0, which writes a `permalink:` into every note's frontmatter on its first index, and no double frontmatter came out of that pass on the demo content. No routine run is needed: `/sb-doctor` includes the detection check, and `fix_double_frontmatter.py --apply` repairs the rare occurrence after its dry-run has been read.
 
 ## Observations and tags, convention
 

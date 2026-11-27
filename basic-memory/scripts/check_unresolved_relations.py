@@ -5,7 +5,7 @@ Report wiki-links that resolve to nothing in the Basic Memory graph.
 A wiki-link `[[Entity]]` that matches no note title is indexed as a relation
 whose target is NULL. Nothing warns about it: the link renders fine in Obsidian,
 the source file is valid, the note is searchable, but the graph edge is dead and
-`build_context` traversal stops there. This is invisible to every other check in
+`bm_context` traversal stops there. This is invisible to every other check in
 this repo, check_orphans.py only looks at whether a note has any link at all, and
 check_symmetric_relations.py compares strings without verifying the target exists.
 

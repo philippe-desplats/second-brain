@@ -29,11 +29,11 @@ This is **NOT a code project**. It is a second brain: a general-purpose workspac
 
 Before answering any question about an entity, a project, or past work:
 
-1. **Query Basic Memory first** (if the MCP server is connected): `search_notes` for discovery, with `search_type` (`text`, `vector` or `semantic`, `hybrid` by default, `title`, `permalink`) and the filters that map onto this workspace's frontmatter: `note_types` (the `type:` field, stored lowercase, so `note_types=["meeting"]`), `tags`, `status`, `after_date` for recency, and `min_similarity` to tighten vector recall. Then `build_context` on a `memory://` URI to follow relations (`depth`, `timeframe`, `max_related`), and `recent_activity` for what changed recently.
+1. **Query Basic Memory first** (if the MCP server is connected): `bm_search` for discovery, always with `project` set to the Basic Memory project in the profile block (every 1.0 tool requires it). Pick `mode` (`hybrid` by default, `text`, `semantic`, `title`, `permalink`) and the filters that map onto this workspace's frontmatter: `note_types` (the `type:` field, stored lowercase, so `note_types=["meeting"]`), `filters` for any other frontmatter field (`{"status": "active"}`, `{"tags": ["pricing"]}`), `categories` for observation categories, `since` for recency (`"7d"`, `"last week"`), and `min_similarity` to tighten semantic recall. Then `bm_context` on a `memory://` URI or a title to follow relations (`depth`, `since`, `max_related`), and `bm_project(command="recent")` for what changed recently.
 2. **Then read the files** for authoritative content: the entity's `CLAUDE.md`, then the relevant project folder, then `sources/internal/CONTEXT.md` for business context.
 3. If no local data exists, say so explicitly and ask whether to create a context file.
 
-**Resuming work on a project**: read its last session memory first, `sources/{zone}/{entity}/{project}/sessions/` sorted by name, most recent last, or `search_notes` with `note_types=["session"]`. It carries what was done, what is next, and what is blocked, written by `/close-session` at the end of the previous session. Everything else in the project is context; that file is the state.
+**Resuming work on a project**: read its last session memory first, `sources/{zone}/{entity}/{project}/sessions/` sorted by name, most recent last, or `bm_search` with `note_types=["session"]`. It carries what was done, what is next, and what is blocked, written by `/close-session` at the end of the previous session. Everything else in the project is context; that file is the state.
 
 **NEVER** invent context. When the user mentions a name or asks "what did we do for X", always search local files before responding.
 

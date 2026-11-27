@@ -56,7 +56,7 @@ Written by `/close-session` at the end of a session, or by hand. Usable in every
 
 ## Why this is its own type
 
-Basic Memory filters by the `type:` field, through `note_types` in `search_notes`. A session filed as a `note` with `note_type: session` would therefore be unreachable by the one query that justifies writing it: "give me the last point of resumption on this project". The same reasoning separates `transcript` from `meeting`.
+Basic Memory filters by the `type:` field, through `note_types` in `bm_search`. A session filed as a `note` with `note_type: session` would therefore be unreachable by the one query that justifies writing it: "give me the last point of resumption on this project". The same reasoning separates `transcript` from `meeting`.
 
 ## Difference from other types
 
@@ -89,7 +89,7 @@ Basic Memory filters by the `type:` field, through `note_types` in `search_notes
 
 Retrieval, in order of preference:
 
-1. Basic Memory, `search_notes` with `note_types=["session"]` and the project name, then `build_context` on the returned `memory://` URI to follow `continues` backwards through the thread
+1. Basic Memory, `bm_search` with `note_types=["session"]` and the project name, then `bm_context` on the returned `memory://` URI to follow `continues` backwards through the thread
 2. Without Basic Memory, list `sources/{zone}/{entity}/{project}/sessions/` and read the most recent file
 
 ## Minimal example

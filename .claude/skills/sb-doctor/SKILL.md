@@ -123,7 +123,7 @@ Reads the indexed graph where check 2 reads the raw files, so only the filtered 
 command -v bm >/dev/null 2>&1 && for t in $(ls basic-memory/schemas/*.md | xargs -n1 basename | sed 's/\.md$//' | grep -v README); do bm schema validate "$t" --strict --project {basic_memory_project from .sb-config.json}; done
 ```
 
-The type argument is not optional in practice: omitting it does not validate everything as the help text claims, it reports `No notes found of type 'unknown'` (observed on 0.21.1 and 0.22.1). Hence the loop over the schema names. A type with no note yet answers `No notes found of type '{t}'`, which is normal on a young workspace, not a finding.
+The loop gives one summary per type, which is what makes a failure easy to locate. On 1.0 omitting the type validates every note that has a schema, with the same total as the loop, while on 0.21.1 and 0.22.1 it reported `No notes found of type 'unknown'` instead, so the loop also keeps the check right on an older install. A type with no note yet answers `No notes found of type '{t}'`, which is normal on a young workspace, not a finding.
 
 Validates every note carrying a `type:` that matches a schema, against both that schema's frontmatter contract and its body contract. Fix: add the missing observation or relation to the note body, or correct the frontmatter field; `bm schema diff {type}` shows where a whole type has drifted from its schema. `--strict` exits with code 1 on validation errors, so this check also runs unattended in a pipeline. If `bm` is absent, the workspace is not a registered Basic Memory project, or nothing is indexed yet, report SKIPPED with that reason.
 

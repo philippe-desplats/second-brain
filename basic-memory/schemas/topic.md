@@ -44,7 +44,7 @@ Live example in this repository, `atlas/topics/client-onboarding.md`.
 ## Why this schema
 
 Topics are the anchors of the semantic graph. A well-documented topic makes it possible to:
-- List all the notes that reference it via `memory://topic/{slug}` and `build_context`
+- List all the notes that reference it via `memory://topic/{slug}` and `bm_context`
 - Document the aliases (e.g. "K8s" vs "Kubernetes")
 - Organize domains hierarchically (tech vs business)
 

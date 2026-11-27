@@ -128,11 +128,11 @@ Two levels, two keys. A schema in this folder carries `version: 1`, the key Basi
 
 ### D10, how these schemas meet Basic Memory's native schema tooling
 
-Verified against Basic Memory 0.21.1 and re-checked unchanged on 0.22.1. The details below belong to the package, not to this repository, so re-read the source before relying on them, a later release can move them.
+Verified against Basic Memory 0.21.1, re-checked unchanged on 0.22.1, and re-checked on 1.0.0 with the one change noted below. The details below belong to the package, not to this repository, so re-read the source before relying on them, a later release can move them.
 
 - **Resolution is database driven, not path driven.** Basic Memory selects indexed notes whose type is `schema`, then matches their `entity:` value against a note's `type:` value, both normalized to permalink form. It never walks a `schema/` directory, so these files are found wherever they sit once the workspace is indexed, and the `basic-memory/schemas/` name is a free choice (see D3).
 - **The parser reads five frontmatter keys**, `entity` (required), `schema` (required, a mapping), `version` (defaults to 1), `settings.validation` (defaults to `warn`), and `settings.frontmatter` (optional). Every other key is ignored, which is what makes the D9 rename load bearing and what makes extra keys such as `title` harmless.
-- **`strict` is the only validation value with special behaviour**, it promotes findings to errors. Every other value, `warn` included, behaves as a warning. The strict and warn split described at the top of this file is therefore compatible as written.
+- **`strict` is the only validation value with special behaviour**, it promotes findings to errors, and `warn` reports them as warnings. Since 1.0.0 the vocabulary is closed: `warn`, `strict`, or `error` as an alias of `strict`, and any other value makes the schema fail to parse instead of falling back to a warning. The strict and warn split described at the top of this file is therefore compatible as written, and a new schema must pick one of those values.
 - **The top-level `schema:` block is validated against the note body**, meaning observations written `- [field] value` and relations written `- field [[Target]]`. Frontmatter is validated only through a separate `settings.frontmatter:` block.
 
 Decision taken, each schema carries the two blocks: `schema:` declares the observation categories and the `## Relations` entries of the body, `settings.frontmatter:` declares the frontmatter fields with their required and optional markers. Entity-typed fields such as `about` sit in both, written in the frontmatter (D6) and mirrored in the body relations. To add a field, pick the block first, then write it with the syntax it maps to:
@@ -151,7 +151,7 @@ Every entry in a `schema:` block stays optional, hence the `?` on all of them. A
 
 Both were added in 0.4.0, and both could have been squeezed into `note`. Neither should have been.
 
-`session` records the end of a working session so the next one resumes from a point instead of a search. Basic Memory filters by the `type:` field, through `note_types` in `search_notes`, and never by an inner field such as `note_type`. A session filed as a `note` would therefore be invisible to the one query that justifies writing it. The retrieval path decides the type, not the size of the file.
+`session` records the end of a working session so the next one resumes from a point instead of a search. Basic Memory filters by the `type:` field, through `note_types` in `bm_search`, and never by an inner field such as `note_type`. A session filed as a `note` would therefore be invisible to the one query that justifies writing it. The retrieval path decides the type, not the size of the file.
 
 `clipping` holds a page someone else wrote. It carries four fields no other type has (`source_url`, `author`, `published`, `site`), and it is fed automatically by the Obsidian Web Clipper through `templates/obsidian-web-clipper.json`, which needs a stable target schema. The line it draws is the same one `transcript` draws against `meeting`: raw external material on one side, your own worked output on the other.
 
@@ -276,4 +276,4 @@ brings_lead:
 
 ### Impact
 
-Basic Memory builds the graph automatically. `bm tool build-context memory://sources/clients/bloom --depth 2` traverses Bloom to Alex Martin to Taylor Brooks in one query. Cross queries become possible: "all clients brought by a partner", "which partner manages which clients".
+Basic Memory builds the graph automatically. `bm tool context memory://Bloom --depth 2 --project {project}` traverses Bloom to Alex Martin to Taylor Brooks in one query. Cross queries become possible: "all clients brought by a partner", "which partner manages which clients".

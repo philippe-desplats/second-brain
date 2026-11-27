@@ -6,7 +6,7 @@ Basic Memory resolves a wiki-link `[[Entity]]` on the note `title:` only (or on
 its permalink). It does NOT resolve on `client:`, `partner:` or `name:`. Any
 entity note whose `title:` differs from its identity value makes every incoming wiki-link dangle silently:
 the link renders fine in Obsidian, the file is indexed, but the graph edge points
-to nothing and `build_context` traversal stops there.
+to nothing and `bm_context` traversal stops there.
 
 Scope and identity field per zone:
 
