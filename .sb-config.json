@@ -1,6 +1,6 @@
 {
   "schema": "sb-config/v1",
-  "boilerplate_version": "0.7.0",
+  "boilerplate_version": "0.8.0",
   "initialized": false,
   "owner": null,
   "organization": null,
@@ -15,5 +15,6 @@
   "working_language_secondary": null,
   "basic_memory_project": null,
   "curation_ritual": null,
+  "harnesses": null,
   "demo_content": "present"
 }
