@@ -38,6 +38,30 @@ class Symmetric(WorkspaceCase):
                          if ln.startswith("Asymmetries found:")).split(":")[1])
         return out, count
 
+    def test_agents_md_entities_are_checked(self):
+        self.ws.write("sources/clients/globex/AGENTS.md", client("Globex", "managed_by [[Proseware]]"))
+        self.ws.write("sources/partners/proseware/AGENTS.md", partner("Proseware"))
+        out, count = self.run_check()
+        self.assertEqual((out.returncode, count), (1, 1), out.stdout)
+        self.assertIn("sources/partners/proseware/AGENTS.md", out.stdout)
+        self.ws.write("sources/partners/proseware/AGENTS.md", partner("Proseware", "manages [[Globex]]"))
+        self.assertEqual(self.run_check()[1], 0)
+
+    def test_legacy_claude_md_entities_are_still_checked(self):
+        self.write("clients", "globex", client("Globex", "managed_by [[Proseware]]"))
+        self.ws.write("sources/partners/proseware/AGENTS.md", partner("Proseware"))
+        out, count = self.run_check()
+        self.assertEqual(count, 1, out.stdout)
+        self.assertIn("sources/partners/proseware/AGENTS.md", out.stdout)
+
+    def test_both_names_in_one_folder_prefer_agents_md_without_double_count(self):
+        self.ws.write("sources/clients/globex/AGENTS.md", client("Globex", "managed_by [[Proseware]]"))
+        self.write("clients", "globex", client("Globex", "managed_by [[Proseware]]"))
+        self.ws.write("sources/partners/proseware/AGENTS.md", partner("Proseware"))
+        out, count = self.run_check()
+        self.assertEqual(count, 1, out.stdout)
+        self.assertNotIn("globex/CLAUDE.md", out.stdout)
+
     def test_no_argument_runs_the_check(self):
         self.write("clients", "globex", client("Globex", "managed_by [[Proseware]]"))
         self.write("partners", "proseware", partner("Proseware", "manages [[Globex]]"))

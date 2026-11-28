@@ -1,20 +1,16 @@
 ---
 name: curate
 description: Weekly or monthly workspace review. Automatically detects candidates for `/distill` (recurring patterns not yet distilled), `/archive` (dormant entities), and `/moc-new` (dense topics without a MOC). Presents a report grouped by action and lets the user trigger each skill through interactive validation. Aligned with the periodic curation ritual ("what did I learn this week that deserves distillation, archiving, or mapping?"). NEVER writes files directly; it is a suggestion orchestrator, not an autonomous executor. Use for a weekly review (end of week), a monthly review (first of the month), or after an intense writing period.
-argument-hint: "[-s scope] [-w window] [-min N] [-only distill|archive|moc] [-r report-only] [-a auto]"
-model: opus
-allowed-tools:
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - AskUserQuestion
-  - TaskCreate
-  - TaskUpdate
-  - Skill
+allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion TaskCreate TaskUpdate Skill
 ---
+
+## Arguments
+
+`/curate [-s scope] [-w window] [-min N] [-only distill|archive|moc] [-r report-only] [-a auto]`
+
+Flags, input and examples are detailed below.
+
+Questions to the owner follow `AGENTS.md`, Asking the owner.
 
 <objective>
 Periodically scan the workspace to identify curation opportunities: distilling recurring patterns into `knowledge/`, archiving dormant entities into `archives/`, and creating MOCs for dense, unmapped topics. Present a grouped report to the user and trigger the matching skills (`/distill`, `/archive`, `/moc-new`) based on their validation.
@@ -68,7 +64,7 @@ Out of scope: writing or moving files directly; that is the job of the delegated
 |------|------|---------|
 | 00 | `steps/step-00-init.md` | Parse args, validate scope |
 | 01 | `steps/step-01-scan.md` | Detect distill/archive/moc candidates with criteria |
-| 02 | `steps/step-02-report.md` | Present the grouped report, AskUserQuestion per candidate |
+| 02 | `steps/step-02-report.md` | Present the grouped report, a question to the owner per candidate |
 | 03 | `steps/step-03-execute.md` | Delegate to validated skills, track executions |
 
 </step_files>
@@ -107,8 +103,8 @@ Out of scope: writing or moving files directly; that is the job of the delegated
 <execution_rules>
 - **Numeric detection, not instinct**: every candidate must produce a score and the reason behind the score (count, dates, etc.)
 - **No direct writes**: this skill orchestrates, it never writes into the workspace (except optional logs)
-- **Per-candidate validation**: unless `{auto_mode}`, each candidate goes through an individual AskUserQuestion (or grouped if the volume is high)
-- **Clean delegation**: call the `/distill`, `/archive`, `/moc-new` skills via the Skill tool, never reimplement them inline
+- **Per-candidate validation**: unless `{auto_mode}`, each candidate goes through an individual question to the owner (or grouped if the volume is high)
+- **Clean delegation**: call the `/distill`, `/archive`, `/moc-new` skills by loading each skill (see `AGENTS.md`, Invoking a skill), never reimplement them inline
 - **Idempotence**: running `/curate` twice in a row must give the same result if nothing changed
 - **Review log**: optionally create a note `atlas/reviews/{YYYY-MM-DD}-review.md` for traceability (validated in step-03)
 </execution_rules>

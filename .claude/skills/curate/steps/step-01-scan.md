@@ -61,7 +61,7 @@ Add to `{candidates_distill}`:
 
 ### 2. Scan `/archive` candidates (dormant entities)
 
-**Criterion**: `last_updated` of the `CLAUDE.md` or the last modified file > `{min_inactive_months}` months.
+**Criterion**: `last_updated` of the `AGENTS.md` or the last modified file > `{min_inactive_months}` months.
 
 ```bash
 # For each client and partner

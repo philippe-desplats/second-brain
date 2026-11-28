@@ -36,7 +36,7 @@ Split the remainder on the first " - ". The first part is `{entity_name}`, the s
 - **No entity:** ask for the client or prospect name.
 - **No need:** ask for a one-line description of what they need.
 
-Use AskUserQuestion or a plain prompt.
+Ask the owner, or use a plain prompt.
 
 ### 3. Derive the slug and check local context
 
@@ -45,7 +45,7 @@ Use AskUserQuestion or a plain prompt.
 
 ### 4. Note profile availability
 
-Read the root `CLAUDE.md` profile block. If the owner is `NOT CONFIGURED`, stop and tell the user to run `/sb-init`: a proposal needs an owner and an offer.
+Read the root `AGENTS.md` profile block. If the owner is `NOT CONFIGURED`, stop and tell the owner to run the `sb-init` skill: a proposal needs an owner and an offer.
 
 ### 5. Summary and transition
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Check symmetric relations on client-context and partner-context CLAUDE.md files.
+Check symmetric relations on client-context and partner-context AGENTS.md files
+(CLAUDE.md, the legacy name, is read where AGENTS.md is absent).
 
 Required pairs:
     managed_by (client) ↔ manages (partner)
@@ -30,6 +31,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import frontmatter as F  # noqa: E402
 from check_helpers import WIKILINK_PATTERN, scalar  # noqa: E402
+from note_types import ENTITY_CONTEXT_NAMES  # noqa: E402
 
 WORKSPACE = Path(__file__).resolve().parent.parent.parent
 CLIENTS = WORKSPACE / "sources" / "clients"
@@ -92,10 +94,19 @@ def parse_relations(body: str) -> list[tuple[str, str]]:
     return relations
 
 
+def context_files(zone: Path) -> list[Path]:
+    """The context file of each entity folder, `AGENTS.md` first, never both of a folder."""
+    found: dict[Path, Path] = {}
+    for name in ENTITY_CONTEXT_NAMES:
+        for path in zone.glob("*/" + name):
+            found.setdefault(path.parent, path)
+    return sorted(found.values())
+
+
 def load_all() -> list[Entity]:
     """Every client and partner context file, clients first."""
-    entities = [Entity("client", p) for p in sorted(CLIENTS.glob("*/CLAUDE.md"))]
-    entities += [Entity("partner", p) for p in sorted(PARTNERS.glob("*/CLAUDE.md"))]
+    entities = [Entity("client", p) for p in context_files(CLIENTS)]
+    entities += [Entity("partner", p) for p in context_files(PARTNERS)]
     return entities
 
 

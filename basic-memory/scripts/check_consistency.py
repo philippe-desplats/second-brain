@@ -60,7 +60,7 @@ SKILL_DIR = WORKSPACE / ".claude" / "skills"
 # `.claude/`, the `.base` views and the documentation are exactly what it
 # audits, so it walks the whole tree rather than `corpus.iter_corpus_notes`.
 # It never writes.
-IGNORED_SEGMENTS = {".git", "node_modules", ".obsidian", "__pycache__", "tmp"}
+IGNORED_SEGMENTS = {".git", "node_modules", ".obsidian", "__pycache__", "tmp", ".agents"}
 
 # Meta fields every note carries, declared in no schema's frontmatter block.
 META_FIELDS = {"type", "schema_version"}
@@ -206,7 +206,7 @@ def check_wikilinks() -> list[dict]:
     findings = []
     for path in iter_files(WORKSPACE, "*.md"):
         rel = path.relative_to(WORKSPACE).as_posix()
-        if rel.startswith((".claude/", "docs/", "templates/", "basic-memory/schemas/")):
+        if rel.startswith((".claude/", ".agents/", "docs/", "templates/", "basic-memory/schemas/")):
             continue  # documentation and templates link to illustrative names
         text = strip_fences(path.read_text(encoding="utf-8"))
         for target, offset in link_targets(text):
@@ -231,7 +231,7 @@ def check_topic_slugs() -> list[dict]:
     findings = []
     for path in iter_files(WORKSPACE, "*.md"):
         rel = path.relative_to(WORKSPACE).as_posix()
-        if rel.startswith((".claude/", "docs/", "templates/", "basic-memory/", "archives/")):
+        if rel.startswith((".claude/", ".agents/", "docs/", "templates/", "basic-memory/", "archives/")):
             continue
         # Inline `[a, b]` and the block list Basic Memory writes read alike.
         for slug in as_list(read_frontmatter(path), "topics"):

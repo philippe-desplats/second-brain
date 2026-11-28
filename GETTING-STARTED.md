@@ -1,13 +1,14 @@
 # Getting started: your first week
 
-`/sb-init` gives you a configured workspace. This guide turns it into a habit. It reads the same whether you drive the workspace from Claude Code or from Claude Cowork: where you see a slash command, Cowork users ask for the same thing in plain words (the skills are markdown instructions in `.claude/skills/`, for example "read `.claude/skills/capture/SKILL.md` and file this email"). One rule above all: feed the wedge flow you named in your charter before anything else.
+`/sb-init` gives you a configured workspace. This guide turns it into a habit. It reads the same in any agent harness (Claude Code, Codex, Gemini CLI, Copilot, Cursor and the others listed in [docs/harnesses.md](docs/harnesses.md)): where you see a slash command, use your harness's own way to run a skill, or ask for the same thing in plain words (the skills are markdown instructions in `.claude/skills/`, for example "read `.claude/skills/capture/SKILL.md` and file this email"). One rule above all: feed the wedge flow you named in your charter before anything else.
 
 ## Day 1: file three real things
 
 Take the last three meaningful artifacts of your work (an email you sent, meeting notes, a document you produced) and file them:
 
+Open the folder in your agent (for example `claude`, `codex` or `gemini`), then:
+
 ```
-claude
 > /capture   (paste the content, it finds the right place)
 ```
 
@@ -23,7 +24,7 @@ For each client or partner you touched this week, make sure a context file exist
 > create the context file for my client Globex
 ```
 
-The agent interviews you briefly (tone, addressing, language, constraints) and writes `sources/clients/globex/CLAUDE.md`. This is the highest-leverage file in the system: every email and deliverable generated for that entity reads it first.
+The agent interviews you briefly (tone, addressing, language, constraints) and writes `sources/clients/globex/AGENTS.md`. This is the highest-leverage file in the system: every email and deliverable generated for that entity reads it first.
 
 ## Day 4-5: work normally, capture as you go
 
@@ -31,7 +32,7 @@ Use the production skills on real work: `/ops-email` for a reply you actually ne
 
 ## Day 6: close a session, then reopen it
 
-At the end of a real working session, before you close the terminal:
+At the end of a real working session, before you close the session:
 
 ```
 > /close-session
@@ -49,7 +50,7 @@ The daily journal is the lighter version of the same idea. If you use Obsidian, 
 
 It scans the week, and proposes what to distill, archive, or map. With one week of data it will mostly find nothing: that is fine. You are installing the ritual, not harvesting yet. Approve or reject each suggestion; nothing moves without you.
 
-If you know you will forget, automate the reminder: `/sb-init` (step 6) can schedule `basic-memory/scripts/curation_reminder.py` weekly on macOS, Linux, or Windows. It drops a note in `inbox/` and fires a system notification; you then open your Claude session and run `/curate -w 7` (or `-r` to just generate the report file into `atlas/reviews/` before deciding).
+If you know you will forget, automate the reminder: `/sb-init` (step 6) can schedule `basic-memory/scripts/curation_reminder.py` weekly on macOS, Linux, or Windows. It drops a note in `inbox/` and fires a system notification; you then open an agent session and run `/curate -w 7` (or `-r` to just generate the report file into `atlas/reviews/` before deciding).
 
 ## Week 2 and beyond
 

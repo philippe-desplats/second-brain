@@ -13,8 +13,10 @@ Scope and identity field per zone:
     atlas/people/*.md                    name
     atlas/topics/*.md                    name
     atlas/services/*.md                  name
-    sources/clients/*/CLAUDE.md          client
-    sources/partners/*/CLAUDE.md         partner
+    sources/clients/*/AGENTS.md          client
+    sources/partners/*/AGENTS.md         partner
+
+(`CLAUDE.md` is still read where `AGENTS.md` is absent, the legacy name.)
 
 Conservative by design:
 - Dry-run is the default, --apply is required to write.
@@ -52,16 +54,33 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import frontmatter as F  # noqa: E402
 from corpus import WORKSPACE, is_corpus_note, rel_posix  # noqa: E402
-from note_types import REPAIR_HINT, field_damage  # noqa: E402
+from note_types import ENTITY_CONTEXT_NAMES, REPAIR_HINT, field_damage  # noqa: E402
 
 # zone name -> (glob pattern relative to workspace, identity frontmatter field)
 ZONES: dict[str, tuple[str, str]] = {
     "people": ("atlas/people/*.md", "name"),
     "topics": ("atlas/topics/*.md", "name"),
     "services": ("atlas/services/*.md", "name"),
-    "clients": ("sources/clients/*/CLAUDE.md", "client"),
-    "partners": ("sources/partners/*/CLAUDE.md", "partner"),
+    "clients": ("sources/clients/*/AGENTS.md", "client"),
+    "partners": ("sources/partners/*/AGENTS.md", "partner"),
 }
+
+
+def zone_files(root: Path, pattern: str) -> list[Path]:
+    """The files a zone pattern reaches, the legacy context name included.
+
+    A pattern naming `AGENTS.md` also reaches the `CLAUDE.md` of a folder that
+    has no `AGENTS.md`, so an unmigrated fork keeps working and a folder holding
+    both is read once, through its `AGENTS.md`.
+    """
+    canonical, legacy = ENTITY_CONTEXT_NAMES[0], ENTITY_CONTEXT_NAMES[1:]
+    if not pattern.endswith("/" + canonical):
+        return sorted(root.glob(pattern))
+    found = {p.parent: p for p in root.glob(pattern)}
+    for name in legacy:
+        for p in root.glob(pattern[: -len(canonical)] + name):
+            found.setdefault(p.parent, p)
+    return sorted(found.values())
 
 H1_RE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
 
@@ -120,7 +139,7 @@ def process(path: Path, zone: str, identity_field: str, apply: bool,
 
     action = "insert" if old_title is None else "replace"
     if apply:
-        F.write_file(path, doc, set_title(fm, identity))
+        F.write_file(path, doc, set_title(fm, identity), root=root)
 
     return Result(rel, zone, identity, old_title, action, "", h1_diverges)
 
@@ -143,7 +162,7 @@ def main(argv=None, root: Path = WORKSPACE) -> int:
 
     for zone in zones:
         pattern, identity_field = ZONES[zone]
-        for path in sorted(root.glob(pattern)):
+        for path in zone_files(root, pattern):
             if not is_corpus_note(rel_posix(path, root), root):
                 continue
             results.append(process(path, zone, identity_field, args.apply, root))

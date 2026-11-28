@@ -41,16 +41,16 @@ settings:
 
 # Schema, Project Brief
 
-A `README.md` or `CLAUDE.md` file at the root of a project. Describes the objective, the context, the planned activities, the folder structure and the decisions. This schema covers both cases:
+A `README.md` or `AGENTS.md` file at the root of a project. Describes the objective, the context, the planned activities, the folder structure and the decisions. This schema covers both cases:
 
 - **`README.md`**, human entry point, documentation-oriented
-- **Project `CLAUDE.md`** (e.g. `sources/internal/kubernetes-cluster/CLAUDE.md`), agent instructions loaded automatically
+- **Project `AGENTS.md`** (e.g. `sources/internal/kubernetes-cluster/AGENTS.md`), agent instructions, loaded by most harnesses when a file in the folder is opened
 
-When a project has both, the `CLAUDE.md` takes priority for agent instructions, the `README.md` for human documentation.
+When a project has both, the `AGENTS.md` takes priority for agent instructions, the `README.md` for human documentation.
 
 ## Location
 
-`sources/{zone}/{entity}/{project}/README.md` or `CLAUDE.md`
+`sources/{zone}/{entity}/{project}/README.md` or `AGENTS.md`
 
 `{zone}` is a zone under `sources/` and `{entity}` a client or partner folder; entity-less zones such as `internal` and `personal` hold their projects directly under the zone.
 
@@ -93,7 +93,7 @@ When a project has both, the `CLAUDE.md` takes priority for agent instructions, 
 - `sources/internal/community/README.md` (community)
 - `sources/internal/automation-workflows/README.md` (lightweight operational)
 - `sources/internal/sunset-experiment/README.md` (rejected post mortem)
-- `sources/internal/kubernetes-cluster/CLAUDE.md` (project with an instruction CLAUDE.md)
+- `sources/internal/kubernetes-cluster/AGENTS.md` (project with an instruction AGENTS.md)
 
 ## Minimal example
 

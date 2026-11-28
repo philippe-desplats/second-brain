@@ -50,6 +50,33 @@ class Orphans(WorkspaceCase):
                       note("title: Lonely\ntype: note\n", "Nothing here.\n"))
         self.assertEqual(self.orphans(), ["sources/internal/ops/2026-07-02-note-lonely.md"])
 
+    def test_root_structural_files_are_never_orphans(self):
+        for name in ("AGENTS.md", "CLAUDE.md", "README.md"):
+            self.ws.write(name, "# Root\n")
+        self.assertEqual(self.orphans(), [])
+
+    def test_zone_readme_stays_exempt_while_entity_agents_md_is_a_note(self):
+        for zone in ("atlas", "sources", "knowledge", "inbox"):
+            self.ws.write(zone + "/README.md", "# Zone\n")
+        self.ws.write("sources/clients/x/AGENTS.md",
+                      note("title: X\nclient: X\ntype: client-context\n", "# X\n"))
+        self.assertEqual(self.orphans(), ["sources/clients/x/AGENTS.md"])
+
+    def test_entity_and_project_agents_md_are_checked(self):
+        self.ws.write("sources/clients/globex/AGENTS.md",
+                      note("title: Globex\nclient: Globex\ntype: client-context\n", "# Globex\n"))
+        self.ws.write("sources/clients/globex/web/AGENTS.md",
+                      note("title: Globex Web\ntype: project-brief\n", "# Web\n"))
+        self.ws.write("sources/internal/pricing/CLAUDE.md",
+                      note("title: Pricing\ntype: project-brief\n", "# Pricing\n"))
+        self.assertEqual(self.orphans(), ["sources/clients/globex/AGENTS.md",
+                                          "sources/clients/globex/web/AGENTS.md",
+                                          "sources/internal/pricing/CLAUDE.md"])
+
+    def test_agents_segment_copy_of_the_skills_is_ignored(self):
+        self.ws.write(".agents/skills/demo/notes.md", "# Copy\n")
+        self.assertEqual(self.orphans(), [])
+
     def test_journal_skipped_in_block_form(self):
         self.ws.write("sources/personal/journal/2026-07-02-note-journal.md",
                       note("title: Journal\ntype: note\nnote_type: 'journal'\n", "Today.\n"))

@@ -1,6 +1,6 @@
 # Writing rules (shared)
 
-Generic anti-AI writing rules for any skill that produces outward-facing prose: emails, meeting minutes, proposals, and other deliverables an entity will read. These rules sit on top of `.claude/rules/communication.md` and the per-entity preferences declared in each entity's `CLAUDE.md`. They carry no house voice: the voice comes from the owner profile, the entity preferences, and the calibration step in each skill.
+Generic anti-AI writing rules for any skill that produces outward-facing prose: emails, meeting minutes, proposals, and other deliverables an entity will read. These rules sit on top of `.claude/rules/communication.md` and the per-entity preferences declared in each entity's `AGENTS.md`. They carry no house voice: the voice comes from the owner profile, the entity preferences, and the calibration step in each skill.
 
 ## Non-negotiable bans
 
@@ -33,7 +33,7 @@ Avoid the autopilot vocabulary: leverage, synergy, delighted to, thrilled to, re
 
 ## Respect the entity
 
-- Write in the language declared in the entity `CLAUDE.md` `language:` field. Fall back to the working language in the root `CLAUDE.md` profile block.
+- Write in the language declared in the entity `AGENTS.md` `language:` field. Fall back to the working language in the root `AGENTS.md` profile block.
 - Match the `addressing:` field, formal or informal. In French this is the vous or tu choice. In other languages it maps to register and to first-name versus title basis.
 - Honor every item in the entity `constraints:` list.
 - Follow the punctuation of the target language. French puts a space before : ! ? and uses the currency symbol rather than the spelled-out word. English uses no space before those marks. Keep list items consistent: a comma to close intermediate items, a period on the last.

@@ -78,7 +78,7 @@ No subfolders for personal projects, keep it minimal.
 
 **If `{project_category}` = clients AND `{entity_name}` context file doesn't exist:**
 
-Ask the user for key client context, then create `sources/clients/{entity_name}/CLAUDE.md` with the canonical `client-context` schema (strict validation, see `basic-memory/schemas/client-context.md`):
+Ask the user for key client context, then create `sources/clients/{entity_name}/AGENTS.md` with the canonical `client-context` schema (strict validation, see `basic-memory/schemas/client-context.md`):
 
 ```markdown
 ---
@@ -122,7 +122,7 @@ language: {fr | en | other}
 
 Check the `zones` array in `.sb-config.json` before writing anything. If it does not list `partners`, the zone was pruned at init: `sources/partners/` and `basic-memory/schemas/partner-context.md` are both gone, so creating this file would write an invalid note against a deleted schema. Do NOT create it. Tell the user the workspace has no partners zone, and refile the project under a kept zone (`clients` for a paid engagement, `internal` otherwise) by going back to step 1.
 
-If `partners` is listed, ask the user for key partner context, then create `sources/partners/{entity_name}/CLAUDE.md` with the canonical `partner-context` schema (strict validation, see `basic-memory/schemas/partner-context.md`):
+If `partners` is listed, ask the user for key partner context, then create `sources/partners/{entity_name}/AGENTS.md` with the canonical `partner-context` schema (strict validation, see `basic-memory/schemas/partner-context.md`):
 
 ```markdown
 ---
@@ -158,7 +158,7 @@ language: {fr | en | other}
 
 Important for `partner-context` validation (strict): the allowed `partnership_type` values are **`commercial | technical | strategic | white-label | mixed`**. The values `reseller`, `co-ownership`, `affiliation` go in the optional `contract:` field (a separate enum), not in `partnership_type:`.
 
-Use AskUserQuestion to gather minimum viable context:
+Ask the owner for the minimum viable context:
 
 ```yaml
 questions:
@@ -243,7 +243,7 @@ topics: [topic-slug, other-topic-slug]   # real slugs from atlas/topics/, not in
 Read and internalize all relevant context files:
 
 - `sources/internal/CONTEXT.md` (already loaded from step-01)
-- `sources/clients/{entity_name}/CLAUDE.md` or `sources/partners/{entity_name}/CLAUDE.md` (if client or partner project)
+- `sources/clients/{entity_name}/AGENTS.md` or `sources/partners/{entity_name}/AGENTS.md` (if client or partner project)
 - Any existing files in the project folder (if resuming a project)
 - **The last session memory, if the project has one.** Run `ls -1 {project_path}/sessions/ 2>/dev/null | sort | tail -1`, read that file, and open the session by restating its first `[next]` item to the user. That file is the point of resumption written by `/close-session` at the end of the previous session; skipping it means re-deriving state someone already wrote down, which is the exact cost the session memory exists to remove.
 - Any existing related files in `sources/clients/`, `sources/partners/`, `sources/internal/`, or `sources/personal/` (search by project name or topic)
@@ -293,7 +293,7 @@ Present a complete brief to the user:
 
 The skill is complete. The user can now start working with full context loaded. Their next message will be a work instruction, not a skill step.
 
-**Do NOT use AskUserQuestion here.** Simply present the brief and wait for the user's first real instruction.
+**Do NOT ask a structured question here.** Simply present the brief and wait for the user's first real instruction.
 
 ---
 

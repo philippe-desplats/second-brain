@@ -1,21 +1,16 @@
 ---
 name: distill
 description: "Distill a recurring pattern from sources/ into knowledge/. Scans the notes to find N similar occurrences (by topic, tag, or keyword), generates a pattern, playbook, guide, runbook, or decision in knowledge/{ops,tech,business}/ with the canonical Basic Memory frontmatter, and creates back-links to the distilled sources. Core of the layered second-brain philosophy: it turns recurring artifacts into reusable knowledge. Use when a subject, technique, or process recurs at least 3 times in the workspace and deserves to be codified."
-argument-hint: "<topic|--auto> [-t ops|tech|business] [-k pattern|playbook|guide|runbook|decision] [-m N] [-a auto]"
-model: opus
-allowed-tools:
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - Agent
-  - Skill
-  - AskUserQuestion
-  - TaskCreate
-  - TaskUpdate
+allowed-tools: Bash Read Write Edit Glob Grep Agent Skill AskUserQuestion TaskCreate TaskUpdate
 ---
+
+## Arguments
+
+`/distill <topic|--auto> [-t ops|tech|business] [-k pattern|playbook|guide|runbook|decision] [-m N] [-a auto]`
+
+Flags, input and examples are detailed below.
+
+Questions to the owner follow `AGENTS.md`, Asking the owner.
 
 <objective>
 Distill repeated knowledge in `sources/` into reusable notes in `knowledge/`. Aim for the **3rd repetition**, the pattern documented in `.claude/rules/knowledge.md`. Without this workflow, `knowledge/` stays empty forever and the second brain never performs its distillation role.

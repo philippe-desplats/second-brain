@@ -96,6 +96,26 @@ class Classify(unittest.TestCase):
         self.assertEqual(classify("sources/clients/globex/web/README.md"), "project-brief")
         self.assertIsNone(classify("sources/internal/CONTEXT.md"))
 
+    def test_agents_md_context_files(self):
+        self.assertEqual(classify("sources/clients/globex/AGENTS.md"), "client-context")
+        self.assertEqual(classify("sources/partners/proseware/AGENTS.md"), "partner-context")
+        self.assertEqual(classify("sources/clients/globex/web/AGENTS.md"), "project-brief")
+        self.assertEqual(classify("sources/internal/pricing/AGENTS.md"), "project-brief")
+
+    def test_legacy_claude_md_still_classified(self):
+        self.assertEqual(classify("sources/clients/globex/CLAUDE.md"), "client-context")
+        self.assertEqual(classify("sources/partners/proseware/CLAUDE.md"), "partner-context")
+        self.assertEqual(classify("sources/clients/globex/web/CLAUDE.md"), "project-brief")
+
+    def test_agents_md_outside_sources_has_no_type(self):
+        self.assertIsNone(classify("AGENTS.md"))
+        self.assertIsNone(classify("knowledge/ops/AGENTS.md"))
+
+    def test_entity_context_names_constant(self):
+        import note_types
+        self.assertEqual(note_types.ENTITY_CONTEXT_NAMES, ("AGENTS.md", "CLAUDE.md"))
+        self.assertEqual(note_types.BRIEF_FILES, ("README.md", "AGENTS.md", "CLAUDE.md"))
+
     def test_knowledge_subtype_is_never_retyped(self):
         rel = "knowledge/business/guide-pricing-plan-landing.md"
         self.assertIsNone(classify(rel, "guide"))

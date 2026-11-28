@@ -49,7 +49,7 @@ Pick the smallest structure that does the job:
 - Active voice, concrete verbs. Specific asks ("tell me if Tuesday works"), never "do not hesitate to".
 - Use a list only for three or more concrete items. A comma closes intermediate items, a period closes the last.
 - In reply mode, answer every point raised in `{thread}`. Do not re-quote the whole original. Match the sender's register.
-- Sign with the owner identity from the root `CLAUDE.md` profile block.
+- Sign with the owner identity from the root `AGENTS.md` profile block.
 
 ### 4. Self-audit
 
@@ -86,7 +86,7 @@ For a reply, omit the subject unless it should change.
 
 ### 6. Refine
 
-Ask with AskUserQuestion:
+Ask the owner (see `AGENTS.md`, Asking the owner):
 
 ```yaml
 questions:

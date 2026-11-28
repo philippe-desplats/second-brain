@@ -21,7 +21,7 @@ Example, `2026-07-02-01-out-project-kickoff.md`.
 1. Scan the target `emails/` folder to find the current day's sequence
 2. Take the next number
 3. Follow the `email` schema for the frontmatter (required fields, enums)
-4. Check the communication preferences in the client or partner `CLAUDE.md`
+4. Check the communication preferences in the client or partner `AGENTS.md`
 
 ## Status and traceability
 

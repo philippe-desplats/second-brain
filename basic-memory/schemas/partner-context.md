@@ -79,15 +79,15 @@ settings:
 
 # Schema, Partner Context
 
-The `CLAUDE.md` file at the root of a partner folder. Canonical source of the rules, `.claude/rules/entities.md`. The 4 structuring elements (`partnership_type`, `active_tracks`, `contract`, `business_referral`) are captured in the frontmatter; `partnership_type` and `active_tracks` are strictly required, while `contract` and `business_referral` are optional to allow progressive declaration.
+The `AGENTS.md` file at the root of a partner folder. Canonical source of the rules, `.claude/rules/entities.md`. The 4 structuring elements (`partnership_type`, `active_tracks`, `contract`, `business_referral`) are captured in the frontmatter; `partnership_type` and `active_tracks` are strictly required, while `contract` and `business_referral` are optional to allow progressive declaration.
 
 This schema enforces `partner:` as the identity field (not `client:`).
 
 ## Location
 
-- `sources/partners/{partner}/CLAUDE.md`
+- `sources/partners/{partner}/AGENTS.md`
 
-Live example in this repository, `sources/partners/proseware/CLAUDE.md`.
+Live example in this repository, `sources/partners/proseware/AGENTS.md`.
 
 ## Required markdown sections
 

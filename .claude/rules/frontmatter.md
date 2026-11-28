@@ -14,14 +14,14 @@ Inside a schema, the frontmatter contract lives in its `settings.frontmatter:` b
 
 | Type | Schema | Location | Key observations |
 |---|---|---|---|
-| client-context | [client-context.md](../../basic-memory/schemas/client-context.md) | `sources/clients/{X}/CLAUDE.md` | `[preference]`, `[contact]`, `[contract]`, `[milestone]`, `[risk]`, `[stack]` |
-| partner-context | [partner-context.md](../../basic-memory/schemas/partner-context.md) | `sources/partners/{X}/CLAUDE.md` | `[active-track]`, `[business-referral]`, `[contact]`, `[preference]`, `[risk]` |
+| client-context | [client-context.md](../../basic-memory/schemas/client-context.md) | `sources/clients/{X}/AGENTS.md` | `[preference]`, `[contact]`, `[contract]`, `[milestone]`, `[risk]`, `[stack]` |
+| partner-context | [partner-context.md](../../basic-memory/schemas/partner-context.md) | `sources/partners/{X}/AGENTS.md` | `[active-track]`, `[business-referral]`, `[contact]`, `[preference]`, `[risk]` |
 
 ### Project schema (1, strict validation)
 
 | Type | Schema | Location |
 |---|---|---|
-| project-brief | [project-brief.md](../../basic-memory/schemas/project-brief.md) | `{project}/README.md` or `CLAUDE.md` |
+| project-brief | [project-brief.md](../../basic-memory/schemas/project-brief.md) | `{project}/README.md` or `AGENTS.md` |
 
 ### Cross-cutting schemas (3, strict validation)
 
@@ -51,9 +51,9 @@ Inside a schema, the frontmatter contract lives in its `settings.frontmatter:` b
 
 | Guiding question | If yes, choose |
 |---|---|
-| Is it a client's `CLAUDE.md`? | `client-context` |
-| Is it a partner's `CLAUDE.md`? | `partner-context` |
-| Is it a project's `README.md` or `CLAUDE.md`? | `project-brief` |
+| Is it a client's `AGENTS.md`? | `client-context` |
+| Is it a partner's `AGENTS.md`? | `partner-context` |
+| Is it a project's `README.md` or `AGENTS.md`? | `project-brief` |
 | Is it a real person (contact, decision-maker)? | `person` |
 | Is it a recurring subject (technology, concept, domain)? | `topic` |
 | Is it a service or offer you provide? | `service` |
@@ -77,8 +77,8 @@ Basic Memory resolves a wiki-link on the `title:` field only. It never looks at 
 
 The rule that follows, for every entity note:
 
-- `sources/clients/{X}/CLAUDE.md`, set `title:` equal to `client:`
-- `sources/partners/{X}/CLAUDE.md`, set `title:` equal to `partner:`
+- `sources/clients/{X}/AGENTS.md`, set `title:` equal to `client:`
+- `sources/partners/{X}/AGENTS.md`, set `title:` equal to `partner:`
 - `atlas/{people,topics,services}/*.md`, set `title:` equal to `name:`
 - descriptive wording (a suffix, a tagline) belongs in the H1 or in an observation, never in `title:`
 
@@ -88,7 +88,7 @@ Audit the corpus with `python3 basic-memory/scripts/align_entity_titles.py` (dry
 
 ### Obsidian resolution, `aliases:`
 
-Obsidian resolves a wiki-link on the file basename only, case-insensitive. It reads neither `title:` nor `aliases:` for resolution, which is an intentional design decision rather than a gap. Every context file being `CLAUDE.md` and every project brief being `README.md`, a link written for Basic Memory reaches nothing in Obsidian and the graph shows ghost nodes.
+Obsidian resolves a wiki-link on the file basename only, case-insensitive. It reads neither `title:` nor `aliases:` for resolution, which is an intentional design decision rather than a gap. Every context file being `AGENTS.md` and every project brief being `README.md`, a link written for Basic Memory reaches nothing in Obsidian and the graph shows ghost nodes.
 
 Two things close that gap, and both are needed.
 
@@ -172,7 +172,7 @@ Check via `python3 basic-memory/scripts/check_symmetric_relations.py --check`.
 
 ## Maintenance scripts
 
-In `basic-memory/scripts/` (23 files, 19 scripts and the 4 modules they share):
+In `basic-memory/scripts/` (24 files, 20 scripts and the 4 modules they share):
 
 - `frontmatter.py`, not a pass: the one frontmatter reader and writer, imported by every script that reads or rewrites a frontmatter, so the grammar Basic Memory writes (column-0 lists, values folded at 80 columns) is implemented once
 - `corpus.py`, not a pass: the shared definition of what counts as a note, and `iter_corpus_notes`, the one walk every pass uses
@@ -191,7 +191,8 @@ In `basic-memory/scripts/` (23 files, 19 scripts and the 4 modules they share):
 - `check_orphans.py`, flags notes with no inbound or outbound relations
 - `generate_indexes.py`, regenerates the `*-static.md` indexes in `atlas/maps/`
 - `align_entity_titles.py`, sets the `title:` of entity notes to their identity field, dry-run by default
-- `add_title_aliases.py`, copies a cited note's `title:` into its `aliases:`, also run by the `.claude/hooks/title_aliases.py` hook
+- `add_title_aliases.py`, copies a cited note's `title:` into its `aliases:`, also run by the `.claude/hooks/title_aliases.py` hook. Its read-only `--check` flag exits with code 1 when an alias is missing, and is what `.githooks/pre-commit` runs
+- `check_harness_compat.py`, read-only, verifies the workspace works in every agent harness: the skills against the Agent Skills spec, the `.agents/skills` and `.kiro/skills` links, no `CLAUDE.md` anywhere in the tree, `AGENTS.md` under 32 KiB, no tool name that exists in a single harness, and the hook configs being valid
 - `check_unresolved_relations.py`, reports the wiki-links that resolve to nothing in the Basic Memory index
 - `check_consistency.py`, validates skill frontmatter templates against the schemas, flags properties a Bases view reads but no schema declares, and reports dead wiki-links
 - `audit_field_usage.py`, measures the real fill rate of every declared schema field and surfaces fields used in notes but declared nowhere

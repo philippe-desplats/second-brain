@@ -1,6 +1,6 @@
 ---
 name: step-02-report
-description: Present the grouped report and allow per-candidate validation via AskUserQuestion
+description: Present the grouped report and allow per-candidate validation
 prev_step: steps/step-01-scan.md
 next_step: steps/step-03-execute.md
 ---
@@ -92,7 +92,7 @@ ever written.
 
 **For each candidate** in the order `candidates_distill` -> `candidates_archive` -> `candidates_moc`. Prune candidates are not part of this loop: they carry no score, no reason and no suggested command, and they are not executed here.
 
-Present via AskUserQuestion:
+Ask the owner (see `AGENTS.md`, Asking the owner):
 
 ```yaml
 questions:
@@ -162,7 +162,7 @@ Skipped: {N skipped}
 OK to run in step-03?
 ```
 
-Via AskUserQuestion (except in `{auto_mode}`):
+Ask the owner (except in `{auto_mode}`):
 
 ```yaml
 options:
@@ -214,7 +214,7 @@ status: archived
 - about [[Workspace Methodology]]
 ```
 
-Validate via AskUserQuestion. If yes, create in step-03. If no, do not create.
+Ask the owner to validate. If yes, create in step-03. If no, do not create.
 
 ---
 

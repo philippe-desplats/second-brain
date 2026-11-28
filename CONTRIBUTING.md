@@ -4,7 +4,7 @@ Thanks for taking the time to contribute. This document explains how to report i
 
 ## Reporting bugs and requesting features
 
-Open a [GitHub issue](https://github.com/philippe-desplats/second-brain/issues). For a bug, include which Claude surface you use (Claude Code terminal or desktop, Cowork, or another agent), the skill or script involved, what you asked, and what you expected versus what happened. Excerpts of the skill's output help a lot; strip any personal or client data from them first.
+Open a [GitHub issue](https://github.com/philippe-desplats/second-brain/issues). For a bug, include which agent harness and version you use (Claude Code, Codex, Gemini CLI, Copilot, Cursor, Cowork or another, see `docs/harnesses.md`), whether the entity `AGENTS.md` loaded in your session, the skill or script involved, what you asked, and what you expected versus what happened. Excerpts of the skill's output help a lot; strip any personal or client data from them first.
 
 ## Proposing a change
 
@@ -19,7 +19,9 @@ Small fixes (typos, docs, obvious bugs) can go straight to a pull request. For l
 
 This repository is a workspace template, not application code. The quality bar is about conventions staying coherent:
 
-- **Skills** follow the existing structure: a `SKILL.md` entry point, `steps/*.md` chained by `next_step`, explicit execution rules, human validation before any write. Register new skills in `.claude/skill-registry.md`.
+- **Skills** follow the existing structure: a `SKILL.md` entry point, `steps/*.md` chained by `next_step`, explicit execution rules, human validation before any write. Register new skills in `.claude/skill-registry.md`. A skill passes `uvx --from skills-ref agentskills validate .claude/skills/{name}`, names no single-harness tool in its prose (write "ask the owner (see AGENTS.md, Asking the owner)", not a tool name), carries no `argument-hint` or `model:` frontmatter key (the hint goes in an `## Arguments` body section), and writes `allowed-tools` as a space-separated string.
+- **Harness loading**: a change that touches instruction loading, hooks or skill discovery states in its pull request which harness it was tested in. Moving a row of `docs/harnesses.md` to "tested" needs the observed behaviour, not the documentation's claim.
+- **No `CLAUDE.md`**: never create one, at the root or in any folder. Claude Code then stops loading the `AGENTS.md` of that folder, so entity contexts silently vanish. Claude-only guidance goes in `.claude/rules/claude-code.md`, and `python3 -I basic-memory/scripts/check_harness_compat.py` fails on a stray file.
 - **Schemas** in `basic-memory/schemas/` are the single source of truth for frontmatter. A schema change must update the decision matrix in `.claude/rules/frontmatter.md` and any template that uses it. `check_consistency.py` catches the templates you forgot: it validates every frontmatter example inside a skill against the schemas, which is how three of them were found writing notes that belonged to no type.
 - **Scripts** in `basic-memory/scripts/` are Python 3 standard library only, no dependencies, and must degrade gracefully on pruned zones (missing `sources/partners/` must never crash them). The one sanctioned exception is an optional `import yaml`, used only by the tests and by the read-only `check_frontmatter_damage.py` to add its `invalid-yaml` diagnostic. It is never required, and its absence is reported rather than raised. Each script stays runnable on its own by importing its 4 shared sibling modules from the same directory, which also works under `python3 -I`: `frontmatter.py` (the frontmatter grammar), `corpus.py` (what counts as a note, and the walks), `note_types.py` (which type a path implies, which project folder and brief a note belongs to, and the guard before a field is rewritten) and `check_helpers.py` (wiki-links, note names and schema fields for the checks). The frontmatter grammar and the definition of a note are never duplicated: a script reads and writes frontmatter through `frontmatter.py` and walks the notes through `corpus.py`.
 - **Placeholders**: demo and example content uses fictional names only (Acme for the owner organization, Globex and Initech for clients, Jane Doe for people, `example.com` domains). Never use real people, companies, or paths.
@@ -40,10 +42,11 @@ python3 basic-memory/scripts/check_symmetric_relations.py --check
 python3 basic-memory/scripts/check_double_frontmatter.py
 python3 basic-memory/scripts/generate_indexes.py --output-dir /tmp/idx-test
 python3 basic-memory/scripts/audit_field_usage.py
+python3 -I basic-memory/scripts/check_harness_compat.py
 python3 -I -m unittest discover -s basic-memory/scripts -p 'test_*.py'
 ```
 
-Those seven run on a bare clone and validate this repository. They are the ones that matter.
+Those eight run on a bare clone and validate this repository. They are the ones that matter.
 
 **`bm schema validate` does not validate this repository unless you make it.** It runs against whichever Basic Memory project is configured on your machine, which is your own vault, not the clone. Running it without registering the clone first returns a green result about something else entirely. To actually validate the clone:
 
@@ -73,7 +76,7 @@ Every release ships **two** upgrade prompts in its `CHANGELOG.md` section and in
 
 There are two because the cloners split into two populations that need opposite things, and one prompt serving both would be a decision tree an agent navigates badly. The first prompt opens by measuring the split, `git diff --stat vX..HEAD` over the infrastructure paths, and routes to the second when it finds anything. Without that gate the first prompt overwrites a fork and reports the damage afterwards, which is what it did in its first draft.
 
-It exists because the git recipe in the README covers only part of a release. The recipe checks out `.claude`, `basic-memory/schemas`, `basic-memory/scripts` and `templates`, and deliberately never touches a data zone. Three kinds of change fall outside it, and every release so far has had at least one:
+It exists because the git recipe in the README covers only part of a release. The recipe checks out `.claude`, `.agents`, `.codex`, `.gemini`, `.qwen`, `.kiro`, `.githooks`, `.aider.conf.yml`, `basic-memory/schemas`, `basic-memory/scripts`, `templates`, `docs/harnesses.md`, `AGENTS.md` and `.gitignore`, and deliberately never touches a data zone. Three kinds of change fall outside it, and every release so far has had at least one:
 
 - **Files that live in a data zone.** The 0.5.0 Bases views ship in `atlas/maps/`, so the recipe pulls none of them. New files conflict with nothing and can be checked out by name, but somebody has to say which.
 - **Files the cloner owns and has edited.** `atlas/home.md` is their hub. It cannot be checked out without destroying their work, so the change has to be described well enough that an agent can merge it.
@@ -81,7 +84,7 @@ It exists because the git recipe in the README covers only part of a release. Th
 
 The two differ in kind, not in length. The stock prompt carries **operations**: exact commands, exact paths, in order. The customized prompt carries **intents**: for each change, the problem it solves and the shape it took upstream, so an agent can re-derive it inside a fork whose files no longer match ours. It must also name what upstream deliberately did not change, or the agent helpfully "fixes" it, and it must allow **skip** as a first-class outcome with a one-line justification, since a fork that already solves a problem its own way should not receive our version of the solution on top.
 
-Write the stock prompt against the real diff, not from memory: `git diff --name-only vX..vY | grep -vE '^(\.claude/|basic-memory/(schemas|scripts)/|templates/)'` lists exactly what the recipe misses. Four properties are not negotiable, since this prompt runs unattended against somebody's only copy of their notes:
+Write the stock prompt against the real diff, not from memory: `git diff --name-only vX..vY | grep -vE '^(\.claude/|\.agents/|\.codex/|\.gemini/|\.qwen/|\.kiro/|\.githooks/|\.aider\.conf\.yml$|basic-memory/(schemas|scripts)/|templates/|docs/harnesses\.md$|AGENTS\.md$|\.gitignore$)'` lists exactly what the recipe misses. Four properties are not negotiable, since this prompt runs unattended against somebody's only copy of their notes:
 
 1. **It refuses to start on a dirty tree**, so the whole upgrade stays revertible with one command.
 2. **It never deletes.** An upgrade adds and rewrites; anything else is a decision the owner makes themselves.

@@ -40,7 +40,7 @@ Remainder     -> brief (new) or pasted thread (reply)
 
 ### 3. Note profile availability
 
-Read the root `CLAUDE.md` profile block. If the owner is `NOT CONFIGURED`, stop and tell the user to run `/sb-init` first: the email cannot be signed without an owner identity.
+Read the root `AGENTS.md` profile block. If the owner is `NOT CONFIGURED`, stop and tell the owner to run the `sb-init` skill first: the email cannot be signed without an owner identity.
 
 ### 4. Transition
 

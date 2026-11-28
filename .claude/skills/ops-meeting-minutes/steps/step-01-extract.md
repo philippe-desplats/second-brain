@@ -32,7 +32,7 @@ Pull the structured facts out of `{raw_content}` and confirm them with the user.
 
 - **Participants:** full names when given, with role or company if stated. Flag missing names as [unspecified].
 - **Date:** an explicit date in the content wins, then the sniff from step 0, then the transcript or file date, then ask.
-- **Entity and project:** scan for a company or entity name. Locate the folder, trying `sources/clients/{slug}/`, then `sources/partners/{slug}/`, then internal or personal. Set `{entity_zone}` and read the entity `CLAUDE.md` if present, for the `language:` and project list. Resolve `{language}` from the entity, falling back to the working language in the root `CLAUDE.md` profile block. If several projects exist, infer from the topics.
+- **Entity and project:** scan for a company or entity name. Locate the folder, trying `sources/clients/{slug}/`, then `sources/partners/{slug}/`, then internal or personal. Set `{entity_zone}` and read the entity `AGENTS.md` if present, for the `language:` and project list. Resolve `{language}` from the entity, falling back to the working language in the root `AGENTS.md` profile block. If several projects exist, infer from the topics.
 
 ### 3. Extract the substance
 
@@ -65,7 +65,7 @@ OPEN QUESTIONS
 - {question}
 ```
 
-Then ask with AskUserQuestion:
+Then ask the owner (see `AGENTS.md`, Asking the owner):
 
 ```yaml
 questions:

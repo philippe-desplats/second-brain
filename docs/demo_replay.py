@@ -194,7 +194,7 @@ def main() -> None:
     think("Brewed", 4)
     tool("Write(sources/internal/second-brain-charter.md)", "Wrote 24 lines")
     tool("Write(sources/internal/CONTEXT.md)", "Wrote 18 lines")
-    tool("Update(CLAUDE.md)", "Profile block filled, zones pruned")
+    tool("Update(AGENTS.md)", "Profile block filled, zones pruned")
     tool("Update(.sb-config.json)", "initialized: true")
     print()
 

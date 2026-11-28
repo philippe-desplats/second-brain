@@ -81,12 +81,12 @@ Disambiguation: a partner is a **bilateral relationship** (resell, white-label, 
 ### 3. Check Existing Context
 
 **If client project:**
-- Check if `sources/clients/{entity-name}/CLAUDE.md` exists
+- Check if `sources/clients/{entity-name}/AGENTS.md` exists
 - If yes, note it for loading in step-02
 - If no, flag as missing context to create
 
 **If partner project:**
-- Check if `sources/partners/{entity-name}/CLAUDE.md` exists
+- Check if `sources/partners/{entity-name}/AGENTS.md` exists
 - If yes, note it for loading in step-02
 - If no, flag as missing context to create
 
@@ -113,7 +113,7 @@ Present a brief summary to the user:
 **Missing context**: {what's missing, if anything}
 ```
 
-Then use AskUserQuestion to confirm:
+Then ask the owner to confirm:
 
 ```yaml
 questions:
@@ -146,7 +146,7 @@ questions:
 ❌ Not reading business context before analyzing
 ❌ Starting to do the actual work instead of just understanding
 ❌ Skipping the confirmation step
-❌ **CRITICAL**: Not using AskUserQuestion for confirmation
+❌ **CRITICAL**: Not asking the owner for confirmation
 
 ---
 

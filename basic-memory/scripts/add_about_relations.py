@@ -17,7 +17,7 @@ excludes, a `repo-files/` or `prompts/` folder among them.
 
 The target is the project brief, as `basic-memory/schemas/email.md` and
 `meeting.md` type `about`: the `title:` of the `README.md` of the note's
-project folder, or of its `CLAUDE.md`, declaring `type: project-brief`. The
+project folder, or of its `AGENTS.md` (`CLAUDE.md` for an unmigrated fork), declaring `type: project-brief`. The
 entity is never the target, `client:` or `partner:` carries it. A note whose
 project has no such brief, or a brief without a title, gets nothing and is
 listed in the report with the reason. Which folder is the project and which

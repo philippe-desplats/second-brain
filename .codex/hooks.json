@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claude/hooks/title_aliases.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -11,7 +11,7 @@ next_step: steps/step-03-report.md
 
 - One release at a time, ascending. Finish a release, including its verification phase and the commit gate, before reading the next prompt.
 - Follow the prompt literally. Its rules (never delete a note, diff before any write into a data zone, stop on an unmet precondition) are your rules for that release.
-- Every "wait for my approval" in a prompt is an AskUserQuestion to the owner, carrying the exact diff or list it asks you to show. Never approve on the owner's behalf.
+- Every "wait for my approval" in a prompt is a question to the owner (see AGENTS.md, Asking the owner), carrying the exact diff or list it asks you to show. Never approve on the owner's behalf.
 - The prompt speaks as the owner ("my workspace", "tell me"). Read "me" as the owner you are talking to.
 
 ## Sequence
@@ -32,6 +32,14 @@ If a command of the prompt fails, show the exact error and ask the owner how to 
 
 Anything that installs or downloads outside the workspace is a gate of its own, even when the prompt offers it. A prompt may suggest `uvx --with pyyaml` to get PyYAML: ask the owner before running it, and accept the documented gap when they decline.
 
+Instruction files and infrastructure paths. A release may check out `AGENTS.md`, `.claude`, `.agents`, `.codex`, `.gemini`, `.qwen`, `.kiro`, `.githooks` and `.aider.conf.yml`. Treat them as follows, whatever the prompt does not spell out:
+
+- `AGENTS.md` carries the owner's profile block between `<!-- sb-init:profile -->` and `<!-- /sb-init:profile -->`. Never overwrite it blindly: show the diff, keep the owner's block as it is, and take only the changes outside the markers.
+- A workspace upgraded from before 0.8.0 has a root `CLAUDE.md` holding that profile block, and entity contexts named `CLAUDE.md`. The prompt moves them to `AGENTS.md`. Never restore a `CLAUDE.md` afterwards, and never leave one next to its `AGENTS.md`: Claude Code stops loading the `AGENTS.md` of any folder at or below a `CLAUDE.md`.
+- `.agents/skills` and `.kiro/skills` are symlinks to `../.claude/skills`. Symlink preferred. A real folder whose `SKILL.md` files are identical to `.claude/skills` is tolerated with a warning (Windows without symlink support), and a drifted copy, a text file or a missing path is a defect to report. The repair is `ln -s ../.claude/skills .agents/skills` (and the same for `.kiro/skills`), run only with the owner's approval. When git cannot create the symlinks on this machine, keep the index entries with `git update-index --skip-worktree .agents/skills .kiro/skills` and never stage a copied folder in the commit gate: check `git status --short` for regular files under those 2 paths before the commit and leave them out.
+- A release prompt runs under the copy of this skill already installed (the snapshot of step-00), not under the version the release ships. A prompt therefore carries its own rules for anything this skill does not know yet, and this skill never assumes a rule a later release added.
+- `.githooks` is inert until `git config core.hooksPath .githooks` is set. Never set it without asking, it is the owner's choice and local to the clone.
+
 If the stock prompt tells you the workspace is customized and sends you to the other prompt, switch to the customized prompt of the same release and say so.
 
 ### 3. Verify
@@ -42,9 +50,9 @@ Then confirm `boilerplate_version` now reads `X.Y.Z`, and set `{current_version}
 
 ### 4. Commit gate
 
-Reach this gate only once the prompt is finished, its last phase included, since that phase usually sets `boilerplate_version`. The next release needs a clean tree. Show `git status --short`, then ask the owner with AskUserQuestion:
+Reach this gate only once the prompt is finished, its last phase included, since that phase usually sets `boilerplate_version`. The next release needs a clean tree. Show `git status --short`, then ask the owner (see AGENTS.md, Asking the owner):
 
-- commit now with the message `chore: upgrade workspace to X.Y.Z`, which you run only on that answer, with `git add -A` first since a checkout leaves some files staged and others not
+- commit now with the message `chore: upgrade workspace to X.Y.Z`, which you run only on that answer, staging first with `git add -u` plus every new path of the release named explicitly, since a checkout leaves some files staged and others not. Never `git add -A`: on a clone without symlink support, `.agents/skills` and `.kiro/skills` may be local copies that must never be committed
 - they commit themselves, and you wait until `git status --porcelain` is empty
 - stop here, the tree stays as it is
 

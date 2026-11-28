@@ -82,7 +82,7 @@ def main(argv=None, root=WORKSPACE):
     for path, rel, doc, fm, target in changes:
         print(f"  [{target:>11}] {rel}")
         if apply:
-            F.write_file(path, doc, F.set_field(fm, "type", target))
+            F.write_file(path, doc, F.set_field(fm, "type", target), root=root)
 
     print()
     print(f"Kept as note ({len(kept)}):")

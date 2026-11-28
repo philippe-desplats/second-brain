@@ -35,7 +35,11 @@ Standard library only.
 
 from __future__ import annotations
 
+import os
 import re
+import stat
+import sys
+import tempfile
 from dataclasses import dataclass, field as dc_field
 from pathlib import Path
 
@@ -94,6 +98,9 @@ class Doc:
     bom: bool = False
     closer: str = "---"
     closer_eol: str | None = None
+    # The whole text this Doc was split from, so a write can tell that the file
+    # changed on disk since it was read. None for a Doc built by hand.
+    source: str | None = dc_field(default=None, compare=False, repr=False)
 
 
 def _eol(line: str) -> tuple[str, str]:
@@ -135,7 +142,7 @@ def split(text: str) -> Doc | None:
         if content in CLOSERS:
             body = "".join(lines[index + 1:])
             return Doc("".join(line + "\n" for line in block_lines), body,
-                       newline, bom, content, ending)
+                       newline, bom, content, ending, text)
         block_lines.append(content.rstrip("\r") if newline == "\r\n" else content)
     return None
 
@@ -1211,14 +1218,61 @@ def read_file(path) -> tuple[Doc, Frontmatter] | tuple[None, None]:
     return doc, parse(doc.block)
 
 
-def write_file(path, doc: Doc, fm: Frontmatter | None = None) -> bool:
-    """Write `doc`, with `fm` as its block when given. True when the file changed."""
-    text = join(doc, fm)
+WRITTEN, UNCHANGED = "written", "unchanged"
+SKIPPED_CHANGED, SKIPPED_SYMLINK, SKIPPED_OUTSIDE = "changed on disk", "symlink", "outside the workspace"
+
+
+def write_status(path, doc: Doc, fm: Frontmatter | None = None, root=None) -> str:
+    """Write `doc` safely and say what happened.
+
+    Returns `WRITTEN`, `UNCHANGED`, or a skip reason: `SKIPPED_SYMLINK` for a
+    path that is a symbolic link (never written through), `SKIPPED_OUTSIDE` for
+    a real path that leaves `root` when one is given, `SKIPPED_CHANGED` when the
+    file on disk no longer equals the text `doc` was split from, so a write
+    never overwrites an edit made after the read.
+
+    The write is atomic: a temporary file in the same directory, flushed and
+    fsynced, then `os.replace`d over the target, with the original mode kept.
+    """
     p = Path(path)
+    if p.is_symlink():
+        return SKIPPED_SYMLINK
+    if root is not None:
+        try:
+            p.resolve().relative_to(Path(root).resolve())
+        except ValueError:
+            return SKIPPED_OUTSIDE
+    text = join(doc, fm)
     with open(p, encoding="utf-8", newline="") as fh:
         old = fh.read()
+    if doc.source is not None and old != doc.source:
+        return SKIPPED_CHANGED
     if old == text:
-        return False
-    with open(p, "w", encoding="utf-8", newline="") as fh:
-        fh.write(text)
-    return True
+        return UNCHANGED
+    mode = stat.S_IMODE(os.stat(p).st_mode)
+    fd, tmp = tempfile.mkstemp(dir=str(p.parent), prefix="." + p.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.chmod(tmp, mode)
+        os.replace(tmp, p)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+    return WRITTEN
+
+
+def write_file(path, doc: Doc, fm: Frontmatter | None = None, root=None) -> bool:
+    """Write `doc` through `write_status`. True when the file changed.
+
+    A skipped write prints one line on stderr and returns False.
+    """
+    status = write_status(path, doc, fm, root)
+    if status in (SKIPPED_CHANGED, SKIPPED_SYMLINK, SKIPPED_OUTSIDE):
+        print("skipped, %s: %s" % (status, path), file=sys.stderr)
+    return status == WRITTEN

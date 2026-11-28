@@ -16,20 +16,20 @@ Deleting these 7 roots removes the demo content itself:
 - `atlas/topics/lead-sourcing.md`
 - `knowledge/ops/playbook-client-onboarding.md`
 
-Removing the partner leaves one dangling line in the client file: `sources/clients/globex/CLAUDE.md` declares `referred_by [[Proseware]]` under `## Relations`. If Globex is kept and Proseware removed, drop that line too. Keep `sources/partners/.gitkeep`, it is workspace structure, not demo content.
+Removing the partner leaves one dangling line in the client file: `sources/clients/globex/AGENTS.md` declares `referred_by [[Proseware]]` under `## Relations`. If Globex is kept and Proseware removed, drop that line too. Keep `sources/partners/.gitkeep`, it is workspace structure, not demo content.
 
 This manifest (`.claude/skills/sb-init/references/demo-manifest.md`) is a skill reference, not demo content; remove it last, once the paths above are gone.
 
 ## Files
 
-sources/clients/globex/CLAUDE.md
+sources/clients/globex/AGENTS.md
 sources/clients/globex/website-redesign/README.md
 sources/clients/globex/website-redesign/emails/2026-06-15-01-in-kickoff-questions.md
 sources/clients/globex/website-redesign/emails/2026-06-16-01-reply-kickoff-answers.md
 sources/clients/globex/website-redesign/meetings/2026-06-22-meeting-kickoff.md
 sources/clients/globex/website-redesign/clippings/2026-06-24-clipping-progressive-disclosure-in-b2b-search.md
 sources/clients/globex/website-redesign/sessions/2026-06-23-session-content-inventory.md
-sources/partners/proseware/CLAUDE.md
+sources/partners/proseware/AGENTS.md
 sources/partners/proseware/lead-sourcing/README.md
 sources/partners/proseware/lead-sourcing/deliverables/2026-06-05-contract-referral-agreement.md
 knowledge/ops/playbook-client-onboarding.md

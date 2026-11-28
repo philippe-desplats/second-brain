@@ -21,21 +21,21 @@ next_step: steps/step-02-file.md
 
 If `{type_override}` is set, use it. Otherwise load `references/type-signals.md` and match `{raw_content}` against the signal matrix. Every capture resolves to exactly one canonical schema type (typical inbound: `email`, `transcript`, `meeting`, `clipping`, `note`, `research`, `brainstorm`).
 
-Confidence rule: one dominant signal set → proceed; two plausible types → ask with AskUserQuestion (two options plus Other).
+Confidence rule: one dominant signal set → proceed; two plausible types → ask the owner (see `AGENTS.md`, Asking the owner) (two options plus Other).
 
 ### 2. Resolve the entity and zone
 
 If `{entity_override}` is set, verify `sources/*/{entity_override}/` exists and use it. Otherwise:
 
 1. List candidate entities: `ls -d sources/*/*/` (entity zones present on disk, e.g. clients and partners when kept; internal and personal are project-based, not entity-based).
-2. Match signals from the content against each entity's `CLAUDE.md`: entity name, contact names, email domains, project vocabulary.
+2. Match signals from the content against each entity's `AGENTS.md`: entity name, contact names, email domains, project vocabulary.
    **A `clipping` carries none of those signals**: an external article never names your client. Match it on subject instead, against the entity's sector and its projects' vocabulary, and treat a subject match as confident only when one entity clearly fits. Otherwise the clip goes to a watch project (`sources/internal/watch/`) or stays in `inbox/`. Filing a clip under the wrong client is worse than leaving it unfiled: it will surface in that client's context forever.
 3. Decide the zone:
    - Matched entity → its zone (`clients`, or `partners` when that zone exists)
    - Owner-internal content (strategy, infra, own business) → `internal`
    - Private, non-business content → `personal`
-4. One confident match → propose it. Several or none → AskUserQuestion listing the top candidates plus "internal", "personal", and "new entity".
-5. **New entity path**: if the content concerns an entity with no folder, offer to create `sources/{zone}/{slug}/` and its `CLAUDE.md` from `templates/entity-CLAUDE-template.md` (minimal interview: tone, addressing, language). This happens in step-02 as part of the write plan, not here.
+4. One confident match → propose it. Several or none → ask the owner, listing the top candidates plus "internal", "personal", and "new entity".
+5. **New entity path**: if the content concerns an entity with no folder, offer to create `sources/{zone}/{slug}/` and its `AGENTS.md` from `templates/entity-AGENTS-template.md` (minimal interview: tone, addressing, language). This happens in step-02 as part of the write plan, not here.
 
 ### 3. Resolve the project
 

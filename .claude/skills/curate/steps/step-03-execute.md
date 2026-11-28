@@ -10,7 +10,7 @@ next_step: null
 ## MANDATORY EXECUTION RULES:
 
 - 🛑 NEVER reimplement inline what the delegated skills already do
-- ✅ ALWAYS invoke via the Skill tool, not via Bash
+- ✅ ALWAYS load the skill (see `AGENTS.md`, Invoking a skill), not via Bash
 - ✅ ALWAYS execute actions sequentially (not in parallel, they may touch the same graph)
 - ✅ ALWAYS produce an execution log even if the user skips the review log
 
@@ -35,7 +35,7 @@ For each action in `{validated_actions}` (in the order above):
 Skill("archive", "{path-or-args}")
 ```
 
-Follow the output. If the skill triggers an AskUserQuestion (second-level confirmation), let the user answer. On exit, capture:
+Follow the output. If the skill asks the owner a question (second-level confirmation), let the user answer. On exit, capture:
 - `{published_path}` (the new location in archives/)
 - Status: success or abort
 

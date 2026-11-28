@@ -1,6 +1,6 @@
 ---
 name: step-02-move
-description: git mv into archives/, update the parent CLAUDE.md
+description: git mv into archives/, update the parent AGENTS.md
 prev_step: steps/step-01-confirm.md
 next_step: steps/step-03-reindex.md
 ---
@@ -11,7 +11,7 @@ next_step: steps/step-03-reindex.md
 
 - 🛑 NEVER `cp + rm`, always `git mv` to preserve history
 - ✅ ALWAYS create the parent folder in archives/ if absent
-- ✅ ALWAYS update the parent CLAUDE.md if archiving a project (not the whole entity)
+- ✅ ALWAYS update the parent AGENTS.md if archiving a project (not the whole entity)
 
 ## EXECUTION SEQUENCE:
 
@@ -47,11 +47,11 @@ git mv {source_path} {target_path}
 - The source folder is not tracked (untracked) -> use `mv` (without git)
 - Check the result with `ls`
 
-### 4. Update the parent CLAUDE.md (if project scope)
+### 4. Update the parent AGENTS.md (if project scope)
 
 **If `{is_project_scope}` = true** (we archive only a project, not the whole entity):
 
-Read `{parent_claude_md}` = `sources/{type-folder}/{slug}/CLAUDE.md`
+Read `{parent_agents_md}` = `sources/{type-folder}/{slug}/AGENTS.md`
 
 Add a mention at the bottom of the body:
 
@@ -65,13 +65,13 @@ Add a mention at the bottom of the body:
 
 Update `last_updated` in the frontmatter to today's date.
 
-### 5. Update the entity CLAUDE.md (if whole-entity scope)
+### 5. Update the entity AGENTS.md (if whole-entity scope)
 
 **If `{is_project_scope}` = false**:
 
-The entity's `CLAUDE.md` was moved into archives/ with it. No need to modify.
+The entity's `AGENTS.md` was moved into archives/ with it. No need to modify.
 
-But add a final note in the archived `CLAUDE.md`:
+But add a final note in the archived `AGENTS.md`:
 
 ```markdown
 ## Archived
@@ -80,7 +80,7 @@ Archived on {YYYY-MM-DD}. Previous path, `sources/{type-folder}/{slug}/`.
 Reason, `{months_inactive} months without activity` or the explicit reason if provided.
 ```
 
-Update `status: archived` in the frontmatter of the archived CLAUDE.md (an exception to the "no redundant status" rule, because here we document the factual fact of archiving for traceability).
+Do not write a `status` for the archive move: the policy is a physical move without a redundant status, and the strict context schemas only accept `active`, `inactive` or `prospect`. The `## Archived` section above and the `archives/` location carry the traceability.
 
 ### 6. Optional, update textual paths in incoming refs
 
@@ -94,7 +94,7 @@ Update `status: archived` in the frontmatter of the archived CLAUDE.md (an excep
 Archived:
 - {source_path} -> {target_path}
 - {N} file(s) moved
-- Parent CLAUDE.md updated (if project scope)
+- Parent AGENTS.md updated (if project scope)
 
 Remaining incoming refs: {N} (not auto-updated, to review)
 ```
@@ -104,14 +104,14 @@ Remaining incoming refs: {N} (not auto-updated, to review)
 ## SUCCESS METRICS:
 
 ✅ git mv succeeded
-✅ Parent or entity CLAUDE.md updated
+✅ Parent or entity AGENTS.md updated
 ✅ No file lost along the way
 ✅ Git history preserved
 
 ## FAILURE MODES:
 
 ❌ Using cp+rm instead of git mv (loses history)
-❌ Forgetting to update the parent CLAUDE.md
+❌ Forgetting to update the parent AGENTS.md
 ❌ Silently refusing if the target exists (should be blocked in step-00)
 
 ---

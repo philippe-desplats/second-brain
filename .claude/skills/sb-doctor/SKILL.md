@@ -1,7 +1,6 @@
 ---
 name: sb-doctor
 description: Workspace health check for the second brain. Runs the maintenance scripts (orphan notes, double frontmatter, symmetric relations), verifies naming and filing conventions, checks index freshness and inbox age, and produces a severity-ranked health report with the exact command to fix each finding. Read-only, never fixes anything itself. Triggers on "sb-doctor", "check the workspace", "health check", "is my second brain healthy".
-argument-hint: "[-v]"
 ---
 
 <objective>
@@ -16,6 +15,10 @@ A monthly (or whenever-in-doubt) hygiene pass over the whole workspace. It detec
 ```
 
 </quick_start>
+
+## Arguments
+
+Optional `-v`: verbose, list every affected file instead of counts.
 
 <execution_rules>
 - **Read-only.** Never write, move, or fix anything; every finding comes with the command or skill that fixes it
@@ -50,11 +53,11 @@ Notes with no incoming or outgoing wiki-link are invisible to graph navigation. 
 python3 basic-memory/scripts/check_symmetric_relations.py --check
 ```
 
-Broken pairs (managed_by without manages, etc.) corrupt the entity graph. Fix: apply the script's suggestions manually in the listed CLAUDE.md files.
+Broken pairs (managed_by without manages, etc.) corrupt the entity graph. Fix: apply the script's suggestions manually in the listed AGENTS.md files.
 
 ### 4. Filing conventions (🔴)
 
-- Files at an entity root (forbidden except CLAUDE.md/CONTEXT.md): `find sources/*/*/ -maxdepth 1 -type f ! -name 'CLAUDE.md' ! -name 'CONTEXT.md' ! -name 'README.md' ! -name '.gitkeep'`
+- Files at an entity root (forbidden except `AGENTS.md`, a `README.md` there is a finding too): `find sources/clients sources/partners -mindepth 2 -maxdepth 2 -type f ! -name 'AGENTS.md' ! -name '.gitkeep' 2>/dev/null`. `sources/internal/` is a zone root, not an entity, and is not checked here
 - Names not matching `YYYY-MM-DD-{type}-slug.md` in project folders (report count, list in verbose). Legacy files predating the convention are INFO, not CRITICAL.
 
 Fix: `git mv` to the conventional path/name; `/capture` files things correctly going forward.
@@ -97,7 +100,8 @@ Fix: `/capture -i`.
 
 - `.sb-config.json` exists and parses (`python3 -c "import json; json.load(open('.sb-config.json'))"`).
 - `initialized` is `true` (if false, the workspace never ran `/sb-init`: that is the fix).
-- Its values match the CLAUDE.md profile block (owner, profile, working language, Basic Memory project); a divergence means one was edited by hand.
+- Its values match the profile block of the root `AGENTS.md`, the lines between `<!-- sb-init:profile -->` and `<!-- /sb-init:profile -->` (owner, profile, working language, Basic Memory project); a divergence means one was edited by hand.
+- If `harnesses` is present, it is an array of strings, or `null` until `/sb-init` has asked. Absent is fine on a workspace initialized before 0.8.0, report it as INFO and point at `/sb-init -r`.
 
 Fix: re-run `/sb-init -r` to resync both, or align the drifted field manually.
 
@@ -127,6 +131,48 @@ The loop gives one summary per type, which is what makes a failure easy to locat
 
 Validates every note carrying a `type:` that matches a schema, against both that schema's frontmatter contract and its body contract. Fix: add the missing observation or relation to the note body, or correct the frontmatter field; `bm schema diff {type}` shows where a whole type has drifted from its schema. `--strict` exits with code 1 on validation errors, so this check also runs unattended in a pipeline. If `bm` is absent, the workspace is not a registered Basic Memory project, or nothing is indexed yet, report SKIPPED with that reason.
 
+### 12. Harness compatibility (🔴)
+
+```bash
+python3 -I basic-memory/scripts/check_harness_compat.py
+```
+
+Verifies what makes the workspace work in every harness, not only in Claude Code: the skills against the Agent Skills spec, the `.agents/skills` and `.kiro/skills` links, no `CLAUDE.md` anywhere in the tree, `AGENTS.md` under 32 KiB, no tool name that exists in a single harness, and the hook configs of each harness being valid. Report each finding with the fix the script prints beside it. A stray `CLAUDE.md` is the one to fix first: Claude Code then stops loading the `AGENTS.md` of that folder, so entity contexts vanish from the session without any error. Fix: move its content into `AGENTS.md` or `.claude/rules/claude-code.md` and delete the file. Per-harness setup is in `docs/harnesses.md`. A script that is missing, or exits with something other than 0 or 1, is SKIPPED with the reason. The `.agents/skills` result follows check 14.
+
+When the owner uses Claude Code (`harnesses` in `.sb-config.json`, or `command -v claude`), also report `claude --version`: below 2.1.281, some sessions read `CLAUDE.md` only and load no workspace instructions at all. Fix: upgrade Claude Code, start a new session and check with `/memory` that `AGENTS.md` is listed.
+
+### 13. Title aliases (🟡)
+
+```bash
+python3 -I basic-memory/scripts/add_title_aliases.py --check
+```
+
+A note cited by a wiki-link whose `title:` is missing from its `aliases:` is a ghost node in Obsidian. `--check` is read-only and exits with code 1 when an alias is missing. Fix: `python3 basic-memory/scripts/add_title_aliases.py` (a dry-run) then its `--apply` form. The same command guards commits when `git config core.hooksPath .githooks` is set, so also report whether that setting is active (`git config --get core.hooksPath`) as INFO, with `git config core.hooksPath .githooks` as the fix.
+
+### 14. Skills mirrors (🔴 missing, drifted or not a directory, 🟡 identical copy)
+
+```bash
+test "$(cd .agents/skills 2>/dev/null && pwd -P)" = "$(cd .claude/skills && pwd -P)" && echo ok
+```
+
+`.agents/skills` (Codex, Gemini CLI, Copilot and others) and `.kiro/skills` (Kiro) must each resolve to `.claude/skills`. Run the command for both paths. One doctrine, the same as `check_harness_compat.py`: a symlink is preferred and clean. A real directory whose `SKILL.md` files are identical to those of `.claude/skills` is tolerated with a 🟡 warning (the Windows case without symlink support), since it drifts the day a skill changes. A drifted copy, a text file or a missing path is 🔴: every skill is invisible or stale for those harnesses. Fix: `ln -s ../.claude/skills .agents/skills`, after moving a real folder aside and checking that nothing in it is missing from `.claude/skills`. Never SKIPPED on Windows, report the copy as the warning it is.
+
+### 15. Basic Memory ignore file (🔴, only if the file exists)
+
+```bash
+f="${BASIC_MEMORY_CONFIG_DIR:-$HOME/.basic-memory}/.bmignore"; test -f "$f" && grep -nxE 'AGENTS\.md|CLAUDE\.md' "$f"
+```
+
+Decide on the file's existence, never on `command -v bm`, since `bm` is often installed outside the agent shell PATH. A line that is exactly `AGENTS.md` or `CLAUDE.md` matches at every depth, so it drops every entity context from the index, the highest value notes of the graph, with no error. Fix: delete that line, and on Basic Memory 1.0 or later add `/AGENTS.md` (anchored to the project root) if the root file should stay out. `/sb-init -r` does it with confirmation. If the file does not exist, report SKIPPED.
+
+### 16. Python interpreter (🟡)
+
+```bash
+command -v python3 >/dev/null 2>&1 && python3 --version || echo "python3 missing"
+```
+
+Every maintenance script and the hooks run on `python3`. Without it the hooks fail open, meaning the title alias pass, the pre-commit guard and the compatibility check silently do nothing, and checks 1 to 3, 5bis, 6, 12 and 13 are SKIPPED. Report it first, with the fix: install Python 3.10 or later (`brew install python`, the system package manager, or python.org on Windows).
+
 </checks>
 
 <report>
@@ -146,5 +192,5 @@ Assemble a single report, worst first:
 Suggested order: {the 1-3 fixes that matter most, as ready-to-run commands}
 ```
 
-Write it in the owner's working language (see the CLAUDE.md profile block). No generic reassurance; if everything is clean, say exactly that in one line.
+Write it in the owner's working language (see the AGENTS.md profile block). No generic reassurance; if everything is clean, say exactly that in one line.
 </report>

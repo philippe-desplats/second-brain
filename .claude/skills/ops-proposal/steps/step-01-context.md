@@ -11,7 +11,7 @@ next_step: steps/step-02-draft.md
 
 - 🛑 NEVER invent context, an offer, or a price
 - ✅ ALWAYS read the internal context file for the offer and pricing
-- ✅ ALWAYS read the entity `CLAUDE.md` when it exists
+- ✅ ALWAYS read the entity `AGENTS.md` when it exists
 - 📋 YOU ARE a context analyst, not a writer
 - 🚫 FORBIDDEN to write proposal content here
 
@@ -35,7 +35,7 @@ Read `sources/internal/CONTEXT.md` and extract into `{offer_context}`:
 
 ### 2. Load the entity context
 
-Read the entity `CLAUDE.md` at `sources/{entity_zone}/{entity_slug}/CLAUDE.md` when it exists. Extract relationship history, past projects, technical stack, contacts, and the communication preferences. Store as `{entity_context}`. Resolve `{language}` from the entity `language:`, falling back to the working language in the root profile block.
+Read the entity `AGENTS.md` at `sources/{entity_zone}/{entity_slug}/AGENTS.md` when it exists. Extract relationship history, past projects, technical stack, contacts, and the communication preferences. Store as `{entity_context}`. Resolve `{language}` from the entity `language:`, falling back to the working language in the root profile block.
 
 **If no entity context exists** (new prospect): ask the user for the essentials in one prompt, company, sector, size, main contact, and the context of the request. Store the answer as `{entity_context}`.
 
@@ -56,7 +56,7 @@ Compare `{need}` against `{offer_context}`. Ask only for what is missing, in a s
 - **Timeline:** a target window or constraints.
 - **Budget range:** any figure or bracket the entity mentioned. Do not push, record what is known and leave the rest to the placeholder.
 
-Use AskUserQuestion for the gaps. Store answers in `{scope}`.
+Ask the owner for the gaps. Store answers in `{scope}`.
 
 ### 5. Validate
 
@@ -78,7 +78,7 @@ Present a synthesis:
 - Budget: {budget or "to define"}
 ```
 
-Then AskUserQuestion:
+Then ask the owner:
 
 ```yaml
 questions:

@@ -27,7 +27,7 @@ next_step: steps/step-02-report.md
 - Variables from step 0: `{period}`, `{period_start}`, `{period_end}`, `{publish_mode}`
 - Workspace root: the repository root (parent of `sources/`)
 - File naming convention: `YYYY-MM-DD-{type}-slug.md`
-- Client context files: `sources/clients/{client}/CLAUDE.md`
+- Client context files: `sources/clients/{client}/AGENTS.md`
 
 ## YOUR TASK:
 
@@ -48,8 +48,8 @@ Scan the entire workspace for files created or modified during the period, categ
 
 **B. Filesystem modification date (secondary):**
 - Use `find` with `-newer` or `-mtime` to catch files without date prefixes
-- Also catches modified files (e.g., CLAUDE.md updates)
-- Exclude: `.git/`, `node_modules/`, `.claude/`, `CLAUDE.md` files (unless specifically updated)
+- Also catches modified files (e.g., AGENTS.md updates)
+- Exclude: `.git/`, `node_modules/`, `.claude/`, `AGENTS.md` files (unless specifically updated)
 
 **Combine both lists, deduplicate by path.**
 
@@ -147,7 +147,7 @@ Store in `{clients_active}` with:
 - `ls sources/clients/` to get all client folder names
 
 **B. For each client NOT in `{clients_active}`:**
-- Check if `sources/clients/{client}/CLAUDE.md` exists
+- Check if `sources/clients/{client}/AGENTS.md` exists
 - If it exists, read it to check whether the client status is "active" or equivalent
 - Only flag as dormant if the client appears to be an active/ongoing relationship
 - Skip archived or completed clients
@@ -161,7 +161,7 @@ Store in `{clients_inactive}`:
 {
   client: string,
   last_activity: string (YYYY-MM-DD or "unknown"),
-  status: string (from CLAUDE.md if available)
+  status: string (from AGENTS.md if available)
 }
 ```
 

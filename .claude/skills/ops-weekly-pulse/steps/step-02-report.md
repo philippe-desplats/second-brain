@@ -103,7 +103,7 @@ Assemble all scan data into a structured, polished pulse report in the owner's w
 
 | Client | Last activity | Status |
 |--------|---------------|--------|
-| {client} | {last_activity_date} | {status from CLAUDE.md} |
+| {client} | {last_activity_date} | {status from AGENTS.md} |
 
 {If no dormant clients: "All active clients had activity during the period."}
 
@@ -111,7 +111,7 @@ Assemble all scan data into a structured, polished pulse report in the owner's w
 
 ## Next week
 
-{Based on {actions_pending}, open items found in CLAUDE.md, pending emails, and meeting follow-ups}
+{Based on {actions_pending}, open items found in AGENTS.md, pending emails, and meeting follow-ups}
 
 - {action item with source reference}
 - {action item with source reference}

@@ -1,11 +1,11 @@
 # Entity Context Rules (clients and partners)
 
-An **entity** is a client or a partner: a third party you maintain a working relationship with, filed under `sources/clients/{X}/` or `sources/partners/{X}/`. Each entity owns a `CLAUDE.md` context file and a set of project subdirectories. This file covers the conventions shared by both, and the distinction between the two.
+An **entity** is a client or a partner: a third party you maintain a working relationship with, filed under `sources/clients/{X}/` or `sources/partners/{X}/`. Each entity owns a `AGENTS.md` context file and a set of project subdirectories. This file covers the conventions shared by both, and the distinction between the two.
 
 ## Canonical schemas
 
-- Client `CLAUDE.md` structure and frontmatter: `basic-memory/schemas/client-context.md` (strict validation).
-- Partner `CLAUDE.md` structure and frontmatter: `basic-memory/schemas/partner-context.md` (strict validation).
+- Client `AGENTS.md` structure and frontmatter: `basic-memory/schemas/client-context.md` (strict validation).
+- Partner `AGENTS.md` structure and frontmatter: `basic-memory/schemas/partner-context.md` (strict validation).
 
 ## Client vs partner, how to decide
 
@@ -28,16 +28,16 @@ Hybrid cases (a partner who is also a client):
 
 When working inside an entity folder (`sources/clients/{X}/` or `sources/partners/{X}/`):
 
-1. `CLAUDE.md` is the primary file, loaded automatically by Claude Code
+1. `AGENTS.md` is the primary file. Most harnesses load it automatically when a file in its folder is opened, some do not (Codex loads only the folders between the repository root and its working directory), so always read it explicitly before any entity-facing output
 2. Read the communication preferences in the frontmatter **before** any entity-facing output
 3. Never invent context, ask the user when information is missing
 
 ## Nothing at the entity root
 
-**No file at the root of an entity folder**, everything goes in a project subfolder. The only exception is `CLAUDE.md`.
+**No file at the root of an entity folder**, everything goes in a project subfolder. The only exception is `AGENTS.md`.
 
 - `sources/clients/{client}/{project}/...` correct
-- `sources/clients/{client}/file.md` forbidden (except `CLAUDE.md`)
+- `sources/clients/{client}/file.md` forbidden (except `AGENTS.md`)
 
 ## Project naming
 
@@ -79,7 +79,7 @@ Check via `python3 basic-memory/scripts/check_symmetric_relations.py --check`.
 
 When entity information changes significantly:
 
-1. Update the relevant section in `CLAUDE.md`
+1. Update the relevant section in `AGENTS.md`
 2. Update `last_updated` in the frontmatter
 3. For partners, if the contractual nature changes (for example prospect -> reseller), update the `partnership_type` field (not `type`, which stays `partner-context` for BM indexing)
 4. If frontmatter fields changed, rerun `python3 basic-memory/scripts/add_observations_from_frontmatter.py --apply`

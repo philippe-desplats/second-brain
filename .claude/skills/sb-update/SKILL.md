@@ -60,9 +60,9 @@ Bring a cloned workspace from its `boilerplate_version` to a newer release witho
 </state_variables>
 
 <execution_rules>
-- **Read the steps from `{snapshot}` once step-00 has made it, never from `.claude/skills/sb-update/`.** Each release checks out `.claude`, which replaces this skill mid-run, and a step read after that would come from another version.
+- **Read the steps from `{snapshot}` once step-00 has made it, never from `.claude/skills/sb-update/`.** Each release checks out `.claude` (and the other harness infrastructure paths, `.agents .codex .gemini .qwen .kiro .githooks .aider.conf.yml`), which replaces this skill mid-run, and a step read after that would come from another version.
 - **The upgrade prompts are the authority.** Follow each one literally, phase by phase. When this skill and a prompt disagree, the prompt wins and you say so in the report.
-- **Every gate of a prompt is a gate with the owner.** "Show me the diff and wait for my approval" means AskUserQuestion with the diff, never an assumed yes. Never batch the approvals of 2 shapes or 2 intents.
+- **Every gate of a prompt is a gate with the owner.** "Show me the diff and wait for my approval" means asking the owner (see AGENTS.md, Asking the owner) with the diff, never an assumed yes. Never batch the approvals of 2 shapes or 2 intents.
 - **One release at a time, in ascending order.** Never jump to the latest prompt from an older version, each prompt states the versions it accepts.
 - **Never commit, push, or delete a note on your own.** Between 2 releases the next prompt needs a clean tree: ask the owner to commit, or commit with their explicit approval of the message, then continue.
 - **Never write upstream.** Fetch only. If `upstream` points at a URL you did not expect, stop and ask.

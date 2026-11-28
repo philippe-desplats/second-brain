@@ -36,7 +36,7 @@ Protected by design and never proposed:
     - anything corpus.py does not count as a note: prompts, repo files, captures
     - journal entries, which are a dated log and are meant to lie still
     - generated static indexes and .base views, rebuilt rather than curated
-    - structural files (README, CHANGELOG, CLAUDE.md), and atlas/home.md, the hub
+    - structural files of the workspace root (README, CHANGELOG, AGENTS.md), and atlas/home.md, the hub
     - maps and indexes (subtype moc or index), which are navigation surfaces
     - entity context files, which describe a relationship rather than a note
 
@@ -71,9 +71,10 @@ PRUNABLE_ZONES = ("sources", "knowledge", "atlas")
 # Inbound links are counted over the whole tree, corpus or not, so a link from
 # anywhere keeps a note alive. `.claude/` is left out of that count: its skills
 # and rules hold example wiki-links, which would keep any note of that name.
-INBOUND_IGNORED_SEGMENTS = IGNORED_SEGMENTS | {".claude"}
-STRUCTURAL = {"README.md", "CHANGELOG.md", "GETTING-STARTED.md", "AGENTS.md",
-              "CLAUDE.md", "CONTRIBUTING.md", "LICENSE.md"}
+INBOUND_IGNORED_SEGMENTS = IGNORED_SEGMENTS | {".claude", ".agents"}
+STRUCTURAL = {"README.md", "CHANGELOG.md", "GETTING-STARTED.md", "CONTRIBUTING.md", "LICENSE.md"}
+# Instruction files: structural at the workspace root, ordinary notes below it.
+ROOT_ONLY_STRUCTURAL = {"AGENTS.md", "CLAUDE.md"}
 # Navigation surfaces. Losing one costs more than any note it points at.
 STRUCTURAL_PATHS = {"atlas/home.md"}
 # Structural subtypes on the `note` type: a map or an index is navigation,
@@ -100,7 +101,10 @@ class Note:
 def is_protected(rel: str) -> bool:
     """A corpus note this pass never proposes, by its path alone."""
     name = rel.rsplit("/", 1)[-1]
-    return rel.endswith("-static.md") or name in STRUCTURAL or rel in STRUCTURAL_PATHS
+    # AGENTS.md and CLAUDE.md protect at the workspace root only: an entity or
+    # project AGENTS.md is a note like any other, and must stay visible to pruning.
+    return (rel.endswith("-static.md") or name in STRUCTURAL or rel in ROOT_ONLY_STRUCTURAL
+            or rel in STRUCTURAL_PATHS)
 
 
 def frontmatter(text: str) -> F.Frontmatter | None:

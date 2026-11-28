@@ -108,7 +108,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import frontmatter as F  # noqa: E402
 from check_helpers import IDENTITY_KEYS, WIKILINK_RE, as_list, note_names, scalar  # noqa: E402
 from corpus import WORKSPACE, iter_corpus_notes, iter_excluded_notes  # noqa: E402
-from note_types import (NOTE_TYPES, PROJECT_ABOUT_TYPES, classify, entity_folder,  # noqa: E402
+from note_types import (ENTITY_CONTEXT_NAMES, NOTE_TYPES, PROJECT_ABOUT_TYPES, classify, entity_folder,  # noqa: E402
                         project_brief, project_folder)
 
 try:
@@ -633,11 +633,13 @@ def about_tables(notes, root: Path = WORKSPACE) -> AboutTables:
     """Built from (rel, Frontmatter or None) pairs, every note of the scan."""
     by_rel = dict(notes)
     entities = {}
-    for rel, fm in notes:
-        folder = entity_folder(rel)
-        if folder is not None and rel == folder + "/CLAUDE.md" and fm is not None:
-            names = {scalar(fm, key) for key in IDENTITY_KEYS} | set(as_list(fm, "aliases"))
-            entities[folder] = names - {""}
+    # AGENTS.md first: a folder holding both is read through its AGENTS.md.
+    for name in ENTITY_CONTEXT_NAMES:
+        for rel, fm in notes:
+            folder = entity_folder(rel)
+            if folder is not None and rel == folder + "/" + name and fm is not None:
+                names = {scalar(fm, key) for key in IDENTITY_KEYS} | set(as_list(fm, "aliases"))
+                entities.setdefault(folder, names - {""})
     internal = {OLD_INTERNAL_ENTITY}
     try:
         config = json.loads((root / ".sb-config.json").read_text(encoding="utf-8"))

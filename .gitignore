@@ -4,6 +4,17 @@
 /.claude/worktrees/
 .mcp.json
 
+# Per-harness MCP configs (they hold a machine path to bm)
+.codex/config.toml
+.cursor/mcp.json
+.roo/mcp.json
+.amp/settings.json
+.devin/mcp_config.local.json
+opencode.json
+opencode.jsonc
+.junie/mcp/
+.kiro/settings/mcp.json
+
 # OS
 .DS_Store
 Thumbs.db

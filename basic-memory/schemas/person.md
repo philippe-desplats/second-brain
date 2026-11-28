@@ -41,7 +41,7 @@ Live example in this repository, `atlas/people/jane-doe.md`.
 
 ## Why this schema
 
-Without a `person` schema, people only exist as `[contact]` observations in the entity `CLAUDE.md` files, or as orphan wikilinks `[[Sam Rivera]]`. Impossible to query "all people who work at an active client", "all emails sent to Sam", "Alex's LinkedIn".
+Without a `person` schema, people only exist as `[contact]` observations in the entity `AGENTS.md` files, or as orphan wikilinks `[[Sam Rivera]]`. Impossible to query "all people who work at an active client", "all emails sent to Sam", "Alex's LinkedIn".
 
 ## Wikilink naming convention
 

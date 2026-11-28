@@ -14,7 +14,7 @@ Universal save logic for all skills that produce deliverables. Every skill that 
 
 ```
 1. DETECT the client
-   - From prompt, recipient, context, or loaded CLAUDE.md (fallback: CONTEXT.md)
+   - From prompt, recipient, context, or loaded AGENTS.md (fallback: CONTEXT.md)
    - If not found, ASK the user
 
 2. RESOLVE the project

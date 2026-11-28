@@ -77,15 +77,39 @@ class Indexes(Workspace):
         ])
 
     def test_active_entities_each_get_their_index(self):
-        self.write("sources/clients/globex/CLAUDE.md", CLIENT)
-        self.write("sources/partners/proseware/CLAUDE.md", PARTNER)
-        self.write("sources/clients/initech/CLAUDE.md",
+        self.write("sources/clients/globex/AGENTS.md", CLIENT)
+        self.write("sources/partners/proseware/AGENTS.md", PARTNER)
+        self.write("sources/clients/initech/AGENTS.md",
                    CLIENT.replace("Globex", "Initech").replace("active", "prospect"))
         self.generate()
         self.assertEqual(self.rows("clients-active"),
-                         ["| [[Globex]] | sources/clients/globex/CLAUDE.md | 2026-06-22 |"])
+                         ["| [[Globex]] | sources/clients/globex/AGENTS.md | 2026-06-22 |"])
         self.assertEqual(self.rows("partners-active"),
-                         ["| [[Proseware]] | sources/partners/proseware/CLAUDE.md | 2026-06-24 |"])
+                         ["| [[Proseware]] | sources/partners/proseware/AGENTS.md | 2026-06-24 |"])
+
+    def test_agents_md_entities_are_indexed(self):
+        self.write("sources/clients/globex/AGENTS.md", CLIENT)
+        self.write("sources/partners/proseware/AGENTS.md", PARTNER)
+        self.generate()
+        self.assertEqual(self.rows("clients-active"),
+                         ["| [[Globex]] | sources/clients/globex/AGENTS.md | 2026-06-22 |"])
+        self.assertEqual(self.rows("partners-active"),
+                         ["| [[Proseware]] | sources/partners/proseware/AGENTS.md | 2026-06-24 |"])
+
+    def test_index_descriptions_say_context_file(self):
+        self.write("sources/clients/globex/AGENTS.md", CLIENT)
+        self.write("sources/partners/proseware/AGENTS.md", PARTNER)
+        self.generate()
+        for name in ("clients-active", "partners-active"):
+            text = (self.out / f"{name}-static.md").read_text(encoding="utf-8")
+            self.assertIn("in their context file.", text)
+            self.assertNotIn("in their AGENTS.md", text)
+
+    def test_legacy_claude_md_entity_is_still_indexed(self):
+        self.write("sources/clients/globex/CLAUDE.md", CLIENT)
+        self.generate()
+        self.assertEqual(self.rows("clients-active"),
+                         ["| [[Globex]] | sources/clients/globex/CLAUDE.md | 2026-06-22 |"])
 
     def test_null_category_prints_empty(self):
         self.write("sources/internal/ops/README.md",
@@ -96,15 +120,15 @@ class Indexes(Workspace):
                          ["| [[Ops]] |  | sources/internal/ops/README.md | 2026-06-01 |"])
 
     def test_only_corpus_notes_are_indexed(self):
-        self.write("sources/clients/globex/CLAUDE.md", CLIENT)
-        for rel in ("sources/clients/globex/site/prompts/CLAUDE.md",
-                    "sources/clients/globex/site/repo-files/CLAUDE.md",
-                    "sources/clients/globex/site/captures/CLAUDE.md",
-                    "docs/CLAUDE.md", "templates/entity-CLAUDE-template.md"):
+        self.write("sources/clients/globex/AGENTS.md", CLIENT)
+        for rel in ("sources/clients/globex/site/prompts/AGENTS.md",
+                    "sources/clients/globex/site/repo-files/AGENTS.md",
+                    "sources/clients/globex/site/captures/AGENTS.md",
+                    "docs/AGENTS.md", "templates/entity-AGENTS-template.md"):
             self.write(rel, CLIENT)
         self.generate()
         self.assertEqual(self.rows("clients-active"),
-                         ["| [[Globex]] | sources/clients/globex/CLAUDE.md | 2026-06-22 |"])
+                         ["| [[Globex]] | sources/clients/globex/AGENTS.md | 2026-06-22 |"])
 
     def test_recent_email_subject_and_decision_are_read_whole(self):
         today = dt.date.today().isoformat()
@@ -119,7 +143,7 @@ class Indexes(Workspace):
                          [f"| {today} | Ship it | sources/clients/globex/site/emails/a.md |"])
 
     def test_partners_index_is_skipped_when_the_zone_is_pruned(self):
-        self.write("sources/clients/globex/CLAUDE.md", CLIENT)
+        self.write("sources/clients/globex/AGENTS.md", CLIENT)
         self.generate()
         self.assertFalse((self.out / "partners-active-static.md").exists())
 

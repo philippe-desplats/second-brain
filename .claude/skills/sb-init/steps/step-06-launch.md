@@ -20,9 +20,9 @@ next_step: null
 
 Take the `{charter}` wedge flow and do it for real, right now:
 
-- **Emails**: "Paste the last important email you sent or received." File it at the right path with the right name (`YYYY-MM-DD-01-{direction}-slug.md`) and full frontmatter. Create the entity folder and its `CLAUDE.md` from `templates/entity-CLAUDE-template.md` on the way if needed.
+- **Emails**: "Paste the last important email you sent or received." File it at the right path with the right name (`YYYY-MM-DD-01-{direction}-slug.md`) and full frontmatter. Create the entity folder and its `AGENTS.md` from `templates/entity-AGENTS-template.md` on the way if needed.
 - **Meeting notes**: "Give me your latest meeting notes, even rough ones." Same treatment via `meetings/`.
-- **Client context**: "Name your most important client." Create `sources/clients/{client}/CLAUDE.md` from the template, interviewing for the communication preferences.
+- **Client context**: "Name your most important client." Create `sources/clients/{client}/AGENTS.md` from the template, interviewing for the communication preferences.
 - **Reusable knowledge**: "What is the thing you re-explain most often?" Draft it as the first `knowledge/` note, with a provenance line.
 
 In quick mode, or if the owner has nothing at hand or is away: do NOT fabricate an entity or invent preferences. Point at the demo content as the working model (if it was kept) and record "create your first real entity context" as the top next step in the final summary. A fabricated client would poison the workspace's trust from day one.
@@ -43,9 +43,9 @@ Explain the single ritual:
 
 > "Once a week, run `/curate -w 7`. It scans what accumulated, and proposes what to distill into knowledge, what to archive, what deserves a map. You approve or reject each suggestion. That is the whole discipline; everything else follows from it."
 
-Ask which day suits them, set `curation_ritual` in `.sb-config.json` (e.g. `"friday, /curate -w 7"`), and mirror a line in the CLAUDE.md profile block: `Curation ritual: {day}, /curate -w 7`.
+Ask which day suits them, set `curation_ritual` in `.sb-config.json` (e.g. `"friday, /curate -w 7"`), and mirror a line in the AGENTS.md profile block: `Curation ritual: {day}, /curate -w 7`.
 
-Then offer to automate the REMINDER (optional, individual confirmation, same pattern as the Basic Memory reindex in step 5). The scheduled job never runs the assistant: it executes `basic-memory/scripts/curation_reminder.py`, which drops a reminder note in `inbox/` and fires an OS notification. The owner then opens Claude Code and runs `/curate -w 7` themselves (`-r` if they just want the report file first).
+Then offer to automate the REMINDER (optional, individual confirmation, same pattern as the Basic Memory reindex in step 5). The scheduled job never runs the assistant: it executes `basic-memory/scripts/curation_reminder.py`, which drops a reminder note in `inbox/` and fires an OS notification. The owner then opens their agent harness and runs `/curate -w 7` themselves (or asks for the `curate` skill by name where the harness has no slash commands) (`-r` if they just want the report file first).
 
 ```bash
 python3 {workspace-path}/basic-memory/scripts/curation_reminder.py
@@ -77,6 +77,7 @@ git add -A && git commit -m "chore: initialize second brain workspace"
 | Charter | sources/internal/second-brain-charter.md |
 | Business context | sources/internal/CONTEXT.md |
 | First note | {path of the note filed in 1} |
+| Harnesses | {harnesses, or "none selected"} |
 | Basic Memory | {bm_project or "not used"} |
 | Ritual | {day}: /curate -w 7 |
 

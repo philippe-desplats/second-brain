@@ -99,6 +99,25 @@ class Resolution(Workspace):
         about.run(self.root, apply=True)
         self.assertIn("## Relations\n\n- about [[Acme Site Redesign]]\n", path.read_text(encoding="utf-8"))
 
+    def test_agents_md_brief_is_found(self):
+        self.write("sources/clients/acme/site/AGENTS.md", brief("Acme Site Agents"))
+        path = self.write("sources/clients/acme/site/meetings/2026-01-01-meeting-k.md", MEETING)
+        about.run(self.root, apply=True)
+        self.assertIn("- about [[Acme Site Agents]]\n", path.read_text(encoding="utf-8"))
+
+    def test_legacy_claude_md_brief_is_found(self):
+        self.write("sources/clients/acme/site/CLAUDE.md", brief("Acme Site Legacy"))
+        path = self.write("sources/clients/acme/site/meetings/2026-01-01-meeting-k.md", MEETING)
+        about.run(self.root, apply=True)
+        self.assertIn("- about [[Acme Site Legacy]]\n", path.read_text(encoding="utf-8"))
+
+    def test_readme_brief_wins_over_agents_md(self):
+        self.write("sources/clients/acme/site/README.md", brief("From Readme"))
+        self.write("sources/clients/acme/site/AGENTS.md", brief("From Agents"))
+        path = self.write("sources/clients/acme/site/meetings/2026-01-01-meeting-k.md", MEETING)
+        about.run(self.root, apply=True)
+        self.assertIn("- about [[From Readme]]\n", path.read_text(encoding="utf-8"))
+
     def test_partner_email_gets_its_project(self):
         self.write("sources/partners/initech/resale/README.md", brief("Initech Resale"))
         path = self.write("sources/partners/initech/resale/emails/2026-01-01-01-out-offer.md", MEETING)

@@ -17,7 +17,7 @@ next_step: null
 
 ### 1. Present the draft to the user
 
-Except if `{auto_mode}` = true, present the full draft (frontmatter + body) and ask via AskUserQuestion:
+Except if `{auto_mode}` = true, present the full draft (frontmatter + body) and ask the owner (see `AGENTS.md`, Asking the owner):
 
 ```yaml
 questions:
@@ -44,7 +44,7 @@ questions:
 mkdir -p knowledge/{target}/
 ```
 
-Write `{draft_content}` into `{draft_path}` via the Write tool.
+Write the file: put `{draft_content}` into `{draft_path}`.
 
 ### 3. Create the back-links in the sources
 

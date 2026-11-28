@@ -38,7 +38,7 @@ Present to the user:
 Are you sure you want to archive?
 ```
 
-AskUserQuestion:
+Ask the owner:
 - Yes, archive anyway (equivalent to `-f`)
 - No, abandon
 
@@ -71,11 +71,11 @@ These references will keep pointing to `sources/{type}/{slug}/` after archiving.
 Do you still validate?
 ```
 
-AskUserQuestion (except in `{auto_mode}`).
+Ask the owner (except in `{auto_mode}`).
 
 ### 5. Check the frontmatter status
 
-If the entity has a `CLAUDE.md` with `status:` in the frontmatter:
+If the entity has an `AGENTS.md` with `status:` in the frontmatter:
 
 - If `status: active`, alert: "The project is still marked active. Sure?"
 - If `status: done` or `status: cancelled` for a long time, OK.
@@ -92,7 +92,7 @@ Planned archive:
 - Mode: {actual | dry-run}
 ```
 
-Final confirmation via AskUserQuestion (except in `{auto_mode}`).
+Final confirmation, asked to the owner (except in `{auto_mode}`).
 
 ---
 

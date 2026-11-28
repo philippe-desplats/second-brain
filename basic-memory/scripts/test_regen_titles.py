@@ -37,6 +37,20 @@ class EntityContext(unittest.TestCase):
         self.assertEqual(ws.read(rel),
                          "---\ntitle: Hooli\nclient: Hooli\ntype: client-context\n---\n\n# Hooli, Context\n")
 
+    def test_agents_md_title_is_identity(self):
+        ws = Workspace(self)
+        rel = "sources/clients/hooli/AGENTS.md"
+        ws.write(rel, "---\ntitle: AGENTS\nclient: Hooli\ntype: client-context\n---\n\n# Hooli, Context\n")
+        run(regen_titles.main, ["--apply"], root=ws.root)
+        self.assertEqual(title_of(ws.read(rel)), "Hooli")
+
+    def test_agents_md_project_brief_title_is_never_agents(self):
+        ws = Workspace(self)
+        rel = "sources/clients/hooli/web/AGENTS.md"
+        ws.write(rel, "---\ntitle: AGENTS\n---\n\n# Hooli Website\n")
+        run(regen_titles.main, ["--apply"], root=ws.root)
+        self.assertEqual(title_of(ws.read(rel)), "Hooli Website")
+
     def test_partner_title_is_identity(self):
         ws = Workspace(self)
         rel = "sources/partners/proseware/CLAUDE.md"

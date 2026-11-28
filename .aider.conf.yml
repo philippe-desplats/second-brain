@@ -1,0 +1,3 @@
+# Aider reads no instruction file by default. Load the workspace instructions on every run.
+read:
+  - AGENTS.md

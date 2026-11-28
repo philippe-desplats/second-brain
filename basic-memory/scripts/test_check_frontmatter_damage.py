@@ -27,6 +27,7 @@ sys.path.insert(0, str(HERE))
 from test_check_helpers import WorkspaceCase, note  # noqa: E402
 
 import check_frontmatter_damage as D  # noqa: E402
+import frontmatter as F  # noqa: E402
 
 FIXTURES = HERE / "tests_fixtures" / "damage"
 LONG = ("Globex Website Redesign, discovery workshop outcomes and the content "
@@ -425,8 +426,8 @@ class AboutEntityNotProject(DamageCase):
 
     PROJECT = "Globex Website Redesign"
 
-    def context(self, organization=None):
-        self.ws.write("sources/clients/globex/CLAUDE.md",
+    def context(self, organization=None, name="CLAUDE.md"):
+        self.ws.write("sources/clients/globex/" + name,
                       note("title: Globex\nclient: Globex\ntype: client-context\nschema_version: 1\n", "# Globex\n"))
         self.ws.write("sources/clients/globex/website-redesign/README.md",
                       note("title: %s\naliases: [%s]\ntype: project-brief\nschema_version: 1\n"
@@ -442,6 +443,18 @@ class AboutEntityNotProject(DamageCase):
         self.assertEqual((hit["path"], hit["line"], hit["end_line"], hit["replacement"], hit["needs_review"]),
                          (PLACES["about-entity-meeting.txt"], 19, 19,
                           ["- about [[%s]]" % self.PROJECT], False))
+
+    def test_entity_context_named_agents_md_is_recognised(self):
+        self.context(name="AGENTS.md")
+        self.place("about-entity-meeting.txt")
+        hit = self.one("about-entity-not-project")
+        self.assertEqual(hit["replacement"], ["- about [[%s]]" % self.PROJECT])
+
+    def test_legacy_claude_md_entity_context_is_still_recognised(self):
+        self.context(name="CLAUDE.md")
+        self.place("about-entity-meeting.txt")
+        hit = self.one("about-entity-not-project")
+        self.assertEqual(hit["replacement"], ["- about [[%s]]" % self.PROJECT])
 
     def test_link_dropped_when_the_pass_already_added_the_project(self):
         self.context()
@@ -718,6 +731,16 @@ class CheckText(unittest.TestCase):
         text = "---\ntitle: 'Atelier : l''inventaire\ntype: meeting\n  du site'\n---\nBody\n"
         shapes = [h.shape for h in D.check_text(text, "sources/internal/ops/meetings/2026-01-01-meeting-x.md")]
         self.assertEqual(shapes, ["type-inside-folded-title"])
+
+
+class BothContextNames(unittest.TestCase):
+    def test_agents_md_wins_over_claude_md_in_either_order(self):
+        def fm(client):
+            return F.parse("title: %s\nclient: %s\ntype: client-context\n" % (client, client))
+        agents = ("sources/clients/globex/AGENTS.md", fm("Globex"))
+        legacy = ("sources/clients/globex/CLAUDE.md", fm("Old Name"))
+        for notes in ([agents, legacy], [legacy, agents]):
+            self.assertEqual(D.about_tables(notes).entities, {"sources/clients/globex": {"Globex"}})
 
 
 if __name__ == "__main__":

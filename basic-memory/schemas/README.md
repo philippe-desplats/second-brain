@@ -53,14 +53,14 @@ Entity-typed fields such as `about` appear in both, written in the frontmatter a
 
 | Schema | Role |
 |---|---|
-| [client-context.md](client-context.md) | Client `CLAUDE.md`, communication preferences and relations |
-| [partner-context.md](partner-context.md) | Partner `CLAUDE.md`, partnership nature and relations |
+| [client-context.md](client-context.md) | Client `AGENTS.md`, communication preferences and relations |
+| [partner-context.md](partner-context.md) | Partner `AGENTS.md`, partnership nature and relations |
 
 ### Project schema (usable in every workspace zone)
 
 | Schema | Role |
 |---|---|
-| [project-brief.md](project-brief.md) | Project `README.md` or `CLAUDE.md` |
+| [project-brief.md](project-brief.md) | Project `README.md` or `AGENTS.md` |
 
 ### Cross-cutting entity schemas
 
@@ -243,7 +243,7 @@ The `check_symmetric_relations.py` script in `../scripts/` verifies these pairs 
 
 Suppose a small brand (`Bloom`) is a product of a white-label partner (`Alex Martin`). It is at once a client (you deliver a website) and a property of the partner. The two context files declare mirror relations:
 
-### `sources/clients/bloom/CLAUDE.md` declares
+### `sources/clients/bloom/AGENTS.md` declares
 
 ```yaml
 ---
@@ -256,7 +256,7 @@ owned_by: Alex Martin
 ---
 ```
 
-### `sources/partners/alex-martin/CLAUDE.md` declares the mirror
+### `sources/partners/alex-martin/AGENTS.md` declares the mirror
 
 ```yaml
 ---

@@ -73,7 +73,7 @@ test -d {target_path} && echo "OK" || echo "FAIL"
 Archive complete:
 
 ✓ {source_path} -> {target_path}
-✓ Parent CLAUDE.md updated
+✓ Parent AGENTS.md updated
 ✓ Static indexes regenerated
 ✓ Basic Memory reindex clean
 ✓ {N} remaining incoming refs (historical traceability, OK)

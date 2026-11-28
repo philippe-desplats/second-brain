@@ -7,7 +7,7 @@ A note is orphan iff:
 - No other note in the workspace links to it, by any name `check_helpers.note_names`
   gives it: basename, path, title, aliases, or an identity key.
 
-Walks the whole workspace (excluding .git, .obsidian, .claude, node_modules,
+Walks the whole workspace (excluding .git, .obsidian, .claude, node_modules, .agents,
 archives/*, templates/, basic-memory/scripts/, atlas/maps/*-static.md).
 
 Output:
@@ -37,7 +37,7 @@ WORKSPACE = Path(__file__).resolve().parent.parent.parent
 # Read-only, and wider than the corpus on purpose: a link from a root file or
 # from a folder corpus.py excludes still makes its target reachable, so the walk
 # is the tree less the zones listed here.
-IGNORED_SEGMENTS = {".git", "node_modules", ".obsidian", ".claude", "tmp", "__pycache__"}
+IGNORED_SEGMENTS = {".git", "node_modules", ".obsidian", ".claude", ".agents", "tmp", "__pycache__"}
 IGNORED_PATH_PREFIXES = (
     "archives/",
     "templates/",
@@ -45,6 +45,10 @@ IGNORED_PATH_PREFIXES = (
     "basic-memory/schemas/",
     "docs/",
 )
+
+# Instruction files: structural at the workspace root, ordinary notes below it.
+ROOT_ONLY_STRUCTURAL = {"AGENTS.md", "CLAUDE.md"}
+
 
 @dataclass
 class Note:
@@ -64,9 +68,13 @@ def is_ignored(rel_path: Path) -> bool:
         return True
     if rel_str.endswith("-static.md"):
         return True
-    # structural files, not knowledge notes: never meaningful as "orphans"
-    structural = {"README.md", "CHANGELOG.md", "GETTING-STARTED.md", "AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md"}
+    # structural files, not knowledge notes: never meaningful as "orphans".
+    # AGENTS.md and CLAUDE.md are structural at the workspace root only, an
+    # entity or project AGENTS.md is a note.
+    structural = {"README.md", "CHANGELOG.md", "GETTING-STARTED.md", "CONTRIBUTING.md"}
     if rel_path.name in structural and len(parts) <= 2:
+        return True
+    if rel_path.name in ROOT_ONLY_STRUCTURAL and len(parts) == 1:
         return True
     return False
 

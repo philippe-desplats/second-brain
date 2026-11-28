@@ -36,6 +36,23 @@ class Align(unittest.TestCase):
                          "---\ntitle: Initech\nclient: Initech\ntype: client-context\n---\n\n"
                          "# Initech, Context\n")
 
+    def test_agents_md_is_aligned(self):
+        ws = Workspace(self)
+        rels = ["sources/clients/initech/AGENTS.md", "sources/partners/proseware/AGENTS.md"]
+        ws.write(rels[0], FOLDED)
+        ws.write(rels[1], "---\ntitle: x\npartner: Proseware\n---\n\n# H\n")
+        out = run(align_entity_titles.main, ["--apply"], root=ws.root)
+        self.assertEqual(F.parse(block_of(ws.read(rels[0]))).get("title"), "Initech")
+        self.assertEqual(F.parse(block_of(ws.read(rels[1]))).get("title"), "Proseware")
+        self.assertIn("AGENTS.md", out)
+
+    def test_legacy_claude_md_is_still_aligned(self):
+        ws = Workspace(self)
+        rel = "sources/partners/proseware/CLAUDE.md"
+        ws.write(rel, "---\ntitle: x\npartner: Proseware\n---\n\n# H\n")
+        run(align_entity_titles.main, ["--apply"], root=ws.root)
+        self.assertEqual(F.parse(block_of(ws.read(rel))).get("title"), "Proseware")
+
     def test_second_run_is_compliant_and_writes_nothing(self):
         ws = Workspace(self)
         rel = "sources/clients/initech/CLAUDE.md"

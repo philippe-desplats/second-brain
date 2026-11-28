@@ -108,7 +108,7 @@ Never guess a number to fill the gap.
 
 ### 3. Review
 
-Show the full proposal, then AskUserQuestion:
+Show the full proposal, then ask the owner:
 
 ```yaml
 questions:

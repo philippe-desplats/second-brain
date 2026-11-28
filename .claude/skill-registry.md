@@ -1,6 +1,8 @@
 # Skill Registry
 
-Central router for the workspace skills. Consult this table before invoking any skill, to match the right skill to the actual request.
+Central router for the workspace skills (16 skills). Consult this table before invoking any skill, to match the right skill to the actual request.
+
+Skills live in `.claude/skills/{name}/SKILL.md` and follow the Agent Skills standard. They are also exposed at `.agents/skills` (a link to the same folder) for the harnesses that read that location. Loading a skill by name is described in `AGENTS.md`, Invoking a skill.
 
 ## Quick routing
 
@@ -11,6 +13,7 @@ Central router for the workspace skills. Consult this table before invoking any 
 | File inbound content (email, transcript, notes) or process the inbox | `/capture` (`-i` for inbox) |
 | Check the workspace health (orphans, conventions, frontmatter) | `/sb-doctor` |
 | Run the weekly or monthly workspace review | `/curate` |
+| Maintain the knowledge base end to end (review, then distill, map, archive with approval) | `librarian` |
 | Promote a recurring pattern into reusable knowledge | `/distill` |
 | Create a Map of Content for a dense topic | `/moc-new` |
 | Archive a dead project | `/archive` |
@@ -24,7 +27,7 @@ Central router for the workspace skills. Consult this table before invoking any 
 
 ## Maintenance cycle
 
-`/curate` is the orchestrator: it scans and proposes; `/distill`, `/moc-new`, and `/archive` execute, each with human validation. The `librarian` agent (`.claude/agents/librarian.md`) can drive the whole cycle. Recommended ritual: `/curate -w 7` once a week.
+`/curate` is the orchestrator: it scans and proposes; `/distill`, `/moc-new`, and `/archive` execute, each with human validation. The `librarian` skill (`.claude/skills/librarian/SKILL.md`) can drive the whole cycle. Claude Code also offers it as a `librarian` subagent (`.claude/agents/librarian.md`), a thin wrapper that preloads the skill. Recommended ritual: `/curate -w 7` once a week.
 
 ## Full registry
 
@@ -38,6 +41,7 @@ Central router for the workspace skills. Consult this table before invoking any 
 | `distill` | 3rd repetition of a topic, "distill X" | topic or slug, `-t {ops\|tech\|business}` `-k {kind}` | note in `knowledge/` with provenance line and back-links | Basic Memory optional |
 | `moc-new` | dense topic (10+ notes), "create a map for X" | topic slug | MOC in `atlas/maps/` (Bases view + curated list) | Obsidian, Bases is a core plugin |
 | `archive` | project done/cancelled 6+ months, `--dry-run` | project slug | `git mv` to `archives/`, reference fixes, reindex | git; Basic Memory optional |
+| `librarian` | "maintain my second brain", "what needs curating", re-orientation after time away | intent (full review or one action) | prioritized plan with evidence, then delegation to `curate`, `distill`, `moc-new`, `archive` on approval, never writes without validation | Basic Memory optional |
 | `ops-resume` | "summarize this", transcript or article pasted | raw content | structured summary saved via save-conventions | none |
 | `ops-email` | "write an email to X", "reply to this", `-e {entity}` `-s` | purpose or pasted thread | draft calibrated on prior emails and entity preferences, saved with email frontmatter (draft, then sent) | none |
 | `ops-meeting-minutes` | "make minutes from this", notes or `@transcript`, `-e {entity}` `-i` internal | raw notes, transcript, or recap | client-facing or internal minutes in `meetings/` with meeting frontmatter | none |
@@ -49,10 +53,10 @@ Central router for the workspace skills. Consult this table before invoking any 
 ## Conventions every skill follows
 
 - Deliverables are saved according to `.claude/skills/references/save-conventions.md` (never at an entity root, always `YYYY-MM-DD-{type}-slug.md`).
-- Generated content uses the owner's working language (see the profile block in `CLAUDE.md`); skill structure stays in English.
+- Generated content uses the owner's working language (see the profile block in `AGENTS.md`); skill structure stays in English.
 - Frontmatter conforms to `basic-memory/schemas/`; the decision matrix is `.claude/rules/frontmatter.md`.
 - Outward-facing content follows `.claude/rules/communication.md` (no emoji, no em dashes, never mention AI assistance).
 
 ## Extending
 
-Add new skills under `.claude/skills/{name}/` with a `SKILL.md` entry point, then register them here. Keep one row per skill and update the quick-routing table only for the frequent cases.
+Add new skills under `.claude/skills/{name}/` with a `SKILL.md` entry point whose frontmatter uses only the Agent Skills fields (`name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`), then register them here and update the skill count above. Keep one row per skill and update the quick-routing table only for the frequent cases.

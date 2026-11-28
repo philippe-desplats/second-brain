@@ -39,7 +39,7 @@ If a skill is missing AND it is part of `{only_filter}`, alert the user and exit
 
 **If `{auto_mode}` = true**:
 
-Warn one last time via AskUserQuestion:
+Warn one last time by asking the owner:
 
 ```yaml
 questions:
@@ -75,7 +75,7 @@ Upcoming detection:
 - Dense topics without a MOC (toward `/moc-new`)
 ```
 
-Confirm via AskUserQuestion (except in `{auto_mode}`).
+Ask the owner to confirm (except in `{auto_mode}`).
 
 ---
 

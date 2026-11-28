@@ -70,13 +70,13 @@ settings:
 
 # Schema, Client Context
 
-`CLAUDE.md` file at the root of a client folder, loaded automatically as agent context. The 6 communication preference fields (tone, addressing, primary_channel, email_format, language, constraints) are promoted to the frontmatter so they can be queried directly.
+`AGENTS.md` file at the root of a client folder, loaded as agent context by most harnesses. The 6 communication preference fields (tone, addressing, primary_channel, email_format, language, constraints) are promoted to the frontmatter so they can be queried directly.
 
 ## Location
 
-- `sources/clients/{client}/CLAUDE.md`
+- `sources/clients/{client}/AGENTS.md`
 
-Live example in this repository, `sources/clients/globex/CLAUDE.md`.
+Live example in this repository, `sources/clients/globex/AGENTS.md`.
 
 One and only one per client.
 
@@ -127,7 +127,7 @@ Wikilinks to this entity use the value of the `client` field as is. For example,
 
 ## Special case, client that is a partner's product
 
-If the client is a product or an activity of a partner (e.g., a small brand owned by a white-label partner), the client CLAUDE.md must declare `owned_by` AND `managed_by` in the frontmatter. The partner CLAUDE.md must declare `owns` and `manages` as a mirror (mandatory symmetric pairs).
+If the client is a product or an activity of a partner (e.g., a small brand owned by a white-label partner), the client AGENTS.md must declare `owned_by` AND `managed_by` in the frontmatter. The partner AGENTS.md must declare `owns` and `manages` as a mirror (mandatory symmetric pairs).
 
 ## Example
 

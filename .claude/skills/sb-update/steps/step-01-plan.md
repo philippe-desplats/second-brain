@@ -43,10 +43,10 @@ A workspace is customized when either is true:
 - The infrastructure differs from the release it came from:
 
 ```bash
-git diff --stat v{current_version}..HEAD -- .claude basic-memory/schemas basic-memory/scripts templates
+git diff --stat v{current_version}..HEAD -- .claude .agents .codex .gemini .qwen .kiro .githooks .aider.conf.yml AGENTS.md basic-memory/schemas basic-memory/scripts templates
 ```
 
-Only those 4 paths count. Commits that touch notes only, after the tag, change nothing.
+Only those paths count. `AGENTS.md` is in the list because it is instruction infrastructure like `.claude`, even though `/sb-init` fills its profile block: a profile block alone does not make it customized, any other change does. A path that does not exist at `v{current_version}` counts only when the workspace created it, which is a customization like any other. A path a later release introduces shows nothing in this diff until that release runs.
 
 Once a release runs customized, every later release of the run is customized too, since a fork stays a fork. A workspace that starts stock is measured again before each later release in step-02, against the tag of the version it has just reached, and stays stock only while that diff is empty.
 
@@ -60,7 +60,7 @@ Otherwise show, in one message:
 - per release: its version, the prompt picked (stock, customized, or manual), and the one-line intro of its CHANGELOG section
 - that every write into a data zone will be shown as a diff first, and that the owner commits between releases
 
-Then ask with AskUserQuestion: proceed, or stop here. This one approval covers the plan only. Each prompt keeps its own gates, one per intent or per damage shape, asked in step-02.
+Then ask the owner (see AGENTS.md, Asking the owner): proceed, or stop here. This one approval covers the plan only. Each prompt keeps its own gates, one per intent or per damage shape, asked in step-02.
 
 ## Router
 

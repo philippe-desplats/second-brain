@@ -80,7 +80,7 @@ Options:
 - Abandon
 ```
 
-AskUserQuestion except in `{auto_mode}` (which continues automatically).
+Ask the owner except in `{auto_mode}` (which continues automatically).
 
 ### 3. Present the grouped scan
 

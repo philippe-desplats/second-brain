@@ -1,19 +1,16 @@
 ---
 name: archive
 description: "Archive an inactive project, client, partner, or internal project from sources/ into archives/. Confirms inactivity, physically moves the folder (git mv preserves history), updates the incoming references (other projects that point to the archived one), regenerates the static indexes, and runs Basic Memory reindex. Policy: physical move WITHOUT a redundant status. Use when a project is marked `status: done` or `status: cancelled` for 6+ months, or on an explicit decision to archive."
-argument-hint: "<slug-or-path> [-t client|partner|internal|personal] [-f force] [-a auto] [--dry-run]"
-model: opus
-allowed-tools:
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - AskUserQuestion
-  - TaskCreate
-  - TaskUpdate
+allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion TaskCreate TaskUpdate
 ---
+
+## Arguments
+
+`/archive <slug-or-path> [-t client|partner|internal|personal] [-f force] [-a auto] [--dry-run]`
+
+Flags, input and examples are detailed below.
+
+Questions to the owner follow `AGENTS.md`, Asking the owner.
 
 <objective>
 Move an inactive project from `sources/{type}/{slug}/` into `archives/{type}/{slug}/`, without breaking references. Policy: physical move without a redundant status. The indexes filter automatically, since both the Bases views and the generation script scope on `sources/` and ignore the archives.
@@ -48,7 +45,7 @@ Out of scope: archiving `.claude/`, `basic-memory/`, `atlas/`, `knowledge/` (non
 <workflow>
 1. **Init** -> Parse args, resolve the source path, deduce the type
 2. **Confirm** -> Present the state (last activity, incoming refs), ask for validation
-3. **Move** -> git mv into archives/, update the parent CLAUDE.md if applicable
+3. **Move** -> git mv into archives/, update the parent AGENTS.md if applicable
 4. **Reindex** -> Regenerate the static indexes, run Basic Memory reindex
 </workflow>
 
@@ -58,7 +55,7 @@ Out of scope: archiving `.claude/`, `basic-memory/`, `atlas/`, `knowledge/` (non
 |------|------|---------|
 | 00 | `steps/step-00-init.md` | Parse args, resolve `{source_path}`, `{target_path}`, `{type}` |
 | 01 | `steps/step-01-confirm.md` | Audit last activity, incoming references, user confirmation |
-| 02 | `steps/step-02-move.md` | git mv, update the parent CLAUDE.md, update references |
+| 02 | `steps/step-02-move.md` | git mv, update the parent AGENTS.md, update references |
 | 03 | `steps/step-03-reindex.md` | generate_indexes.py + bm reindex + check_double_frontmatter |
 
 </step_files>
@@ -86,7 +83,7 @@ Out of scope: archiving `.claude/`, `basic-memory/`, `atlas/`, `knowledge/` (non
 - **Always --dry-run first** if the user is unsure (borderline case)
 - **6 months of inactivity** = default check, override with `-f`
 - **Incoming refs**: if > 5 other notes point to this path, alert explicitly
-- **Parent CLAUDE.md**: if archiving a client project (not the whole client), update its CLAUDE.md to mention the archiving
+- **Parent AGENTS.md**: if archiving a client project (not the whole client), update its AGENTS.md to mention the archiving
 - **No auto update of wiki-links**: Obsidian wiki-links update automatically on rename. In CLI, older textual paths (non-wikilinks) may keep pointing to `sources/...` historically; git history lets you retrieve them
 - **`bm reindex`** mandatory after writing (if Basic Memory is installed)
 - **Refuse if target already exists**: `archives/{type}/{slug}/` already exists -> ask the user (merge, overwrite, abandon)

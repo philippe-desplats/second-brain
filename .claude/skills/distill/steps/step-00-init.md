@@ -50,7 +50,7 @@ From `{user_prompt}`:
 | `audit`, `accessibility`, `seo`, `onboarding`, `billing`, `pricing-process`, `weekly-review` | `ops` |
 | `n8n`, `kubernetes`, `nextjs`, `pulumi`, `docker`, `deploy`, `api` | `tech` |
 | `pricing-{service}`, `proposal`, `sales-methodology`, `strategy`, `positioning` | `business` |
-| (nothing matches) | ask the user via AskUserQuestion |
+| (nothing matches) | ask the owner (see `AGENTS.md`, Asking the owner) |
 
 **If `{kind}` is missing**, deduce from the topic:
 
@@ -61,13 +61,13 @@ From `{user_prompt}`:
 | `guide-`, long doc, methodology | `guide` |
 | `runbook-`, `incident-`, recurring intervention | `runbook` |
 | `decision-`, `adr-`, architecture choice | `decision` |
-| (nothing matches) | ask the user via AskUserQuestion |
+| (nothing matches) | ask the owner (see `AGENTS.md`, Asking the owner) |
 
 ### 3. Validation
 
 - Check that `knowledge/{target}/` physically exists. Otherwise, fail with a clear message (offer to create the folder after validation).
 - Check that `{min_occurrences}` >= 2 (otherwise default to 3).
-- If `{mode}` = `topic` and `{topic}` is empty, ask via AskUserQuestion.
+- If `{mode}` = `topic` and `{topic}` is empty, ask the owner (see `AGENTS.md`, Asking the owner).
 
 ### 4. Present the plan to the user
 
@@ -81,7 +81,7 @@ Planned distillation:
 - Minimum threshold: {min_occurrences} occurrences
 ```
 
-Ask for confirmation via AskUserQuestion:
+Ask the owner for confirmation:
 
 ```yaml
 questions:

@@ -1,19 +1,16 @@
 ---
 name: moc-new
 description: "Create a new MOC (Map of Content) in atlas/maps/ to aggregate the notes linked to a topic. Scans sources/, knowledge/, atlas/topics/ to find the relevant notes (frontmatter topics:, wiki-links, keywords), pre-fills the atlas-moc-template.md with those notes, offers a review to the user, and saves into atlas/maps/MOC-{slug}.md with subtype: moc. Aligned with LYT/MOC best practices (Nick Milo). Use when a topic has become dense enough (10+ notes) to deserve a navigation entry point."
-argument-hint: "<topic> [-t MOC|index] [-m N] [-d depth] [-a auto]"
-model: opus
-allowed-tools:
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - AskUserQuestion
-  - TaskCreate
-  - TaskUpdate
+allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion TaskCreate TaskUpdate
 ---
+
+## Arguments
+
+`/moc-new <topic> [-t MOC|index] [-m N] [-d depth] [-a auto]`
+
+Flags, input and examples are detailed below.
+
+Questions to the owner follow `AGENTS.md`, Asking the owner.
 
 <objective>
 Create a navigable MOC in `atlas/maps/` for a dense topic. The MOC acts as an Obsidian hub: it aggregates wiki-links to the relevant notes, organized by type/context, and lets a human or an agent grasp a subject at a glance.
@@ -30,7 +27,7 @@ Out of scope: generating the static indexes (use `generate_indexes.py` for that)
 /moc-new ai-agents                              # MOC on AI agents
 /moc-new workspace-methodology                  # MOC on the workspace methodology
 /moc-new automation-patterns -t MOC             # force the MOC type
-/moc-new active-clients -t index -d 1           # flat index, depth=1 (just the CLAUDE.md files)
+/moc-new active-clients -t index -d 1           # flat index, depth=1 (just the AGENTS.md files)
 /moc-new accessibility-audits -m 15             # require 15 notes minimum (default: 10)
 /moc-new -a accessibility-audits                # auto, no confirmations
 ```

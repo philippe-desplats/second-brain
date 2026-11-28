@@ -37,7 +37,7 @@ Store `{working_language}`. If the owner works in two languages (for example loc
 
 ### 3. Communication defaults
 
-These become the fallback when an entity has no specific preferences in its own `CLAUDE.md`:
+These become the fallback when an entity has no specific preferences in its own `AGENTS.md`:
 
 - Default tone for outward writing: professional-warm, professional-neutral, or casual
 - Default addressing for languages that distinguish it (tu/vous, du/Sie): informal, formal, or per-entity

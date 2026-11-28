@@ -117,6 +117,62 @@ class SplitJoin(unittest.TestCase):
         self.assertEqual(doc.block, "")
         self.assertEqual(F.parse(doc.block).fields, [])
 
+    def _note(self, tmp, text="---\ntitle: A\n---\nBody\n"):
+        path = Path(tmp) / "note.md"
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def test_write_is_atomic_and_keeps_the_mode(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._note(tmp)
+            os.chmod(path, 0o640)
+            doc, fm = F.read_file(path)
+            self.assertTrue(F.write_file(path, doc, F.set_field(fm, "title", "B")))
+            self.assertEqual(oct(os.stat(path).st_mode & 0o777), oct(0o640))
+            self.assertIn("title: B", path.read_text(encoding="utf-8"))
+            self.assertEqual(sorted(p.name for p in Path(tmp).iterdir()), ["note.md"])
+
+    def test_write_skips_a_file_changed_since_the_read(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._note(tmp)
+            doc, fm = F.read_file(path)
+            path.write_text("---\ntitle: Edited meanwhile\n---\nBody\n", encoding="utf-8")
+            self.assertEqual(F.write_status(path, doc, F.set_field(fm, "title", "B")), F.SKIPPED_CHANGED)
+            self.assertFalse(F.write_file(path, doc, F.set_field(fm, "title", "B")))
+            self.assertIn("Edited meanwhile", path.read_text(encoding="utf-8"))
+
+    def test_write_never_goes_through_a_symlink(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            real = self._note(tmp)
+            link = Path(tmp) / "link.md"
+            os.symlink(real, link)
+            doc, fm = F.read_file(link)
+            self.assertEqual(F.write_status(link, doc, F.set_field(fm, "title", "B")), F.SKIPPED_SYMLINK)
+            self.assertTrue(link.is_symlink())
+            self.assertIn("title: A", real.read_text(encoding="utf-8"))
+
+    def test_write_skips_a_path_outside_the_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "ws"
+            root.mkdir()
+            outside = Path(tmp) / "elsewhere"
+            outside.mkdir()
+            path = self._note(outside)
+            doc, fm = F.read_file(path)
+            self.assertEqual(F.write_status(path, doc, F.set_field(fm, "title", "B"), root=root),
+                             F.SKIPPED_OUTSIDE)
+            inside = self._note(root)
+            doc, fm = F.read_file(inside)
+            self.assertEqual(F.write_status(inside, doc, F.set_field(fm, "title", "B"), root=root), F.WRITTEN)
+
+    def test_doc_built_by_hand_still_writes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._note(tmp)
+            doc = F.split(path.read_text(encoding="utf-8"))
+            doc.source = None
+            doc.body = "New\n"
+            self.assertTrue(F.write_file(path, doc))
+
     def test_read_and_write_file_keep_crlf(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "note.md"

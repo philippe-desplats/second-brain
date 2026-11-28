@@ -1,0 +1,10 @@
+#!/bin/sh
+# Harness-agnostic safety net for the Obsidian title aliases.
+# Enable once per clone: git config core.hooksPath .githooks
+root="$(git rev-parse --show-toplevel)" || exit 0
+command -v python3 >/dev/null 2>&1 || exit 0
+if ! python3 -I "$root/basic-memory/scripts/add_title_aliases.py" --check --quiet; then
+  echo "pre-commit: some cited notes miss their title alias." >&2
+  echo "Run: python3 -I basic-memory/scripts/add_title_aliases.py --apply, then stage the result." >&2
+  exit 1
+fi

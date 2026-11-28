@@ -33,7 +33,7 @@ Turn the freshly cloned boilerplate into a personalized, working second brain in
 3. **Profile** → Agency / freelance / solopreneur / personal, zone selection
 4. **Identity** → Owner, organization, working language, communication defaults
 5. **Personalize** → Write charter, context, profile block; prune zones; adjust schemas
-6. **Memory** → Optional Basic Memory install and MCP wiring
+6. **Harnesses and memory** → Which agent harnesses the owner uses, then optional Basic Memory install and MCP wiring per harness
 7. **Launch** → Smoke test, first note, maintenance ritual, summary
 </workflow>
 
@@ -46,7 +46,7 @@ Turn the freshly cloned boilerplate into a personalized, working second brain in
 | 02 | `steps/step-02-profile.md` | Profile and zone selection |
 | 03 | `steps/step-03-identity.md` | Owner identity and communication defaults |
 | 04 | `steps/step-04-personalize.md` | Write all files, prune zones, adjust schemas |
-| 05 | `steps/step-05-memory.md` | Basic Memory setup (optional) |
+| 05 | `steps/step-05-memory.md` | Harness selection, Basic Memory setup (optional), MCP config per harness |
 | 06 | `steps/step-06-launch.md` | Smoke test, first note, ritual, summary |
 
 </step_files>
@@ -65,6 +65,7 @@ Turn the freshly cloned boilerplate into a personalized, working second brain in
 | `{working_language}` | string | step-03 |
 | `{comm_defaults}` | object | step-03 (tone, addressing, signature) |
 | `{service_types}` | list | step-03 (the owner's offer categories, optional) |
+| `{harnesses}` | list | step-05 (subset of claude-code, codex, gemini-cli, copilot, cursor, opencode, windsurf, qwen-code, cline, roo-code, kiro, zed, amp, goose, junie, other) |
 | `{bm_enabled}` | boolean | step-05 |
 | `{bm_project}` | string | step-05 |
 
@@ -72,10 +73,10 @@ Turn the freshly cloned boilerplate into a personalized, working second brain in
 
 <execution_rules>
 - **Load one step at a time** (progressive loading); follow the next_step directive at the end of each step
-- **Use AskUserQuestion** for structured choices; accept free text via "Other" and treat it with care
+- **Ask the owner (see AGENTS.md, Asking the owner)** for structured choices; accept free text via "Other" and treat it with care
 - **Ask, then act**: batch related questions, keep the pace brisk; this is an interview, not a form
 - **Show a recap before writing anything** in step-04; nothing is written to disk before the owner approves the recap
-- **Never write outside the workspace**, with two explicit exceptions in step-05 (Basic Memory config and MCP registration), each individually confirmed
+- **Never write outside the workspace**, with explicit exceptions in step-05 (Basic Memory config, the MCP registration of each selected harness, and the optional `git config core.hooksPath`), each individually confirmed
 - **Answer in the owner's language** during the interview if they engage in another language, but write all structural files in English and content files in the working language
 - **Never fabricate answers** for skipped questions; quick mode uses documented defaults, not invented ones
 </execution_rules>

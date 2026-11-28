@@ -107,7 +107,7 @@ Three questions to file any new note:
 
 If none fits, `inbox/` to classify within the week.
 
-Full details in the root `CLAUDE.md` and `.claude/rules/`.
+Full details in the root `AGENTS.md` and `.claude/rules/`.
 
 ## Relations
 

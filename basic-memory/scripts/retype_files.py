@@ -8,9 +8,10 @@ Usage:
 
 The pattern table lives in `note_types.py`, shared with
 `retype_fallback_notes.py`. In short, first match wins:
-    sources/clients/{X}/CLAUDE.md                     -> client-context
-    sources/partners/{X}/CLAUDE.md                    -> partner-context
-    sources/{any}/{project}/README.md or CLAUDE.md    -> project-brief
+    sources/clients/{X}/AGENTS.md                     -> client-context
+    sources/partners/{X}/AGENTS.md                    -> partner-context
+    sources/{any}/{project}/README.md or AGENTS.md    -> project-brief
+    (CLAUDE.md, the legacy name, is read like AGENTS.md)
     emails/ mails/ meetings/ deliverables/ proposals/
     transcripts/ clippings/ sessions/ above the file  -> that folder's type
     YYYY-MM-DD-{type}-*.md                            -> {type}
@@ -148,7 +149,7 @@ def main(argv=None, root=WORKSPACE):
                         "action": "UPDATE"})
 
         if not dry_run:
-            if F.write_file(path, doc, set_type(fm, target)):
+            if F.write_file(path, doc, set_type(fm, target), root=root):
                 stats["updated"] += 1
 
     # Report

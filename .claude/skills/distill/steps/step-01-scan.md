@@ -59,13 +59,13 @@ Scan ALL of sources/ to propose distillation candidates:
 3. Count the recurring folder names (`audit`, `proposal`, `wordpress`, etc.)
 4. For each candidate with >= `{min_occurrences}` occurrences, propose it
 
-Present the top 10 via AskUserQuestion (multi-select), then for each selected candidate, restart step-01-scan in `topic` mode with that candidate.
+Present the top 10 via a question to the owner (multi-select), then for each selected candidate, restart step-01-scan in `topic` mode with that candidate.
 
 ### Threshold validation
 
 - If `len({sources_found})` < `{min_occurrences}`:
   - Present the report: "Found only N/min occurrences for `{topic}`"
-  - Ask the user via AskUserQuestion:
+  - Ask the owner (see `AGENTS.md`, Asking the owner):
     - Continue anyway (force the distillation, the pattern will be weaker)
     - Retry with a lower threshold
     - Abandon

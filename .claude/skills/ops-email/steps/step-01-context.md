@@ -40,7 +40,7 @@ If no entity can be resolved, ask the user: which client, partner, or is this in
 
 ### 2. Load preferences
 
-Read the entity `CLAUDE.md` frontmatter and store `{entity_prefs}`:
+Read the entity `AGENTS.md` frontmatter and store `{entity_prefs}`:
 
 - `tone` (professional, friendly, technical, direct, formal, commercial, pedagogical)
 - `addressing` (formal, informal, variable)
@@ -48,9 +48,9 @@ Read the entity `CLAUDE.md` frontmatter and store `{entity_prefs}`:
 - `language`
 - `constraints` (list, honor each one)
 
-Resolve `{language}`: use the entity `language:` if present, otherwise the working language from the root `CLAUDE.md` profile block.
+Resolve `{language}`: use the entity `language:` if present, otherwise the working language from the root `AGENTS.md` profile block.
 
-For internal or personal recipients with no entity `CLAUDE.md`, read `sources/internal/CONTEXT.md` for defaults when it exists. If it does not exist yet, fall back to the profile block and a neutral professional register, and note that `sources/internal/CONTEXT.md` is not set up.
+For internal or personal recipients with no entity `AGENTS.md`, read `sources/internal/CONTEXT.md` for defaults when it exists. If it does not exist yet, fall back to the profile block and a neutral professional register, and note that `sources/internal/CONTEXT.md` is not set up.
 
 ### 3. Assemble purpose and key points
 
@@ -61,7 +61,7 @@ For internal or personal recipients with no entity `CLAUDE.md`, read `sources/in
 
 Ask at most one or two questions, and only for what you cannot infer. Common gaps: the recipient name, the addressing register when the entity sets `variable` and the thread gives no signal, a vague ask that needs a concrete target.
 
-Use AskUserQuestion for a register choice, a plain prompt for open information. In reply mode, match the sender's register automatically and do not ask.
+Ask the owner for a register choice, use a plain prompt for open information. In reply mode, match the sender's register automatically and do not ask.
 
 ### 5. Compile and continue
 
@@ -79,7 +79,7 @@ Summarize internally: recipient, relationship, resolved language and addressing,
 ## FAILURE MODES:
 
 - ❌ Writing email text
-- ❌ Guessing tone instead of reading the entity `CLAUDE.md`
+- ❌ Guessing tone instead of reading the entity `AGENTS.md`
 - ❌ Asking more than two questions when the context was sufficient
 
 ## NEXT STEP:

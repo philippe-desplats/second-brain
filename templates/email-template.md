@@ -73,4 +73,4 @@ thread: weekly-portal
   - `cancelled`, abandoned (the file is kept for traceability)
 - The `thread` field is optional but recommended when several emails belong to the same exchange
 - For received emails (`direction: in`), the file serves as a trace, not a draft
-- Adapt the content to the entity's preferences (see the entity `CLAUDE.md`)
+- Adapt the content to the entity's preferences (see the entity `AGENTS.md`)

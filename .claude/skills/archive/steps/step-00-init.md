@@ -35,7 +35,7 @@ test -d sources/personal/{slug} && type=personal
 ```
 
 **If multiple matches** (the slug exists in several types):
-- Ask the user via AskUserQuestion
+- Ask the owner (see `AGENTS.md`, Asking the owner)
 - List all candidate paths
 
 **If no match**:
@@ -65,7 +65,7 @@ With `{type-folder}` = `clients` if client, `partners` if partner, `internal` if
 - `{source_path}` is not a protected zone:
   - Refuse if it starts with `.claude/`, `basic-memory/`, `atlas/`, `knowledge/`, `inbox/`, `templates/`
 - `{target_path}` does not already exist:
-  - If it does, ask via AskUserQuestion: merge, overwrite (delete + move), abandon
+  - If it does, ask the owner (see `AGENTS.md`, Asking the owner): merge, overwrite (delete + move), abandon
   - Do NOT offer to overwrite silently in `--auto` mode
 
 ### 5. Present the plan
@@ -79,7 +79,7 @@ Planned archive:
 - Scope: {full entity | project only}
 ```
 
-Ask for confirmation via AskUserQuestion (except in `{auto_mode}` = true), move to step-01 for the pre-action audit.
+Ask the owner for confirmation (except in `{auto_mode}` = true), move to step-01 for the pre-action audit.
 
 ---
 

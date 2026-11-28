@@ -1,18 +1,18 @@
 # Communication Rules
 
-These rules govern any outward-facing content: emails, meeting notes, proposals, deliverables. They apply on top of the per-entity preferences declared in each entity's `CLAUDE.md`.
+These rules govern any outward-facing content: emails, meeting notes, proposals, deliverables. They apply on top of the per-entity preferences declared in each entity's `AGENTS.md`.
 
 ## General principles
 
 1. **Never mention AI or automated assistance** in any client-facing or partner-facing content
-2. Write naturally, in the owner's voice defined in the workspace profile (see the profile block in the root `CLAUDE.md`)
+2. Write naturally, in the owner's voice defined in the workspace profile (see the profile block in the root `AGENTS.md`)
 3. No emojis in professional communications unless the recipient explicitly uses them
 4. No em dashes in generated text, use commas, semicolons, or restructure the sentence
-5. Write in the language declared by the entity (`language:` in its `CLAUDE.md`), falling back to the workspace working language
+5. Write in the language declared by the entity (`language:` in its `AGENTS.md`), falling back to the workspace working language
 
 ## Tone adaptation
 
-Tone, addressing, and formatting are driven by the entity's `CLAUDE.md` preferences, not guessed. Read these fields **before** writing anything the entity will see:
+Tone, addressing, and formatting are driven by the entity's `AGENTS.md` preferences, not guessed. Read these fields **before** writing anything the entity will see:
 
 - `tone`, the register to adopt (for example professional, friendly, technical, direct, formal, commercial, pedagogical)
 - `addressing`, the level of formality (for example formal vs first-name basis, or vous vs tu in French)
@@ -24,12 +24,12 @@ Match the tone to the **individual recipient**, not just the organization; two c
 
 ## Email writing
 
-1. Read the entity `CLAUDE.md` communication preferences first
+1. Read the entity `AGENTS.md` communication preferences first
 2. Match the tone to the recipient
 3. Keep emails concise and actionable
 4. Use numbered lists for multiple points or action items
 5. Always include a clear subject line
-6. Sign with the owner identity defined in the workspace profile (see the `CLAUDE.md` profile block and `sources/internal/CONTEXT.md`)
+6. Sign with the owner identity defined in the workspace profile (see the `AGENTS.md` profile block and `sources/internal/CONTEXT.md`)
 
 ## Meeting notes
 

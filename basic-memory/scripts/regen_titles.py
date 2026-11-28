@@ -5,15 +5,15 @@ Regenerate titles in frontmatter from H1 content when title is unusable.
 Unusable patterns:
     title: {slug of filename}
     title: README
-    title: CLAUDE (already fixed manually, but catch any leftover)
+    title: CLAUDE or AGENTS (the file name of an entity context, catch any leftover)
     title: CONTEXT
     title: MIGRATION
     title: PLAN
     title: nodes, plan, services, network, etc (generic slug)
 
 Rules:
-    - Entity context file (sources/clients/{X}/CLAUDE.md,
-      sources/partners/{X}/CLAUDE.md) → title is the identity field, `client:`
+    - Entity context file (sources/clients/{X}/AGENTS.md,
+      sources/partners/{X}/AGENTS.md, or the legacy CLAUDE.md) → title is the identity field, `client:`
       or `partner:`, never the H1, since Basic Memory resolves `[[Acme]]` on
       `title:` only (see .claude/rules/frontmatter.md). No identity → skip, log
     - H1 absent → skip, log edge case
@@ -44,7 +44,7 @@ import frontmatter as F  # noqa: E402
 from corpus import WORKSPACE, iter_corpus_notes  # noqa: E402
 from note_types import REPAIR_HINT, classify, field_damage  # noqa: E402
 
-UNUSABLE_GENERIC_TITLES = {"README", "CLAUDE", "CONTEXT", "MIGRATION", "PLAN", "SUMMARY", "NOTES", "TODO"}
+UNUSABLE_GENERIC_TITLES = {"README", "CLAUDE", "AGENTS", "CONTEXT", "MIGRATION", "PLAN", "SUMMARY", "NOTES", "TODO"}
 
 # Entity context type -> the identity field its title must equal.
 IDENTITY_FIELDS = {"client-context": "client", "partner-context": "partner"}
@@ -161,7 +161,7 @@ def main(argv=None, root=WORKSPACE):
         updates.append({"path": rel, "old": title, "new": new})
 
         if not dry_run:
-            if F.write_file(path, doc, set_title(fm, new)):
+            if F.write_file(path, doc, set_title(fm, new), root=root):
                 stats["updated"] += 1
 
     # Report

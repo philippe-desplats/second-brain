@@ -69,6 +69,25 @@ class Pruning(WorkspaceCase):
         self.old(f"{base}/2026-01-02-note-old.md", note("title: Old\ntype: note\n", "Text.\n"))
         self.assertEqual(self.candidates(), [f"{base}/2026-01-02-note-old.md"])
 
+    def test_structural_names_protect_only_at_the_workspace_root(self):
+        import propose_pruning as P
+        for name in ("AGENTS.md", "CLAUDE.md"):
+            self.assertTrue(P.is_protected(name), name)
+            self.assertFalse(P.is_protected("sources/clients/globex/" + name), name)
+        for name in ("README.md", "CHANGELOG.md", "LICENSE.md"):
+            self.assertTrue(P.is_protected(name), name)
+            self.assertTrue(P.is_protected("sources/" + name), name)
+
+    def test_untyped_agents_md_under_an_entity_is_proposed(self):
+        for name in ("AGENTS.md", "CLAUDE.md"):
+            self.old("sources/internal/ops/" + name, note("title: Ops %s\n" % name, "Text.\n"))
+        self.assertEqual(self.candidates(), ["sources/internal/ops/AGENTS.md", "sources/internal/ops/CLAUDE.md"])
+
+    def test_a_link_from_the_agents_copy_does_not_keep_a_note_alive(self):
+        self.old("sources/internal/ops/2026-01-02-note-old.md", note("title: Old\ntype: note\n", "Text.\n"))
+        self.ws.write(".agents/skills/demo/notes.md", "See [[Old]].\n")
+        self.assertEqual(self.candidates(), ["sources/internal/ops/2026-01-02-note-old.md"])
+
     def test_protected_subtype_in_quotes(self):
         self.old("sources/internal/ops/2026-01-02-note-map.md",
                  note("title: Map\ntype: note\nsubtype: \"moc\"\n", "Text.\n"))

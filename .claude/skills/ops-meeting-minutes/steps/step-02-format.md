@@ -132,7 +132,7 @@ Subject: {one-line topic}
 
 ### 5. Review
 
-Show the full minutes, then AskUserQuestion:
+Show the full minutes, then ask the owner:
 
 ```yaml
 questions:

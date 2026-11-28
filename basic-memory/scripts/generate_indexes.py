@@ -237,7 +237,7 @@ def main(argv: list[str], root: Path = WORKSPACE) -> int:
             args.output_dir,
             "clients-active",
             "Active clients",
-            "All clients with status: active in their CLAUDE.md.",
+            "All clients with status: active in their context file.",
             rows,
             [("name", "Client"), ("path", "Path"), ("last_updated", "Last update")],
         )
@@ -251,7 +251,7 @@ def main(argv: list[str], root: Path = WORKSPACE) -> int:
                 args.output_dir,
                 "partners-active",
                 "Active partners",
-                "All partners with status: active in their CLAUDE.md.",
+                "All partners with status: active in their context file.",
                 rows,
                 [("name", "Partner"), ("path", "Path"), ("last_updated", "Last update")],
             )

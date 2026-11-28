@@ -31,7 +31,7 @@ The workspace ships with four entity zones under `sources/` (mirrored in `archiv
 
 ### 1. Ask for the profile
 
-Use AskUserQuestion:
+Ask the owner (see AGENTS.md, Asking the owner):
 
 > "Which profile is closest to how you work?"
 
@@ -55,7 +55,7 @@ Present the default zones for the chosen profile and ask whether to adjust. In q
 
 ### 3. Explain the consequence once
 
-One sentence, no lecture: removed zones disappear from `sources/`, `archives/`, the schemas' `category` enum, and the CLAUDE.md path table; nothing else changes.
+One sentence, no lecture: removed zones disappear from `sources/`, `archives/`, the schemas' `category` enum, and the AGENTS.md path table; nothing else changes.
 
 ## NEXT STEP:
 

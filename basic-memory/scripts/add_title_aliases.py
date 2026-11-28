@@ -35,6 +35,7 @@ Usage:
     python3 basic-memory/scripts/add_title_aliases.py --top 10        # dry-run on the 10 most-cited
     python3 basic-memory/scripts/add_title_aliases.py --top 10 --apply
     python3 basic-memory/scripts/add_title_aliases.py --apply --quiet   # hook mode, silent
+    python3 basic-memory/scripts/add_title_aliases.py --check --quiet   # git hook, exit 1 when a note would change
 """
 
 import argparse
@@ -253,7 +254,7 @@ def report_leftovers(result, applied):
 
 def apply_changes(root, notes, changes):
     for change in changes:
-        F.write_file(os.path.join(root, change.rel), notes[change.rel].doc, change.edited)
+        F.write_file(os.path.join(root, change.rel), notes[change.rel].doc, change.edited, root=root)
 
 
 def parse_args(argv=None):
@@ -262,6 +263,8 @@ def parse_args(argv=None):
     ap.add_argument("--top", type=int, default=0, help="restrict to the N most-cited titles")
     ap.add_argument("--root", default=".", help="vault root (default: current directory)")
     ap.add_argument("--quiet", action="store_true", help="print nothing, for the hook")
+    ap.add_argument("--check", action="store_true",
+                    help="write nothing, exit 1 when at least one note would be modified, for a git hook")
     ap.add_argument("--exclude", action="append", default=[],
                     help="workspace-relative note never to write, repeatable")
     return ap.parse_args(argv)
@@ -274,19 +277,23 @@ def run(args):
     excluded = normalise_excludes(args.exclude)
     result = plan(notes, index_titles(notes, args.root), count_citations(notes),
                   basenames, excluded, args.top)
+    apply = args.apply and not args.check
     report_changes(result)
-    if args.apply:
+    if apply:
         apply_changes(args.root, notes, result.changed)
-    report_leftovers(result, args.apply)
+    report_leftovers(result, apply)
+    return len(result.changed)
 
 
 def main(argv=None):
     args = parse_args(argv)
     if not args.quiet:
-        run(args)
-        return
-    with open(os.devnull, "w") as sink, contextlib.redirect_stdout(sink):
-        run(args)
+        changed = run(args)
+    else:
+        with open(os.devnull, "w") as sink, contextlib.redirect_stdout(sink):
+            changed = run(args)
+    if args.check and changed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

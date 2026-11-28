@@ -98,7 +98,7 @@ Show the FULL plan as plain text and end the turn:
 Target : {target_path}
 {complete frontmatter block}
 Body   : verbatim ({N} lines) + Relations block
-{If new entity: + creation of sources/{zone}/{entity}/CLAUDE.md from template}
+{If new entity: + creation of sources/{zone}/{entity}/AGENTS.md from template}
 {If new project: + creation of sources/{zone}/{entity}/{project}/}
 ```
 

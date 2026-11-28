@@ -127,9 +127,11 @@ class Workspace:
         return subprocess.run([sys.executable, "-I", str(self.pass_path), "--root", str(self.root), *args],
                               cwd=self.root, capture_output=True, text=True, timeout=60)
 
-    def hook(self, event: dict) -> subprocess.CompletedProcess:
+    def hook(self, event: dict, env: dict | None = None) -> subprocess.CompletedProcess:
+        environ = {k: v for k, v in os.environ.items() if k != "CLAUDE_PROJECT_DIR"}
+        environ.update(env or {})
         return subprocess.run([sys.executable, "-I", str(self.hook_path)], input=json.dumps(event),
-                              cwd=self.root, capture_output=True, text=True, timeout=60)
+                              cwd=self.root, capture_output=True, text=True, timeout=60, env=environ)
 
 
 def summary(proc: subprocess.CompletedProcess) -> tuple[int, int, int, int]:
@@ -358,6 +360,159 @@ class Hook(Base):
         proc = subprocess.run([sys.executable, "-I", str(self.ws.hook_path)], input="not json",
                               capture_output=True, text=True, timeout=60)
         self.assertEqual((proc.returncode, proc.stdout, proc.stderr), (0, "", ""))
+
+
+class HookHarnesses(Base):
+    """The hook reads the event of any harness and finds its workspace by itself."""
+
+    NOTE = "atlas/topics/onboarding.md"
+
+    def setUp(self):
+        super().setUp()
+        self.ws.write(self.NOTE, "---\ntitle: Onboarding\ntype: topic\n---\n\n# H\n")
+        self.cite("Onboarding")
+
+    def assert_aliased(self, event, env=None):
+        proc = self.ws.hook(event, env)
+        self.assertEqual((proc.returncode, proc.stdout, proc.stderr), (0, "", ""))
+        self.assertEqual(aliases_of(self.ws.read(self.NOTE)), ["Onboarding"])
+
+    def assert_untouched(self, event, env=None):
+        proc = self.ws.hook(event, env)
+        self.assertEqual((proc.returncode, proc.stdout, proc.stderr), (0, "", ""))
+        self.assertIsNone(aliases_of(self.ws.read(self.NOTE)))
+
+    def path(self, rel="sources/internal/links/2026-01-01-note-links.md"):
+        return str(self.ws.root / rel)
+
+    def test_tool_input_path(self):
+        self.assert_aliased({"tool_input": {"path": self.path()}})
+
+    def test_tool_input_absolute_path(self):
+        self.assert_aliased({"tool_name": "write_file", "tool_input": {"absolute_path": self.path()}})
+
+    def test_top_level_file_path_cursor(self):
+        self.assert_aliased({"hook_event_name": "afterFileEdit", "file_path": self.path()})
+
+    def test_camel_case_file_path(self):
+        self.assert_aliased({"tool_input": {"filePath": self.path()}})
+        self.ws.write(self.NOTE, "---\ntitle: Onboarding\ntype: topic\n---\n\n# H\n")
+        self.assert_aliased({"filePath": self.path()})
+
+    def test_top_level_path(self):
+        self.assert_aliased({"path": self.path()})
+
+    def test_found_path_outside_note_zones_does_nothing(self):
+        self.assert_untouched({"tool_input": {"path": self.path("docs/guide.md")}})
+
+    def test_non_markdown_path_does_nothing(self):
+        self.assert_untouched({"file_path": self.path("sources/internal/x/data.json")})
+
+    def test_no_path_runs_the_full_pass(self):
+        self.assert_aliased({"tool_name": "apply_patch", "tool_input": {"command": "*** Begin Patch"}})
+
+    def test_empty_object_does_nothing(self):
+        self.assert_untouched({})
+
+    def test_read_and_search_tools_exit_at_once(self):
+        for tool in ("Read", "Grep", "read_file", "Bash", "glob"):
+            with self.subTest(tool):
+                self.assert_untouched({"tool_name": tool, "tool_input": {"file_path": self.path()}})
+
+    def test_tool_names_are_case_insensitive(self):
+        self.assert_aliased({"tool_name": "WRITE_FILE", "tool_input": {"path": self.path()}})
+
+    def test_replace_is_an_edit_and_not_excluded(self):
+        self.assert_aliased({"tool_name": "replace", "tool_input": {"file_path": self.path(self.NOTE)}})
+
+    def test_apply_patch_path_is_extracted(self):
+        patch = "*** Begin Patch\n*** Update File: %s\n@@\n-a\n+b\n*** End Patch" % self.NOTE
+        self.assert_untouched({"tool_name": "apply_patch", "tool_input": {"command": patch}})
+        patch = "*** Begin Patch\n*** Add File: docs/x.md\n+a\n*** End Patch"
+        self.assert_untouched({"tool_name": "apply_patch", "tool_input": {"input": patch}})
+        patch = "*** Begin Patch\n*** Add File: sources/internal/links/2026-01-01-note-links.md\n+a\n*** End Patch"
+        self.assert_aliased({"tool_name": "apply_patch", "tool_input": {"command": patch}})
+
+    def test_a_held_lock_makes_the_second_pass_exit(self):
+        import fcntl
+        lock = self.ws.root / ".claude" / "output" / ".alias-pass.lock"
+        lock.parent.mkdir(parents=True)
+        with open(lock, "w") as fh:
+            fcntl.flock(fh, fcntl.LOCK_EX)
+            self.assert_untouched({"tool_name": "Write", "tool_input": {"file_path": self.path()}})
+        self.assert_aliased({"tool_name": "Write", "tool_input": {"file_path": self.path()}})
+
+    def test_write_of_the_target_excludes_it(self):
+        self.assert_untouched({"tool_name": "Write", "tool_input": {"file_path": self.path(self.NOTE)}})
+
+    def test_empty_stdin_fails_open(self):
+        proc = subprocess.run([sys.executable, "-I", str(self.ws.hook_path)], input="",
+                              capture_output=True, text=True, timeout=60)
+        self.assertEqual((proc.returncode, proc.stdout, proc.stderr), (0, "", ""))
+
+    def test_non_object_json_fails_open(self):
+        proc = subprocess.run([sys.executable, "-I", str(self.ws.hook_path)], input="[1, 2]",
+                              capture_output=True, text=True, timeout=60)
+        self.assertEqual((proc.returncode, proc.stdout, proc.stderr), (0, "", ""))
+
+    def test_script_location_wins_over_claude_project_dir(self):
+        other = Workspace(self)
+        other.write(self.NOTE, "---\ntitle: Onboarding\ntype: topic\n---\n\n# H\n")
+        link = "sources/internal/links/2026-01-01-note-links.md"
+        other.write(link, "---\ntitle: Links\ntype: note\n---\n\n- see [[Onboarding]]\n")
+        proc = self.ws.hook({"file_path": self.path()}, {"CLAUDE_PROJECT_DIR": str(other.root)})
+        self.assertEqual((proc.returncode, proc.stdout, proc.stderr), (0, "", ""))
+        self.assertEqual(aliases_of(self.ws.read(self.NOTE)), ["Onboarding"])
+        self.assertIsNone(aliases_of(other.read(self.NOTE)))
+
+    def test_claude_project_dir_is_only_a_fallback(self):
+        other = Workspace(self)
+        other.write(self.NOTE, "---\ntitle: Onboarding\ntype: topic\n---\n\n# H\n")
+        link = "sources/internal/links/2026-01-01-note-links.md"
+        other.write(link, "---\ntitle: Links\ntype: note\n---\n\n- see [[Onboarding]]\n")
+        shutil.rmtree(self.ws.root / "basic-memory")
+        proc = self.ws.hook({"file_path": str(other.root / link)}, {"CLAUDE_PROJECT_DIR": str(other.root)})
+        self.assertEqual((proc.returncode, proc.stdout, proc.stderr), (0, "", ""))
+
+    def test_script_location_is_the_default_root(self):
+        self.assert_aliased({"file_path": self.path()})
+
+
+class Check(Base):
+    """`--check` reports through the exit code and writes nothing."""
+
+    NOTE = "atlas/topics/onboarding.md"
+    TEXT = "---\ntitle: Onboarding\ntype: topic\n---\n\n# H\n"
+
+    def test_exit_1_when_a_note_would_change_and_nothing_is_written(self):
+        self.ws.write(self.NOTE, self.TEXT)
+        self.cite("Onboarding")
+        proc = self.ws.run("--check")
+        self.assertEqual(proc.returncode, 1)
+        self.assertEqual(self.ws.read(self.NOTE), self.TEXT)
+
+    def test_exit_0_when_nothing_to_do(self):
+        self.ws.write(self.NOTE, self.TEXT)
+        self.assertEqual(self.ws.run("--check").returncode, 0)
+
+    def test_exit_0_when_already_compliant(self):
+        self.ws.write(self.NOTE, self.TEXT)
+        self.cite("Onboarding")
+        self.apply_ok()
+        self.assertEqual(self.ws.run("--check").returncode, 0)
+
+    def test_quiet_check_prints_nothing(self):
+        self.ws.write(self.NOTE, self.TEXT)
+        self.cite("Onboarding")
+        proc = self.ws.run("--check", "--quiet")
+        self.assertEqual((proc.returncode, proc.stdout), (1, ""))
+
+    def test_check_ignores_apply(self):
+        self.ws.write(self.NOTE, self.TEXT)
+        self.cite("Onboarding")
+        proc = self.ws.run("--check", "--apply")
+        self.assertEqual(proc.returncode, 1)
+        self.assertEqual(self.ws.read(self.NOTE), self.TEXT)
 
 
 class Report(Base):

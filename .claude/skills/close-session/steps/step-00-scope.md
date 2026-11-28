@@ -26,7 +26,7 @@ If `-p` is set, resolve it and verify the directory exists. `{entity}/{project}`
 
 1. Look at what the session actually touched: files read or written, entity names, project vocabulary.
 2. One dominant project -> propose it.
-3. Several -> AskUserQuestion listing them, most-touched first.
+3. Several -> ask the owner, listing them, most-touched first.
 4. **None** -> say so plainly and offer two options: attach the memory to a project the owner names, or write nothing. Do not invent a project folder to have somewhere to write; a session about nothing in particular does not need a memory.
 
 Set `{project_path}`, `{zone}`, `{entity}`.

@@ -8,10 +8,12 @@ note from the other. The answer now lives here, and both passes ask `classify`.
 The rules, first match wins:
 
     1. an entity or project context file, by its place
-         sources/clients/{X}/CLAUDE.md                   client-context
-         sources/partners/{X}/CLAUDE.md                  partner-context
-         sources/{zone}/{project}/.../CLAUDE.md          project-brief
+         sources/clients/{X}/AGENTS.md                   client-context
+         sources/partners/{X}/AGENTS.md                  partner-context
+         sources/{zone}/{project}/.../AGENTS.md          project-brief
          sources/{zone}/{project}/.../README.md          project-brief
+       `CLAUDE.md` is accepted everywhere `AGENTS.md` is, the legacy name of an
+       unmigrated fork, see `ENTITY_CONTEXT_NAMES`
     2. a container folder anywhere above the file, which forces its type
          emails/ mails/                                  email
          meetings/                                       meeting
@@ -20,7 +22,7 @@ The rules, first match wins:
          clippings/                                      clipping
          sessions/                                       session
     3. the word right after the date, `YYYY-MM-DD-{type}-slug.md`, the naming
-       convention of the root CLAUDE.md, and `YYYY-MM-DD-{seq}-{direction}-`
+       convention of the root AGENTS.md, and `YYYY-MM-DD-{seq}-{direction}-`
        for an email filed outside its folder
     4. a keyword in the name, `-audit-` or `-plan-` and the like, only when
        the name carries no type word after its date
@@ -51,6 +53,13 @@ import frontmatter as F  # noqa: E402
 # Re-exported: a grammar fact, kept importable from here for the passes that
 # already import their guards from this module.
 from frontmatter import swallowed_key_line  # noqa: E402,F401
+
+# The file names an entity context or a project brief may carry, canonical
+# first. `AGENTS.md` is read by every agent harness, `CLAUDE.md` is the legacy
+# name, accepted so a fork that has not migrated keeps working. This module is
+# the shared home because it already holds the rules that decide what a path
+# means, and the passes that look for these files import it anyway.
+ENTITY_CONTEXT_NAMES = ("AGENTS.md", "CLAUDE.md")
 
 # The 17 canonical types, one per schema in `basic-memory/schemas/`.
 NOTE_TYPES = frozenset({
@@ -94,11 +103,11 @@ KEYWORD_TYPES: tuple[tuple[tuple[str, ...], str], ...] = (
 
 
 def _context_type(parts: list[str]) -> str | None:
-    """Rule 1, for a CLAUDE.md or a README.md."""
+    """Rule 1, for an AGENTS.md, a legacy CLAUDE.md or a README.md."""
     name = parts[-1]
     if parts[0] != "sources":
         return None
-    if name == "CLAUDE.md":
+    if name in ENTITY_CONTEXT_NAMES:
         if len(parts) == 4 and parts[1] == "clients":
             return "client-context"
         if len(parts) == 4 and parts[1] == "partners":
@@ -150,7 +159,7 @@ def classify(rel: str, subtype=None) -> str | None:
         return None
     if name == "CONTEXT.md":
         return None
-    if name in ("CLAUDE.md", "README.md"):
+    if name in ENTITY_CONTEXT_NAMES or name == "README.md":
         return _context_type(parts)
     ancestors = set(parts[:-1])
     for folder, note_type in FOLDER_TYPES:
@@ -176,7 +185,7 @@ def is_forced(rel: str) -> bool:
 
 ENTITY_ZONES = ("clients", "partners")
 PROJECT_ZONES = ("internal", "personal")
-BRIEF_FILES = ("README.md", "CLAUDE.md")
+BRIEF_FILES = ("README.md",) + ENTITY_CONTEXT_NAMES
 # The types whose `about` targets the project brief, in their schemas.
 PROJECT_ABOUT_TYPES = frozenset({"email", "meeting", "session"})
 
@@ -217,7 +226,8 @@ class Brief:
 def project_brief(folder: str | None, frontmatter_of):
     """(Brief, None) for the brief of `folder`, or (None, why there is none).
 
-    The brief is the folder's `README.md`, or its `CLAUDE.md`, declaring
+    The brief is the folder's `README.md`, or its `AGENTS.md` (`CLAUDE.md` for
+    an unmigrated fork), declaring
     `type: project-brief` and a non-empty `title:`. `frontmatter_of(rel)`
     returns the parsed frontmatter of a workspace-relative path, None when the
     file is absent or has none, so a caller reading the disk and one holding

@@ -22,7 +22,7 @@ next_step: steps/step-01-scan.md
 - **Flag `-d`**: integer -> `{depth}` (default 99 = recursive)
 - **Flag `-a`**: boolean -> `{auto_mode}`
 
-If `{topic}` is empty, ask via AskUserQuestion:
+If `{topic}` is empty, ask the owner (see `AGENTS.md`, Asking the owner):
 
 ```yaml
 questions:
@@ -59,7 +59,7 @@ test -f {target_path} && echo "EXISTS" || echo "NEW"
 
 **If it exists**:
 
-Present to the user via AskUserQuestion:
+Ask the owner (see `AGENTS.md`, Asking the owner):
 
 ```yaml
 questions:
@@ -93,7 +93,7 @@ Planned MOC:
 - Mode: {new | update | overwrite}
 ```
 
-Confirm via AskUserQuestion (except in `{auto_mode}`).
+Ask the owner to confirm (except in `{auto_mode}`).
 
 ---
 

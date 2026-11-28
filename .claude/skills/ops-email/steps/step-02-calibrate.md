@@ -35,7 +35,7 @@ Search the entity's project folders for earlier outgoing emails:
 If no prior outgoing emails exist for this entity:
 
 - Ask the user to paste one or two short examples of their own real writing (any email of a similar kind).
-- Use AskUserQuestion or a plain prompt. Keep it optional: the user can skip.
+- Ask the owner, or use a plain prompt. Keep it optional: the user can skip.
 - If provided, derive `{voice_sample}` from the register of those samples.
 
 ### (c) Entity preferences with a neutral default

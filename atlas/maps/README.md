@@ -41,7 +41,7 @@ views:
 
 Frontmatter properties are referenced `note.x` in the `properties` and `filters` blocks, and bare in `order` and `sort`. File properties use the `file.` prefix. View types available without installing anything are `table`, `cards` and `list`. A fourth, `map`, needs the Maps plugin and is therefore not used here. The `list` type requires Obsidian 1.10 or later.
 
-**Never label a column with `file.name` in this workspace.** Entity context files are all named `CLAUDE.md` and project briefs are all `README.md`, so the column would read "CLAUDE" on every row. Use the note's own identity property instead: `client` for a client context, `partner` for a partner context, `title` for a project brief, `subject` for an email. Add `file.folder` when the reader needs to know where the note lives.
+**Never label a column with `file.name` in this workspace.** Entity context files are all named `AGENTS.md` and project briefs are all `README.md`, so the column would read "AGENTS" on every row. Use the note's own identity property instead: `client` for a client context, `partner` for a partner context, `title` for a project brief, `subject` for an email. Add `file.folder` when the reader needs to know where the note lives.
 
 ### 2. The static twin, `{name}-static.md`
 
@@ -60,13 +60,13 @@ auto_generated: true
 
 # Active clients
 
-_All clients with status: active in their CLAUDE.md._
+_All clients with status: active in their AGENTS.md._
 _Generated on YYYY-MM-DD by `generate_indexes.py`. Do not edit by hand._
 
 | Client | Path | Last updated |
 | --- | --- | --- |
-| [[Globex]] | sources/clients/globex/CLAUDE.md | YYYY-MM-DD |
-| [[Initech]] | sources/clients/initech/CLAUDE.md | YYYY-MM-DD |
+| [[Globex]] | sources/clients/globex/AGENTS.md | YYYY-MM-DD |
+| [[Initech]] | sources/clients/initech/AGENTS.md | YYYY-MM-DD |
 ```
 
 **Never edit a `-static.md` by hand.** Rerun `generate_indexes.py` to refresh it. If you leave Obsidian for good, regenerate the statics and delete the `.base` files.

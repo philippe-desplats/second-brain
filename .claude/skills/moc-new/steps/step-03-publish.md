@@ -17,7 +17,7 @@ next_step: null
 
 ### 1. Present the draft to the user
 
-Except if `{auto_mode}` = true, present the full draft (frontmatter + body) and ask via AskUserQuestion:
+Except if `{auto_mode}` = true, present the full draft (frontmatter + body) and ask the owner (see `AGENTS.md`, Asking the owner):
 
 ```yaml
 questions:
@@ -53,7 +53,7 @@ Read the existing one. Merge:
 
 **If `{mode}` = new**: direct write.
 
-**If `{mode}` = overwrite**: warn one last time via AskUserQuestion before overwriting.
+**If `{mode}` = overwrite**: warn one last time by asking the owner before overwriting.
 
 ### 3. Write the file
 
@@ -61,11 +61,11 @@ Read the existing one. Merge:
 mkdir -p atlas/maps/
 ```
 
-Write `{draft_content}` into `{target_path}` via the Write tool.
+Write the file: put `{draft_content}` into `{target_path}`.
 
 ### 4. Back-links (optional)
 
-Ask via AskUserQuestion (except in `{auto_mode}`):
+Ask the owner (see `AGENTS.md`, Asking the owner) (except in `{auto_mode}`):
 
 ```yaml
 questions:

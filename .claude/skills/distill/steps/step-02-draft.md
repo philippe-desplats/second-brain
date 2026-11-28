@@ -33,7 +33,7 @@ And `{slug}` is the `{topic}` in kebab-case.
 
 **If the file already exists**:
 - Read the existing one
-- Present to the user via AskUserQuestion: update / overwrite / abandon
+- Ask the owner (see `AGENTS.md`, Asking the owner): update / overwrite / abandon
 - If update: continue in merge mode (add the new sources, enrich)
 - If overwrite: warn, ask for explicit confirmation
 
